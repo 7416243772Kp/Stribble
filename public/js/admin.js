@@ -194,7 +194,6 @@ function renderCourses(courses) {
         <h4>${course.title}</h4>
         <p>${course.description}</p>
         <p><strong>₹${course.price}</strong></p>
-        <a href="${course.googleDriveLink}" target="_blank">Google Drive Link</a>
       </div>
       <div class="actions">
         <button onclick="editCourse('${course._id}')">Edit</button>

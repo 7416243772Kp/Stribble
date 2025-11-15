@@ -11,8 +11,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import bcrypt from "bcrypt";
-import cookieParser from "cookie-parser";
-import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 // ==== AWS SES (v3) ====
@@ -49,15 +47,7 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-app.use(
-  helmet({
-    contentSecurityPolicy: false, // enable CSP later after removing inline scripts
-    crossOriginEmbedderPolicy: false,
-  })
-);
-
 app.use(express.json({ limit: "200kb" }));
-app.use(cookieParser());
 
 // --- Express 5–safe in-place sanitizer (blocks NoSQL injection operators) ---
 function deepSanitize(obj) {

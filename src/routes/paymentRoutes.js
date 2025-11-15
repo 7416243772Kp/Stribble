@@ -41,7 +41,7 @@ router.post("/order", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
     }
 
-    // Compute commissions (₹, not paise) — coerce to Number to avoid NaN surprises
+    // compute commissions (coerce to Number)
     const influencerCommission = Number(coupon.influencerCommission || 0);
     const ebookCreatorCommission = Number(coupon.ebookCreatorCommission || 0);
     const ownerAmount = Number(amount) - influencerCommission - ebookCreatorCommission;
@@ -50,15 +50,8 @@ router.post("/order", async (req, res) => {
       return res.status(400).json({ success: false, message: "Commission exceeds price" });
     }
 
-    // Create Razorpay order (paise)
-    const razorpayOrder = await razorpay.orders.create({
-      amount: Math.round(Number(amount) * 100),
-      currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-    });
-
-    // Save order in DB (pending until verify)
-    const createdOrder = await Order.create({
+    // Save new Order
+    await Order.create({
       courseId,
       couponId: coupon._id,
       buyerEmail: email,
