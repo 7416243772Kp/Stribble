@@ -1,5 +1,5 @@
 //C:\Ebook\server.js
-// ==== Environment & Core Imports ====
+// = Environment & Core Imports =
 import dotenv from "dotenv";
 dotenv.config();
 
