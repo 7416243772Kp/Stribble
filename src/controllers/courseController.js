@@ -2,25 +2,41 @@
 import Course from "../models/course.js";
 
 // @desc Get all courses (public)
+// @desc Get all courses (public) -- defensive
 export const getCourses = async (req, res) => {
   try {
-    const courses = await Course.find();
-    res.json(courses);
+    const courses = await Course.find().lean();
+    // remove googleDriveLink from every course
+    const sanitized = courses.map(c => {
+      if (c.googleDriveLink) delete c.googleDriveLink;
+      return c;
+    });
+    return res.json(sanitized);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching courses" });
+    console.error("getCourses error:", error);
+    return res.status(500).json({ message: "Error fetching courses" });
   }
 };
 
+
 // @desc Get single course by ID (public)
+// @desc Get single course by ID (public) -- defensive, always removes googleDriveLink
 export const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
-    if (!course) return res.status(404).json({ message: "Course not found" });
-    res.json(course);
+    // fetch the course (get full doc just in case)
+    const courseDoc = await Course.findById(req.params.id).lean();
+    if (!courseDoc) return res.status(404).json({ message: "Course not found" });
+
+    // forcefully remove the sensitive field
+    if (courseDoc.googleDriveLink) delete courseDoc.googleDriveLink;
+
+    return res.json(courseDoc);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching course" });
+    console.error("getCourseById error:", error);
+    return res.status(500).json({ message: "Error fetching course" });
   }
 };
+
 
 // @desc Create a new course (admin)
 export const createCourse = async (req, res) => {
@@ -35,6 +51,7 @@ export const createCourse = async (req, res) => {
     await newCourse.save();
     res.status(201).json(newCourse);
   } catch (error) {
+    console.error("createCourse error:", error);
     res.status(500).json({ message: "Error creating course" });
   }
 };
@@ -46,6 +63,7 @@ export const updateCourse = async (req, res) => {
     if (!updated) return res.status(404).json({ message: "Course not found" });
     res.json(updated);
   } catch (error) {
+    console.error("updateCourse error:", error);
     res.status(500).json({ message: "Error updating course" });
   }
 };
@@ -57,6 +75,7 @@ export const deleteCourse = async (req, res) => {
     if (!deleted) return res.status(404).json({ message: "Course not found" });
     res.json({ message: "Course deleted" });
   } catch (error) {
+    console.error("deleteCourse error:", error);
     res.status(500).json({ message: "Error deleting course" });
   }
 };

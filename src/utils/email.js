@@ -1,9 +1,10 @@
-//C:\Ebook\src\utils\email.js
+// src/utils/email.js
 import SESv2Pkg from "@aws-sdk/client-sesv2";
 const { SESv2Client, SendEmailCommand } = SESv2Pkg;
 import nodemailer from "nodemailer";
+import Course from "../models/course.js"; // <-- important import
 
-// ✅ Ensure AWS_REGION fallback
+// Ensure AWS_REGION fallback
 const sesClient = new SESv2Client({
   region: process.env.AWS_REGION || "ap-south-1", // fallback region
   credentials: {
@@ -12,17 +13,32 @@ const sesClient = new SESv2Client({
   },
 });
 
-// Use nodemailer with SES
 const transporter = nodemailer.createTransport({
   SES: { ses: sesClient, SendEmailCommand },
 });
 
 /**
- * Send payment confirmation email
+ * Send payment confirmation email.
+ *
+ * Either pass `downloadLink` directly, or pass `courseId` and the function will
+ * fetch the googleDriveLink (explicitly selecting it).
+ *
+ * Params:
+ * - to (string) - recipient email
+ * - customerName (string)
+ * - courseId (string) - optional if downloadLink provided
+ * - courseName (string)
+ * - amount (number)
+ * - orderId (string)
+ * - paymentId (string)
+ * - dateTime (string)
+ * - downloadLink (string) - optional; if not provided, will be loaded from DB
+ * - supportEmail (string)
  */
 export const sendPaymentEmail = async ({
   to,
   customerName,
+  courseId,
   courseName,
   amount,
   orderId,
@@ -31,8 +47,24 @@ export const sendPaymentEmail = async ({
   downloadLink,
   supportEmail = "support@stribble.site",
 }) => {
-  const htmlContent = `
-<!doctype html>
+  try {
+    // If no downloadLink provided, fetch the course and explicitly include the hidden field
+    if (!downloadLink) {
+      if (!courseId) {
+        throw new Error("Either downloadLink or courseId must be provided to sendPaymentEmail");
+      }
+      const course = await Course.findById(courseId).select("+googleDriveLink").lean();
+      if (!course) throw new Error("Course not found when preparing email");
+      downloadLink = course.googleDriveLink;
+    }
+
+    // Fallback if still missing
+    if (!downloadLink) {
+      console.warn("sendPaymentEmail: no downloadLink available for course", courseId);
+      // Optionally continue and send email without link, or throw — here we continue but with no button.
+    }
+
+    const htmlContent = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -76,9 +108,9 @@ export const sendPaymentEmail = async ({
 
               <!-- Download Button -->
               <div style="text-align:center;margin-top:22px;">
-                <a href="${downloadLink}" target="_blank" style="padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#2563eb,#06b6d4);color:#fff;font-weight:700;text-decoration:none;">
+                ${downloadLink ? `<a href="${downloadLink}" target="_blank" style="padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#2563eb,#06b6d4);color:#fff;font-weight:700;text-decoration:none;">
                   Access Your Course
-                </a>
+                </a>` : `<p style="color:#ff4d4f;">Download link is not available. Please contact support.</p>`}
               </div>
 
               <p style="margin-top:18px;font-size:13px;color:#6b7280;">
@@ -101,11 +133,17 @@ export const sendPaymentEmail = async ({
 </body>
 </html>`;
 
-  // Send email
-  await transporter.sendMail({
-    from: "no-reply@stribble.site", // must be verified in SES
-    to,
-    subject: `Here is your Course - ${courseName}`,
-    html: htmlContent,
-  });
+    // Send email
+    await transporter.sendMail({
+      from: "no-reply@stribble.site", // must be verified in SES
+      to,
+      subject: `Here is your Course - ${courseName}`,
+      html: htmlContent,
+    });
+
+    return true;
+  } catch (err) {
+    console.error("sendPaymentEmail error:", err);
+    throw err; // let caller handle failure (or return false)
+  }
 };

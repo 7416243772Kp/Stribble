@@ -23,10 +23,8 @@ router.post("/", async (req, res) => {
       ebookCreatorUPI,
       ebookCreatorUpi,
       influencerCommission = 0,
-      ebookCreatorCommission,
-      ebookCommission,
+      ebookCreatorCommission = 0,
       isDefault = false,
-      maxUses = 0,
     } = req.body;
 
     // Validate course
@@ -46,9 +44,8 @@ router.post("/", async (req, res) => {
       influencerUPI: influencerUPI || influencerUpi || "",
       ebookCreatorUPI: ebookCreatorUPI || ebookCreatorUpi || "",
       influencerCommission: Number(influencerCommission) || 0,
-      ebookCreatorCommission: Number(ebookCreatorCommission ?? ebookCommission ?? 0),
+      ebookCreatorCommission: Number(ebookCreatorCommission) || 0,
       isDefault: Boolean(isDefault),
-      maxUses: Number(maxUses) || 0,
     });
 
     res.json({ success: true, coupon });
@@ -136,12 +133,6 @@ router.post("/validate", async (req, res) => {
           .json({ success: false, message: "Invalid coupon" });
 
       return res.json({ success: true, coupon: defaultCoupon });
-    }
-
-    if (coupon.maxUses > 0 && coupon.uses >= coupon.maxUses) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Coupon usage limit reached" });
     }
 
     res.json({ success: true, coupon });

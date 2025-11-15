@@ -20,16 +20,17 @@ const courseSchema = new mongoose.Schema(
     },
     thumbnail: {
       type: String, // e.g. /uploads/thumbnail.png
-      required: true,
+      required: true
     },
     googleDriveLink: {
       type: String, // used for email course delivery
       required: true,
       trim: true,
+      select: false // always exclude from query results unless explicitly included
     },
     soldCount: {
       type: Number,
-      default: 0,
+      default: 0
     },
     // optional: if you ever want to store category or tags later
     category: {

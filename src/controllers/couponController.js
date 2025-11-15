@@ -4,7 +4,7 @@ import Coupon from "../models/coupon.js";
 // Create coupon
 export const createCoupon = async (req, res) => {
   try {
-    const { code, course, influencerUPI, creatorUPI, influencerCommission, creatorCommission, isDefault } = req.body;
+    const { code, course, influencerUPI, creatorUPI, influencerCommission, ebookCreatorCommission, isDefault } = req.body;
 
     // Ensure only one default coupon exists
     if (isDefault) {
@@ -18,7 +18,7 @@ export const createCoupon = async (req, res) => {
       creatorUPI,
       
       influencerCommission,
-      creatorCommission,
+      ebookCreatorCommission,
       isDefault,
     });
 

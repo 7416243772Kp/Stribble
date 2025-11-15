@@ -7,17 +7,21 @@ import { sendPaymentEmail } from "../utils/email.js";
 
 const router = express.Router();
 
+// If you have an admin auth middleware, apply it here:
+// router.use(adminAuthMiddleware);
+
 // ===============================
 // Failed Emails Management
 // ===============================
 
-// Get all failed emails
+// Get all failed emails (completed orders where email wasn't sent)
 router.get("/failed-emails", async (req, res) => {
   try {
+    // populate courseId and explicitly include googleDriveLink (hidden by default)
     const failedOrders = await Order.find({
       emailSent: false,
       status: "completed",
-    }).populate("courseId");
+    }).populate({ path: "courseId", select: "+googleDriveLink title" });
 
     res.json({ success: true, failedOrders });
   } catch (err) {
@@ -29,12 +33,21 @@ router.get("/failed-emails", async (req, res) => {
 // Resend single failed email
 router.post("/resend-email/:orderId", async (req, res) => {
   try {
-    const order = await Order.findById(req.params.orderId).populate("courseId");
+    const order = await Order.findById(req.params.orderId).populate({
+      path: "courseId",
+      select: "+googleDriveLink title",
+    });
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
     if (!order.courseId) {
       return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    // Ensure googleDriveLink exists (it should since we populated it)
+    const downloadLink = order.courseId.googleDriveLink;
+    if (!downloadLink) {
+      return res.status(500).json({ success: false, message: "Download link not available for this course" });
     }
 
     await sendPaymentEmail({
@@ -48,7 +61,7 @@ router.post("/resend-email/:orderId", async (req, res) => {
       orderId: order.razorpayOrderId,
       paymentId: order.razorpayPaymentId,
       dateTime: new Date(order.paidAt).toLocaleString(),
-      downloadLink: order.courseId.googleDriveLink, // fixed key name
+      downloadLink,
     });
 
     order.emailSent = true;
@@ -67,7 +80,7 @@ router.post("/resend-all-emails", async (req, res) => {
     const failedOrders = await Order.find({
       emailSent: false,
       status: "completed",
-    }).populate("courseId");
+    }).populate({ path: "courseId", select: "+googleDriveLink title" });
 
     if (!failedOrders.length) {
       return res.json({ success: true, message: "No failed emails to resend" });
@@ -78,6 +91,13 @@ router.post("/resend-all-emails", async (req, res) => {
 
     for (const order of failedOrders) {
       try {
+        const downloadLink = order.courseId && order.courseId.googleDriveLink;
+        if (!downloadLink) {
+          console.warn(`Order ${order._id} has no download link, skipping`);
+          failCount++;
+          continue;
+        }
+
         await sendPaymentEmail({
           to: order.buyerEmail,
           customerName: order.buyerEmail.split("@")[0],
@@ -89,7 +109,7 @@ router.post("/resend-all-emails", async (req, res) => {
           orderId: order.razorpayOrderId,
           paymentId: order.razorpayPaymentId,
           dateTime: new Date(order.paidAt).toLocaleString(),
-          downloadLink: order.courseId.googleDriveLink, // fixed key name
+          downloadLink,
         });
 
         order.emailSent = true;
@@ -136,11 +156,15 @@ router.get("/sales", async (req, res) => {
       { $match: { status: "completed" } },
       {
         $group: {
-          _id: { day: { $dayOfMonth: "$paidAt" }, month: { $month: "$paidAt" } },
+          _id: {
+            year: { $year: "$paidAt" },
+            month: { $month: "$paidAt" },
+            day: { $dayOfMonth: "$paidAt" },
+          },
           total: { $sum: "$ownerAmount" },
         },
       },
-      { $sort: { "_id.month": 1, "_id.day": 1 } },
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
     ]);
 
     const salesPerCourse = await Order.aggregate([
@@ -159,8 +183,15 @@ router.get("/sales", async (req, res) => {
     ]);
 
     const couponUsage = await Order.aggregate([
-      { $match: { status: "completed" } },
-      { $group: { _id: "$couponId", usageCount: { $sum: 1 }, totalDiscount: { $sum: "$influencerCommission" } } },
+      { $match: { status: "completed", couponId: { $ne: null } } },
+      {
+        $group: {
+          _id: "$couponId",
+          usageCount: { $sum: 1 },
+          totalInfluencerCommission: { $sum: "$influencerCommission" },
+          totalEbookCommission: { $sum: "$ebookCreatorCommission" },
+        },
+      },
       {
         $lookup: {
           from: "coupons",
@@ -170,7 +201,7 @@ router.get("/sales", async (req, res) => {
         },
       },
       { $unwind: "$coupon" },
-      { $project: { code: "$coupon.code", usageCount: 1, totalDiscount: 1 } },
+      { $project: { code: "$coupon.code", usageCount: 1, totalInfluencerCommission: 1, totalEbookCommission: 1 } },
     ]);
 
     res.json({ success: true, dailySales, salesPerCourse, couponUsage });

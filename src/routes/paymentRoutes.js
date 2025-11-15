@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import Order from "../models/order.js";
 import Coupon from "../models/coupon.js";
 import Course from "../models/course.js";
-import { sendPaymentEmail } from "../util/email.js";
+import { sendPaymentEmail } from "../utils/email.js";
 
 const router = express.Router();
 
@@ -32,51 +32,52 @@ router.post("/order", async (req, res) => {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
-    // Validate coupon
+    // Validate coupon (normalize code to uppercase like your schema)
     const coupon = await Coupon.findOne({
-      code: couponCode,
+      code: couponCode.toUpperCase(),
       courseId: new mongoose.Types.ObjectId(courseId),
     });
     if (!coupon) {
       return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
     }
 
-    // Compute commissions (₹, not paise)
-    const influencerCommission = coupon.influencerCommission;
-    const ebookCommission = coupon.ebookCommission;
-    const ownerAmount = amount - influencerCommission - ebookCommission;
+    // Compute commissions (₹, not paise) — coerce to Number to avoid NaN surprises
+    const influencerCommission = Number(coupon.influencerCommission || 0);
+    const ebookCreatorCommission = Number(coupon.ebookCreatorCommission || 0);
+    const ownerAmount = Number(amount) - influencerCommission - ebookCreatorCommission;
 
     if (ownerAmount < 0) {
       return res.status(400).json({ success: false, message: "Commission exceeds price" });
     }
 
     // Create Razorpay order (paise)
-    const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100),
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(Number(amount) * 100),
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
     });
 
-    // Save order in DB
-    await Order.create({
+    // Save order in DB (pending until verify)
+    const createdOrder = await Order.create({
       courseId,
       couponId: coupon._id,
       buyerEmail: email,
       influencerCommission,
-      ebookCreatorCommission: ebookCommission,
+      ebookCreatorCommission,
       ownerAmount,
       status: "pending",
-      razorpayOrderId: order.id,
+      razorpayOrderId: razorpayOrder.id,
       createdAt: new Date(),
     });
 
     // Send to client
     res.json({
       success: true,
-      orderId: order.id,
-      amountPaise: order.amount,
-      currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID, // ✅ safe to expose
+      orderId: razorpayOrder.id,
+      amountPaise: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID, // safe to expose
+      dbOrderId: createdOrder._id,
     });
   } catch (err) {
     console.error("Order creation failed:", err);
@@ -104,7 +105,7 @@ router.post("/verify", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid signature" });
     }
 
-    // Mark order as completed
+    // Mark order as completed and populate course with hidden field
     const order = await Order.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id },
       {
@@ -114,7 +115,7 @@ router.post("/verify", async (req, res) => {
         paidAt: new Date(),
       },
       { new: true }
-    ).populate("courseId"); // ✅ get course details
+    ).populate({ path: "courseId", select: "+googleDriveLink title" }); // include hidden link and title
 
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
@@ -125,20 +126,50 @@ router.post("/verify", async (req, res) => {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
-    // ✅ Send course email with Drive link
-    await sendPaymentEmail({
-      to: order.buyerEmail,
-      customerName: order.buyerEmail.split("@")[0], // fallback: before @
-      courseName: course.title,
-      amount: order.influencerCommission + order.ebookCreatorCommission + order.ownerAmount,
-      orderId: order._id,
-      paymentId: order.razorpayPaymentId,
-      dateTime: new Date(order.paidAt).toLocaleString(),
-      downloadLink: course.driveLink, // ✅ Google Drive link stored in course
-      supportEmail: "support@mademycourse.online",
-    });
+    // compute amount (reconstruct from order fields you stored)
+    const totalAmount =
+      (order.influencerCommission || 0) +
+      (order.ebookCreatorCommission || 0) +
+      (order.ownerAmount || 0);
 
-    res.json({ success: true, message: "Payment verified & email sent", order });
+    // Use the correct field name: googleDriveLink
+    const googleDriveLink = course.googleDriveLink; // present due to populate select
+    console.log("Resolved googleDriveLink:", googleDriveLink);
+
+    // Send course email (try/catch so payment still succeeds even if email fails)
+    let emailOk = false;
+    try {
+      await sendPaymentEmail({
+        to: order.buyerEmail,
+        customerName: order.buyerEmail.split("@")[0],
+        courseName: course.title,
+        amount: totalAmount,
+        orderId: order._id,
+        paymentId: order.razorpayPaymentId,
+        dateTime: new Date(order.paidAt).toLocaleString(),
+        downloadLink: googleDriveLink,
+        supportEmail: "support@stribble.site",
+      });
+      emailOk = true;
+    } catch (e) {
+      console.error("Email failed:", e);
+    }
+
+    // persist emailSent flag and ensure order saved
+    order.emailSent = emailOk;
+    await order.save();
+
+    // IMPORTANT: increment coupon uses only after successful payment completion
+    if (order.couponId) {
+      try {
+        await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } });
+      } catch (incErr) {
+        console.error("Failed to increment coupon.uses:", incErr);
+      }
+    }
+
+    // final response
+    return res.json({ success: true, message: "Payment verified", emailSent: emailOk, order });
   } catch (err) {
     console.error("Payment verification failed:", err);
     res.status(500).json({ success: false, message: "Server error" });
