@@ -1,4 +1,4 @@
-// src/models/AdminUser.js
+//C:\Ebook\src\models\AdminUser.js
 import mongoose from "mongoose";
 
 const AdminUserSchema = new mongoose.Schema({

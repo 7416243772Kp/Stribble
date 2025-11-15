@@ -1,4 +1,4 @@
-// src/routes/couponRoutes.js
+//C:\Ebook\src\routes\couponRoutes.js
 import express from "express";
 import Coupon from "../models/coupon.js";
 import Course from "../models/course.js";
@@ -9,9 +9,7 @@ const router = express.Router();
 // Middleware: protect all coupon routes
 router.use(adminAuth);
 
-// ===============================
-// Create Coupon
-// ===============================
+
 router.post("/", async (req, res) => {
   try {
     const {

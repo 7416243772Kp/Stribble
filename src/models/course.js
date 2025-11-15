@@ -1,4 +1,4 @@
-// src/models/course.js
+//C:\Ebook\src\models\course.js
 import mongoose from "mongoose";
 
 const courseSchema = new mongoose.Schema(

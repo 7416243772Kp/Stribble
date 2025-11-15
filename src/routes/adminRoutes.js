@@ -1,4 +1,4 @@
-// src/routes/adminRoutes.js
+//C:\Ebook\src\routes\adminRoutes.js
 import express from "express";
 import Order from "../models/order.js";
 import Course from "../models/course.js";

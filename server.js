@@ -1,7 +1,4 @@
-// ============================
-//  Server.js (Clean Structure)
-// ============================
-
+//C:\Ebook\server.js
 // ==== Environment & Core Imports ====
 import dotenv from "dotenv";
 dotenv.config();

@@ -1,4 +1,4 @@
-
+//C:\Ebook\public\js\checkout.js
 const urlParams = new URLSearchParams(window.location.search);
 const selectedCourseId = urlParams.get("courseId");
 

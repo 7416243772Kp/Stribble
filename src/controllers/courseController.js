@@ -1,4 +1,4 @@
-// src/controllers/courseController.js
+//C:\Ebook\src\controllers\courseController.js
 import Course from "../models/course.js";
 
 // @desc Get all courses (public)

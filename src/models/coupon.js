@@ -1,4 +1,4 @@
-// src/models/coupon.js
+//C:\Ebook\src\models\coupon.js
 import mongoose from "mongoose";
 
 const CouponSchema = new mongoose.Schema({

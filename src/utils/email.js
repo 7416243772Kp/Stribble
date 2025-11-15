@@ -1,4 +1,4 @@
-// src/utils/email.js
+//C:\Ebook\src\utils\email.js
 import SESv2Pkg from "@aws-sdk/client-sesv2";
 const { SESv2Client, SendEmailCommand } = SESv2Pkg;
 import nodemailer from "nodemailer";

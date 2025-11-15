@@ -1,7 +1,4 @@
-// =============================
-// Sidebar Navigation
-// =============================
-
+//C:\Ebook\public\js\admin.js
 const links = document.querySelectorAll(".sidebar-nav a");
 const sections = document.querySelectorAll(".content-section");
 const sectionTitle = document.getElementById("section-title");

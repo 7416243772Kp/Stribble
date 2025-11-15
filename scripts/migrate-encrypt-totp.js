@@ -1,4 +1,4 @@
-// scripts/migrate-encrypt-totp.js
+//C:\Ebook\scripts\migrate-encrypt-totp.js
 import dotenv from "dotenv";
 dotenv.config(); // <- important: load env first
 

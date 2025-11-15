@@ -1,4 +1,4 @@
-// src/controllers/paymentController.js
+//C:\Ebook\src\controllers\paymentController.js
 import Transaction from "../models/payment.js"; // relative path (adjust depending on file location)
 
 export const verifyPayment = async (req, res) => {

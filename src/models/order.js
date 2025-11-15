@@ -1,4 +1,4 @@
-// src/models/order.js
+//C:\Ebook\src\models\order.js
 import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema({

@@ -1,4 +1,4 @@
-// src/controllers/couponController.js
+//C:\Ebook\src\controllers\couponController.js
 import Coupon from "../models/coupon.js";
 
 // Create coupon

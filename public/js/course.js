@@ -1,3 +1,4 @@
+//C:\Ebook\public\js\course.js
 document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const courseId = params.get("id");

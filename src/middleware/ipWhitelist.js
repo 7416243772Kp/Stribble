@@ -1,3 +1,4 @@
+//C:\Ebook\src\middleware\ipWhitelist.js
 const allowedIps = (process.env.ALLOWED_IPS || "").split(","); 
 export function ipWhitelist(req, res, next) {
   const clientIp = req.ip || req.connection.remoteAddress;

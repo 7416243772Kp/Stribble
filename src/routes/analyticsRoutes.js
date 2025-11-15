@@ -1,4 +1,4 @@
-// routes/analyticsRoutes.js
+//C:\Ebook\src\routes\analyticsRoutes.js
 import express from "express";
 import Order from "../models/order.js";
 import { authAdmin } from "../middleware/authAdmin.js";
