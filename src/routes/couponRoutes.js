@@ -1,0 +1,154 @@
+// src/routes/couponRoutes.js
+import express from "express";
+import Coupon from "../models/coupon.js";
+import Course from "../models/course.js";
+import adminAuth from "../middleware/authAdmin.js";
+
+const router = express.Router();
+
+// Middleware: protect all coupon routes
+router.use(adminAuth);
+
+// ===============================
+// Create Coupon
+// ===============================
+router.post("/", async (req, res) => {
+  try {
+    const {
+      code,
+      courseId,
+      discount = 0,
+      influencerUPI,
+      influencerUpi,
+      ebookCreatorUPI,
+      ebookCreatorUpi,
+      influencerCommission = 0,
+      ebookCreatorCommission,
+      ebookCommission,
+      isDefault = false,
+      maxUses = 0,
+    } = req.body;
+
+    // Validate course
+    const course = await Course.findById(courseId);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    // If this is a default coupon, remove previous defaults for THIS course
+    if (isDefault) {
+      await Coupon.updateMany({ courseId, isDefault: true }, { $set: { isDefault: false } });
+    }
+
+    const coupon = await Coupon.create({
+      code: String(code).trim().toUpperCase(),
+      courseId,
+      discount: Number(discount) || 0,
+      influencerUPI: influencerUPI || influencerUpi || "",
+      ebookCreatorUPI: ebookCreatorUPI || ebookCreatorUpi || "",
+      influencerCommission: Number(influencerCommission) || 0,
+      ebookCreatorCommission: Number(ebookCreatorCommission ?? ebookCommission ?? 0),
+      isDefault: Boolean(isDefault),
+      maxUses: Number(maxUses) || 0,
+    });
+
+    res.json({ success: true, coupon });
+  } catch (err) {
+    console.error("Coupon create error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ===============================
+// Edit Coupon
+// ===============================
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (updates.isDefault) {
+      await Coupon.updateMany({ isDefault: true }, { $set: { isDefault: false } });
+    }
+
+    const coupon = await Coupon.findByIdAndUpdate(id, updates, { new: true });
+    if (!coupon)
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+
+    res.json({ success: true, coupon });
+  } catch (err) {
+    console.error("Coupon update error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ===============================
+// Delete Coupon
+// ===============================
+router.delete("/:id", async (req, res) => {
+  try {
+    const coupon = await Coupon.findByIdAndDelete(req.params.id);
+    if (!coupon)
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    res.json({ success: true, message: "Coupon deleted" });
+  } catch (err) {
+    console.error("Coupon delete error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ===============================
+// Get All Coupons
+// ===============================
+router.get("/", async (req, res) => {
+  try {
+    const coupons = await Coupon.find()
+      .populate("courseId", "title price")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, coupons });
+  } catch (err) {
+    console.error("Fetch coupons error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ===============================
+// Validate Coupon (used in checkout)
+// ===============================
+router.post("/validate", async (req, res) => {
+  try {
+    const { code, courseId } = req.body;
+
+    const coupon = await Coupon.findOne({
+      code: code.trim().toUpperCase(),
+      courseId,
+      active: true,
+    });
+
+    if (!coupon) {
+      const defaultCoupon = await Coupon.findOne({
+        courseId,
+        isDefault: true,
+        active: true,
+      });
+      if (!defaultCoupon)
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid coupon" });
+
+      return res.json({ success: true, coupon: defaultCoupon });
+    }
+
+    if (coupon.maxUses > 0 && coupon.uses >= coupon.maxUses) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Coupon usage limit reached" });
+    }
+
+    res.json({ success: true, coupon });
+  } catch (err) {
+    console.error("Coupon validate error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+export default router;

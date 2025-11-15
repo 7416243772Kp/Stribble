@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | CourseHub</title>
+  <link rel="stylesheet" href="css/checkout.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">Course<span>Hub</span></div>
+  </nav>
+
+  <!-- Checkout Container -->
+  <main class="checkout-container">
+    <div class="checkout-card animate-fade-in">
+      <h2 class="checkout-title">Secure Checkout</h2>
+      
+      <!-- Course Info -->
+      <div class="course-summary animate-slide-up">
+        <h3 id="courseTitle">📘 Loading...</h3>
+        <p class="price" id="coursePrice">₹0</p>
+        <p class="price" id="totalAmount" data-amount="0" data-final-amount="0">₹0</p>
+      </div>
+
+      <!-- Form -->
+      <form id="checkoutForm" class="animate-slide-up">
+        <div id="notification" aria-live="polite"></div>
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+
+        <label for="coupon">Coupon Code</label>
+        <div class="coupon-wrapper">
+          <input type="text" id="coupon" placeholder="Enter coupon code" required/>
+        </div>
+
+        <label for="otp">OTP</label>
+        <input type="text" id="otp" placeholder="Enter OTP" disabled>
+
+        <div class="checkout-actions">
+          <button type="button" id="validate-btn">Validate & Send OTP</button>
+          <button type="button" id="verify-otp-btn" disabled>Verify OTP</button>
+          <button type="submit" id="payment-btn" class="checkout-btn" disabled>Proceed to Pay</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>© 2025 CourseHub. All rights reserved.</p>
+  </footer>
+
+  <!-- External JS -->
+  <script src="js/checkout.js"></script>
+</body>
+</html>
+    

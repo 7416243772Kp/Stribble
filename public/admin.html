@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <script src="js/settings.js"></script>
+  <link rel="stylesheet" href="css/admin.css" />
+  <style>
+    /* Minimal OTP UI styles for reset overlay and 6-digit inputs */
+    .login-overlay{display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999}
+    .login-box{background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2);padding:24px;max-width:420px;width:92%}
+    .hidden{display:none!important}
+    .btn{background:#182A42;color:#fff;border:none;border-radius:8px;padding:10px 14px;cursor:pointer}
+    .btn-primary{background:#182A42}
+    .btn-secondary{background:#f3f4f6;color:#111827;border:1px solid #e5e7eb}
+    .login-error{margin-top:10px;color:#d14343;font-size:14px}
+    .otp-input-group{display:flex;gap:10px;justify-content:center;margin:10px 0}
+    .otp-input-single{width:42px;height:48px;text-align:center;font-size:22px;border:2px solid #e5e7eb;border-radius:8px}
+    .otp-input-single:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+    .reset-overlay{display:none;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999}
+    .reset-box{background:#fff;padding:24px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:92%;max-width:420px}
+    .timer-display{color:#6b7280;text-align:center;margin:8px 0}
+    .field{margin:10px 0}
+    .field input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px}
+  </style>
+</head>
+<body>
+  <!-- 🔔 Notification Container -->
+  <div id="notification" class="notification-container"></div>
+
+  <!-- Login Overlay -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-box">
+      <div id="login-form-container">
+        <h3>🔐 Admin Login</h3>
+        <form id="adminLoginForm">
+          <div class="field">
+            <label for="adminEmail">Email Address</label>
+            <input type="email" id="adminEmail" placeholder="admin@example.com" required />
+          </div>
+          <div class="field">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" placeholder="Enter your password" required />
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+        </form>
+
+        <!-- Forgot Password Link -->
+        <div style="text-align:center;margin-top:12px">
+          <a href="#" id="forgotPasswordLink" style="color:#667eea;text-decoration:underline;font-size:14px">
+            Forgot your password?
+          </a>
+        </div>
+      </div>
+
+      <!-- TOTP Setup (first login) -->
+      <div id="totp-setup" class="totp-setup hidden">
+        <h3>📱 Setup Two-Factor Authentication</h3>
+        <p style="color:#666;font-size:14px">Scan this QR code with your authenticator app (Google/Microsoft Authenticator)</p>
+        <img id="totp-qr" alt="TOTP QR" class="qr-img" style="margin:16px auto;display:block;max-width:220px"/>
+        <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin:8px 0">
+          <small>Manual entry code:</small><br/>
+          <code id="totp-secret" style="font-size:15px;user-select:all"></code>
+        </div>
+        <div class="field">
+          <label>Enter 6-digit code from app</label>
+          <input type="text" id="totp-token" placeholder="000000" maxlength="6" pattern="[0-9]{6}" />
+        </div>
+        <button id="verify-totp-btn" class="btn btn-primary" style="width:100%">Verify & Enable 2FA</button>
+      </div>
+
+      <!-- TOTP Challenge -->
+      <div id="totp-challenge" class="totp-challenge hidden">
+        <h3>🔐 Two-Factor Authentication</h3>
+        <p>Enter the 6-digit code from your authenticator app</p>
+        <div class="otp-input-group">
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-1" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-2" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-3" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-4" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-5" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-6" />
+        </div>
+        <input type="hidden" id="totp-login-token" />
+        <button id="verify-login-totp" class="btn btn-primary" style="width:100%">Verify Code</button>
+        <div style="text-align:center;margin-top:10px">
+          <a href="#" onclick="location.reload()" style="color:#666;font-size:13px">← Back to login</a>
+        </div>
+      </div>
+
+      <div id="login-error" class="login-error hidden"></div>
+    </div>
+  </div>
+
+  <!-- Simple Password Reset Overlay (no email prompt) -->
+  <div id="reset-overlay" class="reset-overlay">
+    <div class="reset-box">
+      <h3>🔑 Reset Admin Password</h3>
+      <p style="color:#6b7280">We sent a 6-digit OTP to the registered admin email. Enter it below and set a new password.</p>
+
+      <div class="field">
+        <label for="reset-otp">OTP Code</label>
+        <input type="text" id="reset-otp" placeholder="6-digit OTP" maxlength="6" />
+      </div>
+
+      <div class="timer-display">OTP expires in: <span id="timer-countdown">10:00</span></div>
+
+      <div class="field">
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" placeholder="At least 8 characters" />
+      </div>
+      <div class="field">
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" placeholder="Re-enter new password" />
+      </div>
+
+      <button id="reset-password-btn" class="btn btn-primary" style="width:100%;margin-top:6px">Reset Password</button>
+      <button id="resend-otp-btn" class="btn btn-secondary" style="width:100%;margin-top:8px">Resend OTP</button>
+
+      <div style="text-align:center;margin-top:12px">
+        <a href="#" id="close-reset" style="color:#667eea;text-decoration:underline">Cancel & Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin</h2>
+    <nav class="sidebar-nav">
+      <a href="#" data-section="dashboard" class="active">📊 Dashboard</a>
+      <a href="#" data-section="courses">📚 Courses</a>
+      <a href="#" data-section="coupons">🎟️ Coupons</a>
+      <a href="#" data-section="sales">💰 Sales</a>
+      <a href="#" onclick="logout()">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <div class="topbar">
+      <span id="section-title">Dashboard</span>
+    </div>
+
+    <div id="dashboard" class="content-section">
+      <h2>Dashboard</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><h3 id="dashboard-courses">0</h3><p>Total Courses</p></div>
+        <div class="stat-card"><h3 id="dashboard-coupons">0</h3><p>Total Coupons</p></div>
+        <div class="stat-card"><h3 id="dashboard-sales">0</h3><p>Total Sales</p></div>
+      </div>
+    </div>
+
+    <div id="courses" class="content-section hidden">
+      <h2>Manage Courses</h2>
+      <form id="add-course-form" enctype="multipart/form-data">
+        <input type="text" name="title" placeholder="Course Title" required />
+        <textarea name="description" placeholder="Course Description" required></textarea>
+        <input type="number" name="price" placeholder="Course Price" required />
+        <input type="text" name="googleDriveLink" placeholder="Google Drive Link" required />
+        <label>Thumbnail Image</label>
+        <input type="file" name="thumbnail" accept="image/*" required />
+        <button type="submit" class="btn">Add Course</button>
+      </form>
+      <div id="course-list"></div>
+    </div>
+
+    <div id="coupons" class="content-section hidden">
+      <h2>Manage Coupons</h2>
+      <form id="add-coupon-form">
+        <label>Select Course</label>
+        <select name="courseId" id="coupon-course-select" required><option value="">-- Select Course --</option></select>
+        <input type="text" name="code" placeholder="Coupon Code" required />
+        <input type="number" name="discount" placeholder="Discount (₹)" required />
+        <input type="text" name="influencerUPI" placeholder="Influencer UPI ID (optional)" />
+        <input type="text" name="ebookCreatorUPI" placeholder="Ebook Creator UPI ID (optional)" />
+        <input type="number" name="influencerCommission" placeholder="Influencer Commission (₹)" />
+        <input type="number" name="ebookCreatorCommission" placeholder="Ebook Creator Commission (₹)" />
+        <button type="submit" class="btn">Add Coupon</button>
+      </form>
+      <h3>All Coupons</h3>
+      <div id="coupon-list"></div>
+    </div>
+
+    <div id="sales" class="content-section hidden">
+      <h2>Sales Reports</h2>
+      <div class="chart-container">
+        <h3>Daily Sales (Last 7 Days)</h3>
+        <canvas id="salesChart" width="600" height="300"></canvas>
+      </div>
+      <div class="sales-cards">
+        <h3>Total Sales per Course</h3>
+        <div id="course-sales" class="cards-grid"></div>
+      </div>
+      <div class="coupon-usage-cards">
+        <h3>Coupon Usage</h3>
+        <div id="coupon-usage" class="cards-grid"></div>
+      </div>
+      <div class="failed-emails-section mt-30">
+        <h3>📧 Failed Email Deliveries</h3>
+        <button id="resendAllBtn" class="btn mb-12">Resend All Failed Emails</button>
+        <table class="failed-emails-table">
+          <thead><tr><th>Email</th><th>Course</th><th>Order ID</th><th>Paid At</th><th>Action</th></tr></thead>
+          <tbody id="failedEmailsList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/admin-auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

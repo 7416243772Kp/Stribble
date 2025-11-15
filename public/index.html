@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CourseHub — Premium Courses</title>
+
+  <!-- Favicon (prevents 404) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 rx=%2718%27 fill=%27%232563eb%27/%3E%3Ctext x=%2750%25%27 y=%2758%25%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27white%27 font-family=%27Arial,Helvetica,sans-serif%27%3ECH%3C/text%3E%3C/svg%3E" />
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/index.css" />
+</head>
+<body>
+  <!-- Nav -->
+  <header class="nav">
+    <div class="container nav__inner">
+      <a href="index.html" class="brand">
+        <span class="brand__dot"></span>
+        <span class="brand__name">CourseHub</span>
+      </a>
+      <!-- Removed Admin link -->
+      <nav class="nav__links">
+        <a href="#catalog" class="nav__link">Courses</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero__grid">
+      <div class="hero__content">
+        <h1 class="hero__title">
+          Upgrade your skills with <span class="accent">quality courses</span>
+        </h1>
+        <p class="hero__subtitle">
+          Curated content, clear outcomes, and instant access after secure checkout.
+        </p>
+        <div class="hero__actions">
+          <a href="#catalog" class="btn btn--primary">Browse Courses</a>
+          <a href="course.html" class="btn btn--ghost">View a Course</a>
+        </div>
+        <div class="hero__meta">
+          <span>🔒 Secure payments</span>
+          <span>⚡ Instant delivery</span>
+          <span>♾ Lifetime updates</span>
+        </div>
+      </div>
+      <div class="hero__visual">
+        <div class="visual__card">
+          <div class="visual__badge">New</div>
+          <div class="visual__title">Zero to Pro</div>
+          <div class="visual__line"></div>
+          <div class="visual__foot">Premium course</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Catalog -->
+  <main id="catalog" class="section">
+    <div class="container">
+      <div class="section__head">
+        <h2 class="section__title">Available Courses</h2>
+        <div class="tools">
+          <div class="search">
+            <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21l-4.2-4.2m1.2-5.3a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            <input id="searchInput" type="text" class="search__input" placeholder="Search courses..." />
+          </div>
+        </div>
+      </div>
+
+      <div id="courses" class="grid">
+        <!-- Cards/Skeletons injected here -->
+      </div>
+
+      <div id="emptyState" class="empty hidden">
+        <div class="empty__card">
+          <div class="empty__emoji">📭</div>
+          <h3>No courses available</h3>
+          <p>We’re adding new content soon. Please check back later.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="brand brand--muted">
+        <span class="brand__dot"></span>
+        <span class="brand__name">CourseHub</span>
+      </div>
+      <div class="footer__right">
+        <span>© <span id="year"></span> CourseHub</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/settings.js"></script>
+  <script>
+    const wrap = document.getElementById("courses");
+    const empty = document.getElementById("emptyState");
+    const searchInput = document.getElementById("searchInput");
+    const INR = (v) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v || 0);
+
+    function setYear(){ document.getElementById("year").textContent = new Date().getFullYear(); }
+
+    function skeleton(count = 8) {
+      wrap.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement("div");
+        s.className = "card skeleton";
+        s.innerHTML = `
+          <div class="card__media skeleton__block"></div>
+          <div class="card__body">
+            <div class="skeleton__line w-70"></div>
+            <div class="skeleton__line"></div>
+            <div class="card__footer">
+              <div class="skeleton__chip"></div>
+              <div class="skeleton__btn"></div>
+            </div>
+          </div>`;
+        wrap.appendChild(s);
+      }
+    }
+
+    function card(course){
+      const a = document.createElement("a");
+      a.className = "card";
+      a.href = `course.html?id=${course._id}`;
+      a.setAttribute("data-title", (course.title || "").toLowerCase());
+      a.setAttribute("data-desc", (course.description || "").toLowerCase());
+
+      a.innerHTML = `
+        <div class="card__media">
+          <img src="${course.thumbnail}" alt="${course.title}" loading="lazy" />
+        </div>
+        <div class="card__body">
+          <h3 class="card__title">${course.title}</h3>
+          <p class="card__desc">${(course.description || "").slice(0, 96)}${course.description && course.description.length > 96 ? "…" : ""}</p>
+          <div class="card__footer">
+            <span class="price">${INR(course.price)}</span>
+            <span class="cta">View</span>
+          </div>
+        </div>`;
+      return a;
+    }
+
+    function applySearch(){
+      const q = (searchInput.value || "").toLowerCase().trim();
+      let shown = 0;
+      document.querySelectorAll(".grid .card").forEach(c => {
+        const t = c.getAttribute("data-title") || "";
+        const d = c.getAttribute("data-desc") || "";
+        const visible = !q || t.includes(q) || d.includes(q);
+        c.style.display = visible ? "" : "none";
+        if (visible) shown++;
+      });
+      empty.classList.toggle("hidden", shown !== 0);
+    }
+
+    async function loadCourses(){
+      try {
+        skeleton(8);
+        const res = await fetch(`${window.API_BASE}/api/courses`);
+        const data = await res.json();
+
+        wrap.innerHTML = "";
+        const items = Array.isArray(data?.courses) ? data.courses : (Array.isArray(data) ? data : []);
+        if (!items.length) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        items.forEach(c => wrap.appendChild(card(c)));
+        applySearch();
+      } catch (e) {
+        wrap.innerHTML = `
+          <div class="empty__card">
+            <div class="empty__emoji">⚠️</div>
+            <h3>Couldn’t load courses</h3>
+            <p>Please refresh and try again.</p>
+          </div>`;
+      }
+    }
+
+    searchInput.addEventListener("input", applySearch);
+    setYear();
+    loadCourses();
+  </script>
+</body>
+</html>
