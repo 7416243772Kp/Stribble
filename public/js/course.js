@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // Creates order
-      const orderRes = await fetch("http://localhost:5000/api/payment/order", {
+      const orderRes = await fetch(`${window.API_BASE}/api/payment/order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: course.price * 100 })
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         description: course.title,
         order_id: orderData.id,
         handler: async function (response) {
-          const verifyRes = await fetch("http://localhost:5000/api/payment/verify", {
+          const verifyRes = await fetch(`${window.API_BASE}/api/payment/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

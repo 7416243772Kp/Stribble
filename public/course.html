@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Course Details | CourseHub</title>
+  <script src="js/settings.js"></script>
   <link rel="stylesheet" href="css/index.css">
   <style>
     /* Enroll Now button styling */
@@ -59,6 +60,11 @@
 
       try {
         const res = await fetch(`${window.API_BASE}/api/courses/${courseId}`);
+        if (!res.ok) {
+          const text = await res.text(); // helps debugging: HTML error body
+          console.error('Course fetch failed', res.status, text);
+          throw new Error(`Course fetch failed: ${res.status}`);
+        }
         const data = await res.json();
 
         const course = data.course || data;

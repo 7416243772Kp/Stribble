@@ -1,4 +1,7 @@
 //C:\Ebook\public\js\admin.js
+// =============================
+// Sidebar Navigation
+// =============================
 const links = document.querySelectorAll(".sidebar-nav a");
 const sections = document.querySelectorAll(".content-section");
 const sectionTitle = document.getElementById("section-title");
@@ -375,27 +378,31 @@ async function loadFailedEmails() {
     const tbody = document.getElementById("failedEmailsList");
     tbody.innerHTML = "";
 
-    if (!data.success || !data.failedOrders.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">✅ No failed emails</td></tr>`;
+    if (!data.success || !data.failedOrders || !data.failedOrders.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">✅ No failed emails</td></tr>`;
       return;
     }
 
+    // Build rows
     data.failedOrders.forEach((order) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${order.buyerEmail}</td>
+        <td>${order.buyerEmail || "N/A"}</td>
         <td>${order.courseId?.title || "N/A"}</td>
-        <td>${order.razorpayOrderId}</td>
-        <td>${new Date(order.paidAt).toLocaleString()}</td>
+        <td>${order.razorpayOrderId || "N/A"}</td>
+        <td>${order.paidAt ? new Date(order.paidAt).toLocaleString() : "N/A"}</td>
+        <td>${order.emailFailReason ? String(order.emailFailReason) : "—"}</td>
         <td><button class="btn resend-btn" data-id="${order._id}">Resend</button></td>
       `;
       tbody.appendChild(tr);
     });
 
+    // Attach handlers to the dynamically-created buttons
     document.querySelectorAll(".resend-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const orderId = btn.dataset.id;
         btn.disabled = true;
+        const originalText = btn.textContent;
         btn.textContent = "Resending...";
         try {
           const res = await authFetch(`${window.API_BASE}/api/admin/resend-email/${orderId}`, { method: "POST" });
@@ -403,22 +410,27 @@ async function loadFailedEmails() {
           const result = await res.json();
           if (result.success) {
             showNotification("success", "Email resent successfully");
-            loadFailedEmails();
+            // Refresh the list so the order disappears (or update the row)
+            await loadFailedEmails();
           } else {
-            showNotification("error", result.message);
+            showNotification("error", result.message || "Resend failed");
           }
-        } catch {
+        } catch (err) {
+          console.error("Resend error", err);
           showNotification("error", "Server error");
         } finally {
           btn.disabled = false;
-          btn.textContent = "Resend";
+          btn.textContent = originalText;
         }
       });
     });
   } catch (err) {
     console.error("Failed to load failed emails:", err);
+    const tbody = document.getElementById("failedEmailsList");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#a00">Error loading failed emails</td></tr>`;
   }
 }
+
 
 if (resendAllBtn) {
   resendAllBtn.addEventListener("click", async () => {

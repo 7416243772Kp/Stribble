@@ -17,10 +17,10 @@ const router = express.Router();
 // Get all failed emails (completed orders where email wasn't sent)
 router.get("/failed-emails", async (req, res) => {
   try {
-    // populate courseId and explicitly include googleDriveLink (hidden by default)
+    // find completed orders where emailSent is false OR not set
     const failedOrders = await Order.find({
-      emailSent: false,
       status: "completed",
+      $or: [{ emailSent: false }, { emailSent: { $exists: false } }],
     }).populate({ path: "courseId", select: "+googleDriveLink title" });
 
     res.json({ success: true, failedOrders });
@@ -29,6 +29,7 @@ router.get("/failed-emails", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // Resend single failed email
 router.post("/resend-email/:orderId", async (req, res) => {
@@ -40,46 +41,53 @@ router.post("/resend-email/:orderId", async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
-    if (!order.courseId) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+
+    const to = order.buyerEmail;
+    const courseTitle = order.courseId?.title || "";
+    const amount =
+      Number(order.ownerAmount || 0) +
+      Number(order.influencerCommission || 0) +
+      Number(order.ebookCreatorCommission || 0);
+
+    try {
+      await sendPaymentEmail({
+        to,
+        customerName: (to || "").split("@")[0],
+        courseName: courseTitle,
+        amount,
+        orderId: order.razorpayOrderId,
+        paymentId: order.razorpayPaymentId,
+        dateTime: order.paidAt ? new Date(order.paidAt).toLocaleString() : new Date().toLocaleString(),
+        // prefer explicit link, else pass courseId so helper can resolve link
+        downloadLink: order.courseId?.googleDriveLink || null,
+        courseId: order.courseId?._id || null,
+      });
+
+      order.emailSent = true;
+      order.emailFailReason = undefined;
+      await order.save();
+
+      res.json({ success: true, message: "Email resent successfully" });
+    } catch (mailErr) {
+      console.error("Resend single email failed:", mailErr);
+      order.emailSent = false;
+      order.emailFailReason = (mailErr && mailErr.message) || String(mailErr);
+      await order.save().catch(() => {});
+      res.status(500).json({ success: false, message: "Failed to send email", error: order.emailFailReason });
     }
-
-    // Ensure googleDriveLink exists (it should since we populated it)
-    const downloadLink = order.courseId.googleDriveLink;
-    if (!downloadLink) {
-      return res.status(500).json({ success: false, message: "Download link not available for this course" });
-    }
-
-    await sendPaymentEmail({
-      to: order.buyerEmail,
-      customerName: order.buyerEmail.split("@")[0],
-      courseName: order.courseId.title,
-      amount:
-        Number(order.ownerAmount || 0) +
-        Number(order.influencerCommission || 0) +
-        Number(order.ebookCreatorCommission || 0),
-      orderId: order.razorpayOrderId,
-      paymentId: order.razorpayPaymentId,
-      dateTime: new Date(order.paidAt).toLocaleString(),
-      downloadLink,
-    });
-
-    order.emailSent = true;
-    await order.save();
-
-    res.json({ success: true, message: "Email resent successfully" });
   } catch (err) {
-    console.error("Resend single email failed:", err);
-    res.status(500).json({ success: false, message: "Server error during resend" });
+    console.error("Resend single email endpoint error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // Resend all failed emails
 router.post("/resend-all-emails", async (req, res) => {
   try {
     const failedOrders = await Order.find({
-      emailSent: false,
       status: "completed",
+      $or: [{ emailSent: false }, { emailSent: { $exists: false } }],
     }).populate({ path: "courseId", select: "+googleDriveLink title" });
 
     if (!failedOrders.length) {
@@ -87,49 +95,50 @@ router.post("/resend-all-emails", async (req, res) => {
     }
 
     let successCount = 0;
-    let failCount = 0;
+    const failList = [];
 
     for (const order of failedOrders) {
       try {
-        const downloadLink = order.courseId && order.courseId.googleDriveLink;
-        if (!downloadLink) {
-          console.warn(`Order ${order._id} has no download link, skipping`);
-          failCount++;
-          continue;
-        }
-
+        const downloadLink = order.courseId?.googleDriveLink || null;
         await sendPaymentEmail({
           to: order.buyerEmail,
-          customerName: order.buyerEmail.split("@")[0],
-          courseName: order.courseId.title,
+          customerName: (order.buyerEmail || "").split("@")[0],
+          courseName: order.courseId?.title || "",
           amount:
             Number(order.ownerAmount || 0) +
             Number(order.influencerCommission || 0) +
             Number(order.ebookCreatorCommission || 0),
           orderId: order.razorpayOrderId,
           paymentId: order.razorpayPaymentId,
-          dateTime: new Date(order.paidAt).toLocaleString(),
+          dateTime: order.paidAt ? new Date(order.paidAt).toLocaleString() : new Date().toLocaleString(),
           downloadLink,
+          courseId: order.courseId?._id || null,
         });
 
         order.emailSent = true;
-        await order.save();
+        order.emailFailReason = undefined;
+        await order.save().catch(() => {});
         successCount++;
-      } catch (err) {
-        console.error(`❌ Failed to resend email for order ${order._id}:`, err);
-        failCount++;
+      } catch (e) {
+        console.error(`❌ Failed to resend email for order ${order._id}:`, e);
+        order.emailSent = false;
+        order.emailFailReason = (e && e.message) || String(e);
+        await order.save().catch(() => {});
+        failList.push({ orderId: order._id, reason: order.emailFailReason });
       }
     }
 
     res.json({
       success: true,
-      message: `Resend completed. ✅ ${successCount} sent, ❌ ${failCount} failed.`,
+      message: `Resend completed. ✅ ${successCount} sent, ❌ ${failList.length} failed.`,
+      failList,
     });
   } catch (err) {
     console.error("Resend All failed:", err);
     res.status(500).json({ success: false, message: "Server error during resend all" });
   }
 });
+
 
 // ===============================
 // Dashboard Stats

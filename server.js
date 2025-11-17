@@ -47,13 +47,24 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+
+
+// ==== CORS & Cookie Parser ====
+import cookieParser from "cookie-parser";
+
+const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());
+
+// allow JSON bodies (already present) + urlencoded for admin forms if needed
 app.use(express.json({ limit: "200kb" }));
+app.use(express.urlencoded({ extended: false }));
+
+// cookie parser (populates req.cookies)
+app.use(cookieParser());
 
 // --- Express 5–safe in-place sanitizer (blocks NoSQL injection operators) ---
 function deepSanitize(obj) {
   if (!obj || typeof obj !== "object") return;
   for (const key of Object.keys(obj)) {
-    // Block Mongo-style operators and dotted paths
     if (key.startsWith("$") || key.includes(".")) {
       delete obj[key];
       continue;
@@ -62,19 +73,27 @@ function deepSanitize(obj) {
     if (val && typeof val === "object") deepSanitize(val);
   }
 }
-// Apply AFTER parsers, BEFORE routes
+
 app.use((req, res, next) => {
   try {
     deepSanitize(req.body);
     deepSanitize(req.params);
-    deepSanitize(req.query); // mutate properties in place (no reassignment)
-  } catch {}
+    deepSanitize(req.query);
+  } catch (e) {}
   next();
 });
 
-// ==== CORS ====
-const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5000").split(",");
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+// robust CORS: echo allowed origin, supports credentials
+app.use(cors({
+  origin: function (origin, callback) {
+  if (!origin) return callback(null, true);
+  if (rawAllowed.indexOf(origin) !== -1) return callback(null, true);
+  console.warn("Blocked CORS origin:", origin);
+  return callback(null, false); // decline without creating an Error object
+  },
+  credentials: true,
+}));
+
 
 // ==== Static Files ====
 app.use(express.static(path.join(__dirname, "public")));
@@ -102,14 +121,18 @@ const razorpay = new Razorpay({
 // ============================
 //  AWS SES Setup
 // ============================
-const ses = new SESClient({
-  region: process.env.AWS_REGION || "ap-south-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
-const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@mademycourse.online";
+const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+const ses = hasAwsCreds
+  ? new SESClient({
+      region: process.env.AWS_REGION || "ap-south-1",
+      credentials: {
+        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+      },
+    })
+  : new SESClient({ region: process.env.AWS_REGION || "ap-south-1" }); // will use default provider chain if available
+
+const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 
 // ============================
 //  Rate Limiters
@@ -445,9 +468,10 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
       Number(order.influencerCommission || 0) +
       Number(order.ebookCreatorCommission || 0);
 
+    const courseIdForPayment = order.courseId?._id || null;
     await Payment.create({
       email: order.buyerEmail,
-      courseId: order.courseId._id,
+      courseId: courseIdForPayment,
       amount: amountPaid,
       razorpay_order_id,
       razorpay_payment_id,
@@ -457,22 +481,54 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
     });
 
     try {
-      await sendPaymentEmail({
-        to: order.buyerEmail,
-        customerName: order.buyerEmail.split("@")[0],
-        courseName: order.courseId.title,
-        amount: amountPaid,
-        orderId: order.razorpayOrderId,
-        paymentId: order.razorpayPaymentId || razorpay_payment_id,
-        dateTime: new Date(order.paidAt).toLocaleString(),
-        downloadLink: order.courseId.googleDriveLink,
-        supportEmail: "support@mademycourse.online",
-      });
+      // prefer an explicit download link if present on course object
+      const downloadLink = order.courseId?.googleDriveLink || null;
+      if (downloadLink) {
+        await sendPaymentEmail({
+          to: order.buyerEmail,
+          customerName: order.buyerEmail.split("@")[0],
+          courseName: order.courseId.title,
+          amount: amountPaid,
+          orderId: order.razorpayOrderId,
+          paymentId: order.razorpayPaymentId || razorpay_payment_id,
+          dateTime: new Date(order.paidAt).toLocaleString(),
+          downloadLink,
+          supportEmail: "support@stribble.site",
+        });
+        order.emailSent= true;
+        order.emailFailReason = undefined;
+        await order.save().catch(()=>{});
 
-      order.emailSent = true;
-      await order.save();
+      } else if (order.courseId?._id) {
+        // pass courseId — the sendPaymentEmail helper should fetch course details
+        await sendPaymentEmail({
+          to: order.buyerEmail,
+          customerName: order.buyerEmail.split("@")[0],
+          courseName: order.courseId.title || "",
+          amount: amountPaid,
+          orderId: order.razorpayOrderId,
+          paymentId: order.razorpayPaymentId || razorpay_payment_id,
+          dateTime: new Date(order.paidAt).toLocaleString(),
+          courseId: order.courseId._id,    // pass id so helper can look up link
+          supportEmail: "support@stribble.site",
+        });
+        order.emailSent= true;
+        order.emailFailReason = undefined;
+        await order.save().catch(()=>{});
+
+      } else {
+        console.warn("No downloadLink or courseId available for order:", order._id);
+      }
     } catch (mailErr) {
       console.error("❌ Email send failed:", mailErr);
+      // mark order (exists in variable 'order' above) so admin UI can show failed emails
+      try {
+        order.emailSent = false;
+        order.emailFailReason = (mailErr && mailErr.message) || String(mailErr);
+        await order.save().catch(() => {});
+      } catch (saveErr) {
+        console.error("Failed to save order email failure reason:", saveErr);
+      }
     }
 
     res.json({ success: true, message: "Payment verified", order });
@@ -486,8 +542,8 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
 //  Default Admin Setup
 // ============================
 async function ensureDefaultAdmin() {
-  const email = process.env.ADMIN_EMAIL || "admin@example.com";
-  const defaultPassword = process.env.ADMIN_PASSWORD || "change-me";
+  const email = process.env.ADMIN_EMAIL || "praveenkunche@gmail.com";
+  const defaultPassword = process.env.ADMIN_PASSWORD || "praveenkunche";
   const forceReset = (process.env.ADMIN_FORCE_RESET || "").toLowerCase() === "true";
 
   let admin = await AdminUser.findOne({ email });
@@ -514,4 +570,14 @@ ensureDefaultAdmin().catch((err) => console.error("❌ Failed to ensure default 
 //  Start Server
 // ============================
 const PORT = process.env.PORT || 5000;
+
+process.on("unhandledRejection", (reason, p) => {
+  console.error("Unhandled Rejection at Promise:", p, "reason:", reason);
+  // optionally: send alert or graceful shutdown
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  // optionally: perform graceful shutdown
+});
+
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
