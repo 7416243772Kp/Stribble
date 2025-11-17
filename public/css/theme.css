@@ -1,98 +1,530 @@
-/* -------------------------
-   theme.css — global tokens
-   Paste at top of your CSS files
-   ------------------------- */
+/* ===========================
+   theme.css — unified premium/minimal theme
+   Palette: Soft off-white background, charcoal text, teal -> indigo accents
+   Single file used by index/course/checkout/admin (admin is scoped with .admin-root)
+   =========================== */
+
+/* ---------- Design tokens ---------- */
 :root{
-  --bg:#f6f7fb;             /* page background */
-  --card:#ffffff;           /* card / panel background */
-  --muted:#6b7280;          /* muted text */
-  --text:#0b1220;           /* primary text */
-  --accent:#2563eb;         /* brand accent (blue) */
-  --accent-2:#06b6d4;       /* secondary accent */
-  --glass: rgba(11, 18, 32, 0.04);
-  --radius:12px;
-  --shadow-soft: 0 8px 24px rgba(11,22,39,0.06);
-  --shadow-xs: 0 2px 8px rgba(11,22,39,0.04);
-  --max-width:1100px;
-  --container-padding:20px;
+  --bg: #fbfcfd;              /* page background */
+  --panel: #ffffff;           /* card/panel */
+  --muted: #6b7280;          /* muted text */
+  --text: #0f1724;           /* primary text (charcoal) */
+  --accent: #fd0808;         /* teal */
+  --accent-2: #f16363;       /* indigo */
+  --glass: rgba(238, 8, 16, 0.04);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 12px 36px rgba(15,23,36,0.06);
+  --shadow-xs: 0 4px 14px rgba(15,23,36,0.04);
+  --max-width: 1100px;
+  --pad: 20px;
+  --nav-h: 72px;
+  --ease: 180ms;
+  --focus: rgba(14,165,164,0.12);
 }
 
-/* Typography */
-*{box-sizing:border-box}
+/* ---------- Reset & base ---------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
 html,body{height:100%}
+html{ -webkit-text-size-adjust:100% }
 body{
   margin:0;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background:var(--bg);
-  color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  background:var(--bg);
+  color:var(--text);
   line-height:1.5;
   font-size:16px;
 }
 
-/* Layout container */
-.container{
-  max-width:var(--max-width);
-  margin:0 auto;
-  padding:0 var(--container-padding);
-}
+/* remove default link decoration but keep keyboard focus visible */
+a{ color:inherit; text-decoration:none }
+a:focus{ outline: 3px solid var(--focus); outline-offset:2px; border-radius:8px }
 
-/* Utility spacing / responsiveness */
-.section{padding:48px 0}
-@media (max-width:768px){ .section{padding:28px 0} }
+/* headings / text scale */
+h1{ font-size:40px; margin:0 0 8px; line-height:1.04 }
+h2{ font-size:22px; margin:0 0 8px }
+h3{ font-size:18px; margin:0 0 8px }
+p{ margin:0 0 1rem; color:var(--muted) }
 
-/* Basic card */
-.card{
-  background:var(--card);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow-soft);
-  padding:18px;
-}
+/* small helpers */
+.container{ max-width:var(--max-width); margin:0 auto; padding:0 var(--pad) }
+.section{ padding:56px 0 }
+.center{text-align:center}
+.hidden{display:none!important}
+.muted{ color:var(--muted) }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  border:0;
-  cursor:pointer;
-  padding:10px 14px;
-  border-radius:10px;
-  font-weight:600;
-  transition: transform .12s ease, box-shadow .12s ease;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:0; cursor:pointer; padding:10px 14px; border-radius:10px; font-weight:600;
+  transition: transform var(--ease) ease, box-shadow var(--ease) ease, opacity var(--ease);
+  background:transparent;
 }
-.btn:active{ transform:translateY(1px); }
+.btn:active{ transform: translateY(1px) }
 .btn--primary{
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  color:#fff;
-  box-shadow:0 6px 18px rgba(37,99,235,0.14);
+  background: linear-gradient(90deg,var(--accent), var(--accent-2));
+  color:#fff; box-shadow: 0 10px 30px rgba(99,102,241,0.12);
 }
 .btn--ghost{
-  background:transparent;
-  border:1px solid rgba(11,22,39,0.06);
-  color:var(--text);
+  border:1px solid rgba(15,23,36,0.06); background:var(--panel); color:var(--text)
 }
 
-/* Form inputs */
+/* small controls */
+.btn--block{ display:block; width:100% }
+
+/* ---------- Form inputs ---------- */
 input[type="text"], input[type="email"], input[type="number"], input[type="password"], textarea, select {
-  width:100%;
-  padding:12px 14px;
-  border-radius:10px;
-  border:1px solid rgba(11,22,39,0.06);
-  background:#fff;
-  font-size:15px;
+  width:100%; padding:12px 14px; border-radius:var(--radius-sm);
+  border:1px solid rgba(15,23,36,0.06); background:var(--panel); font-size:15px; color:var(--text);
+  transition: box-shadow var(--ease), border-color var(--ease);
+}
+input:focus, textarea:focus, select:focus{
+  box-shadow: 0 8px 22px rgba(14,165,164,0.08);
+  border-color: rgba(14,165,164,0.9);
   outline:none;
 }
-input:focus, textarea:focus, select:focus {
-  box-shadow:0 6px 18px rgba(37,99,235,0.08);
-  border-color: rgba(37,99,235,0.8);
+
+/* ---------- Layout utilities ---------- */
+.row{ display:flex; gap:14px; align-items:center }
+.column{ display:flex; flex-direction:column; gap:12px }
+
+/* ---------- NAVBAR ---------- */
+header.nav, nav.navbar{
+  height: var(--nav-h); display:flex; align-items:center; position:sticky; top:0; z-index:80;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+  backdrop-filter: blur(6px); padding:8px 0;
+}
+.nav__inner{ display:flex; align-items:center; justify-content:space-between; width:100%; gap:12px }
+.brand{ display:flex; align-items:center; gap:10px; color:var(--text); font-weight:800; font-size:18px }
+.brand__dot{ width:12px; height:12px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:4px; box-shadow:0 8px 24px rgba(14,165,164,0.12) }
+.nav__links{ display:flex; gap:12px; align-items:center }
+.nav__link{ color:var(--muted); padding:8px 10px; border-radius:8px; transition: background var(--ease) }
+.nav__link:hover{ background: rgba(15,23,36,0.02); color:var(--text) }
+
+/* mobile: hide nav links */
+@media (max-width:720px){ .nav__links{ display:none } }
+
+/* ---------- HERO ---------- */
+.hero{ padding:64px 0 40px }
+.hero__grid{ display:grid; grid-template-columns: 1fr 360px; gap:28px; align-items:center }
+@media (max-width:920px){ .hero__grid{ grid-template-columns:1fr } }
+
+.hero__title{ font-weight:800; font-size:44px; margin:0 }
+.hero__title .accent{ color:var(--accent-2); background: rgba(99,102,241,0.08); padding:6px 8px; border-radius:8px }
+.hero__subtitle{ color:var(--muted); margin-bottom:16px; font-size:15px }
+.hero__actions{ display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap }
+.hero__meta{ display:flex; gap:14px; color:var(--muted); font-size:14px }
+
+/* hero visual card */
+.visual__card{
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  border-radius:16px; padding:20px; box-shadow:var(--shadow-xs);
+  display:flex; flex-direction:column; gap:10px; min-width:240px;
+}
+.visual__badge{ display:inline-block; background:rgba(14,165,164,0.08); color:var(--accent); padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px }
+
+/* ===== Mobile: stack card content and center price + View button ===== */
+@media (max-width: 640px) {
+  /* Make the whole card stack vertically: media (thumbnail) above body */
+  .card {
+    flex-direction: column;      /* stack image then body */
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Make the image fluid when card stacks */
+  .card__media {
+    width: 100% !important;
+    height: auto !important;
+    flex: 0 0 auto;
+  }
+  .card__media img {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    border-radius: 10px;
+  }
+
+  /* Card body layout stays column */
+  .card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Footer stacks and centers children */
+  .card__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;      /* CENTER everything horizontally */
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+  }
+
+  /* Price centered and slightly larger on mobile */
+  .card__footer .price {
+    text-align: center;
+    width: 100%;
+    font-size: 16px;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* CTA centered, not full width, consistent size */
+  .card__footer .cta {
+    display: inline-block;
+    min-width: 110px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #fff !important;
+    font-weight: 600;
+    text-align: center;
+    width: auto;         /* ensure not full width */
+    margin: 0 auto;      /* center if parent has extra space */
+    box-sizing: border-box;
+  }
 }
 
-/* Small helpers */
-.muted{color:var(--muted)}
-.row{display:flex;gap:18px;align-items:center}
-.column{display:flex;flex-direction:column;gap:8px}
-.hidden{display:none!important}
-.center{text-align:center}
+
+
+/* skeleton helpers */
+.skeleton__block{ height:80px; background: linear-gradient(90deg,#eef7f6,#fff); border-radius:8px }
+.skeleton__line{ height:12px; background: linear-gradient(90deg,#f4f6f7,#fff); border-radius:6px; margin:8px 0 }
+.skeleton__line.w-70{ width:70% }
+
+/* empty */
+.empty__card{ padding:36px; border-radius:12px; background: linear-gradient(180deg,#fff,#fbfdff); box-shadow:var(--shadow-xs); text-align:center }
+
+/* ---------- SEARCH ---------- */
+.search{ display:flex; align-items:center; gap:10px }
+.search__input{ min-width:200px; padding:10px 12px; border-radius:10px; border:1px solid rgba(15,23,36,0.04); background:var(--panel) }
+
+/* ---------- FOOTER ---------- */
+.footer{ padding:36px 0; margin-top:40px; border-top:1px solid rgba(15,23,36,0.03) }
+.footer__inner{ display:flex; justify-content:space-between; align-items:center; gap:12px }
+
+/* ---------- COURSE PAGE ---------- */
+.course-grid{ display:grid; grid-template-columns: 360px 1fr; gap:22px; margin-top:18px; align-items:start }
+@media (max-width:920px){ .course-grid{ grid-template-columns:1fr } }
+.course-card{ display:flex; gap:18px; padding:18px; background:var(--panel); border-radius:12px; box-shadow:var(--shadow-soft) }
+.course-card img{ width:360px; height:220px; object-fit:cover; border-radius:12px }
+.enroll-btn{ padding:10px 14px; border-radius:10px; background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; border:0 }
+/* ensure course-card stacks vertically on small screens */
+.course-card {
+  display: flex;       /* preserved for desktop */
+  gap: 18px;
+  align-items: flex-start;
+  flex-direction: row; /* default */
+}
+
+/* responsive: stack on smaller screens */
+@media (max-width: 920px) {
+  .course-card {
+    flex-direction: column;   /* stack image then content */
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  /* make image fluid and not overflow horizontally */
+  .course-card img,
+  .course-card .course-card img,
+  .course-card .card__media img {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+    border-radius: 12px;
+    display: block;
+  }
+
+  /* ensure the button appears under the text and is full width (or block) */
+  .course-info .enroll-btn,
+  .course-info .buy-btn,
+  .enroll-btn,
+  .buy-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    box-sizing: border-box;
+  }
+
+  /* reduce side paddings for tight screens (optional) */
+  .container { padding-left: 16px; padding-right: 16px; }
+}
+
+
+/* ---------- CHECKOUT ---------- */
+.checkout-container{ min-height:60vh; display:flex; align-items:center; justify-content:center; padding:40px 0 }
+.checkout-card{ width:720px; max-width:95%; border-radius:14px; padding:24px; background:linear-gradient(180deg,var(--panel),#fbfdff); box-shadow:var(--shadow-soft) }
+.course-summary{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:var(--glass); border-radius:10px; margin-bottom:14px }
+.coupon-wrapper{ display:flex; gap:8px }
+
+/* buttons in checkout */
+#payment-btn{ min-width:160px; padding:10px 14px; border-radius:10px }
+/* ========================
+   Checkout inputs & coupon UI
+   ======================== */
+
+/* Improve inputs appearance */
+.checkout-card input[type="email"],
+.checkout-card input[type="text"],
+.checkout-card input[type="number"],
+.checkout-card input[type="password"],
+.checkout-card textarea,
+.checkout-card .coupon-wrapper input {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,36,0.06);
+  background: linear-gradient(180deg, #fff, #fbfdff);
+  box-shadow: 0 6px 20px rgba(15,23,36,0.03);
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* Placeholder color */
+.checkout-card ::placeholder { color: #9aa3ad; }
+
+/* Field labels (clear separation) */
+.checkout-card label {
+  display:block;
+  margin: 14px 0 8px;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Coupon hint / default coupon block */
+.coupon-hint {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, rgba(14,165,164,0.04), rgba(99,102,241,0.03));
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text);
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow: 0 6px 18px rgba(15,23,36,0.02);
+}
+.coupon-hint .hint-text{ color:var(--muted); font-size:13px }
+.coupon-hint .default-coupon {
+  background: linear-gradient(90deg,var(--accent),var(--accent-2));
+  color: #fff;
+  padding:6px 10px;
+  border-radius:8px;
+  font-weight:700;
+  font-size:13px;
+}
+
+/* Price panel (before/after) */
+.price-panel {
+  margin: 14px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  box-shadow: 0 8px 24px rgba(15,23,36,0.04);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.price-left { display:flex; align-items:center; gap:12px; }
+.course-mini-thumb { width:44px; height:44px; border-radius:8px; object-fit:cover; background:#f3f6f6 }
+
+/* Price styles */
+.price-original {
+  color: var(--muted);
+  text-decoration: line-through;
+  font-weight:600;
+  font-size:14px;
+  opacity:0.85;
+}
+.price-current {
+  font-weight:800;
+  font-size:18px;
+  color:var(--text);
+}
+.price-savings {
+  font-size:13px;
+  color: #0ea5a4;
+  font-weight:700;
+  background: rgba(14,165,164,0.06);
+  padding:4px 8px;
+  border-radius:8px;
+}
+
+/* Success message for coupon apply */
+.coupon-success {
+  margin-top:10px;
+  color:#065f46;
+  background: rgba(5,150,105,0.06);
+  border-radius:10px;
+  padding:8px 12px;
+  font-weight:600;
+}
+
+/* Error message */
+.coupon-error {
+  margin-top:10px;
+  color:#cc2b2b;
+  background: rgba(255,235,238,0.6);
+  border-radius:10px;
+  padding:8px 12px;
+  font-weight:600;
+}
+
+/* Checkout buttons grouped */
+.checkout-actions { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; align-items:center; }
+@media (max-width:540px){ .checkout-actions { flex-direction:column; } }
+
+/* Ensure the Apply coupon button looks like a control */
+#apply-coupon-btn {
+  border-radius:10px;
+  padding:10px 14px;
+  background: transparent;
+  border: 1px solid rgba(15,23,36,0.06);
+  color: var(--text);
+  font-weight:700;
+  cursor:pointer;
+  transition: all 160ms ease;
+}
+#apply-coupon-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(15,23,36,0.04); }
+
+/* Make OTP and validate buttons coherent (repeat earlier styles) */
+#validate-btn, #verify-otp-btn {
+  padding:10px 12px; border-radius:10px; border: none; cursor:pointer; font-weight:700;
+}
+#validate-btn:not(:disabled), #verify-otp-btn:not(:disabled) {
+  background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff;
+}
+#validate-btn:disabled, #verify-otp-btn:disabled {
+  background:#eef2f7; color:#9aa3ad; cursor:not-allowed;
+}
+
+/* small responsive tweaks */
+@media (max-width:560px) {
+  .checkout-card { padding:16px; }
+  .coupon-hint { flex-direction:column; align-items:flex-start; gap:8px; }
+  .price-panel { flex-direction:column; align-items:flex-start; gap:8px; }
+}
+
+
+/* ---------- ADMIN (SCOPED) ---------- */
+/* Admin layout applies only inside .admin-root */
+.admin-root{ display:flex; min-height:100vh; background:var(--bg) }
+.admin-root .sidebar{
+  width:260px; background: linear-gradient(180deg,#ffffff,#fbfdff); border-right:1px solid rgba(15,23,36,0.04);
+  padding:20px; box-shadow:var(--shadow-xs); position:fixed; left:0; top:0; bottom:0; overflow:auto;
+}
+.admin-root .sidebar h2{ margin:0 0 16px; font-size:18px; color:var(--text) }
+.admin-root .sidebar-nav{ display:flex; flex-direction:column; gap:8px }
+.admin-root .sidebar-nav a{ display:block; padding:10px; border-radius:8px; color:var(--muted); text-decoration:none }
+.admin-root .sidebar-nav a.active{ background: linear-gradient(90deg, rgba(14,165,164,0.06), rgba(99,102,241,0.06)); color:var(--accent-2); font-weight:700 }
+
+.admin-root .content{ margin-left:300px; padding:28px; flex:1; min-height:100vh }
+.admin-root .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; color:var(--muted) }
+.admin-root .stat-card{ flex:1; background:var(--panel); padding:18px; border-radius:10px; box-shadow:var(--shadow-xs) }
+
+/* overlays scoped to admin root */
+.admin-root .login-overlay, .admin-root .reset-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(8,12,20,0.44); z-index:9999;
+}
+.admin-root .login-box, .admin-root .reset-box{ width:420px; max-width:94%; padding:20px; border-radius:12px; background:var(--panel); box-shadow:var(--shadow-soft) }
+.admin-root .otp-input-group{ display:flex; gap:8px; justify-content:center; margin:12px 0 }
+.admin-root .otp-input-single{ width:48px; height:52px; text-align:center; font-size:18px; border-radius:8px; border:1px solid rgba(15,23,36,0.06) }
+
+/* tables in admin */
+.admin-root table{ width:100%; border-collapse:collapse; background:var(--panel); border-radius:8px; overflow:hidden; box-shadow:var(--shadow-xs) }
+.admin-root table thead{ background: rgba(15,23,36,0.02) }
+.admin-root th, .admin-root td{ padding:10px 12px; text-align:left; border-bottom:1px solid rgba(15,23,36,0.04) }
+
+/* responsive admin */
+@media (max-width:900px){
+  .admin-root{ flex-direction:column }
+  .admin-root .sidebar{ position:relative; width:100%; border-right:none; border-bottom:1px solid rgba(15,23,36,0.04) }
+  .admin-root .content{ margin-left:0 }
+}
+
+/* ---------- UTILITIES ---------- */
+.mt-30{ margin-top:30px }
+.mb-12{ margin-bottom:12px }
+
+/* focus accessibility */
+:focus{ outline: 3px solid var(--focus); border-radius:8px }
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce){ *{ transition:none!important; animation:none!important } }
+
+/* ================================
+   Checkout Buttons – Premium Style
+   ================================ */
+#validate-btn,
+#verify-otp-btn,
+#payment-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Primary button (active) */
+#validate-btn:not(:disabled),
+#verify-otp-btn:not(:disabled) {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(14,165,164,0.12);
+}
+
+/* Disabled state */
+#validate-btn:disabled,
+#verify-otp-btn:disabled,
+#payment-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Payment button active state */
+#payment-btn:not(:disabled) {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(99,102,241,0.18);
+}
+
+/* Hover effects */
+#validate-btn:hover:not(:disabled),
+#verify-otp-btn:hover:not(:disabled),
+#payment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.12);
+}
+
+/* Full responsive width on mobile */
+@media (max-width: 540px) {
+  #validate-btn,
+  #verify-otp-btn,
+  #payment-btn {
+    width: 100%;
+  }
+
+  .checkout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

@@ -167,6 +167,67 @@ app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
 
+// ----------------------------
+// Public: GET default coupon
+// ----------------------------
+// Usage (public): GET /api/coupons/default?courseId=<optionalCourseId>
+// If courseId provided, tries to return default coupon for that course,
+// otherwise returns any global default coupon (first found).
+app.get("/api/coupons/default", async (req, res) => {
+  try {
+    const { courseId } = req.query;
+
+    // If courseId provided, try to find default coupon scoped to that course
+    if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
+      const coupon = await Coupon.findOne({
+        courseId: new mongoose.Types.ObjectId(courseId),
+        isDefault: true,
+        active: true,
+      }).lean();
+
+      if (coupon) {
+        return res.json({
+          success: true,
+          coupon: {
+            id: coupon._id,
+            code: coupon.code,
+            discount: coupon.discount || 0,
+            influencerCommission: coupon.influencerCommission || 0,
+            ebookCreatorCommission: coupon.ebookCreatorCommission || 0,
+            influencerUPI: coupon.influencerUPI || "",
+            ebookCreatorUPI: coupon.ebookCreatorUPI || "",
+            isDefault: coupon.isDefault || false,
+            courseId: coupon.courseId || null,
+          },
+        });
+      }
+    }
+
+    // Fallback: find any coupon marked isDefault for any course
+    const globalDefault = await Coupon.findOne({ isDefault: true, active: true }).lean();
+    if (!globalDefault) return res.status(404).json({ success: false, message: "No default coupon" });
+
+    return res.json({
+      success: true,
+      coupon: {
+        id: globalDefault._id,
+        code: globalDefault.code,
+        discount: globalDefault.discount || 0,
+        influencerCommission: globalDefault.influencerCommission || 0,
+        ebookCreatorCommission: globalDefault.ebookCreatorCommission || 0,
+        influencerUPI: globalDefault.influencerUPI || "",
+        ebookCreatorUPI: globalDefault.ebookCreatorUPI || "",
+        isDefault: globalDefault.isDefault || false,
+        courseId: globalDefault.courseId || null,
+      },
+    });
+  } catch (err) {
+    console.error("GET /api/coupons/default error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
 // ---- OTP & Email Validation ----
 // Validate and send OTP to email
 app.post("/api/validate/email", async (req, res) => {

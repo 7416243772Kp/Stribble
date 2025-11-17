@@ -321,7 +321,15 @@ async function loadCoupons() {
 
 addCouponForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const data = Object.fromEntries(new FormData(addCouponForm).entries());
+  const formEntries = Object.fromEntries(new FormData(addCouponForm).entries());
+  const data = {
+    ...formEntries,
+    discount: Number(formEntries.discount || 0),
+    influencerCommission: Number(formEntries.influencerCommission || 0),
+    ebookCreatorCommission: Number(formEntries.ebookCreatorCommission || 0),
+    // read the checkbox explicitly to get a boolean
+    isDefault: !!document.getElementById("addCouponDefault") && document.getElementById("addCouponDefault").checked,
+  };
   data.discount = Number(data.discount);
   data.influencerCommission = Number(data.influencerCommission || 0);
   data.ebookCreatorCommission = Number(data.ebookCreatorCommission || 0);
