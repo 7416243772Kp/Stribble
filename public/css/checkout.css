@@ -1,345 +1,38 @@
-/* Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Inter", sans-serif;
-}
-
-body {
-  background: linear-gradient(135deg, #f9f9f9, #eef3fa);
-  color: #222;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Navbar */
-.navbar {
-  background: #fff;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
-  letter-spacing: 0.5px;
-}
-.logo span {
-  color: #0070f3;
-}
-
-/* Checkout Container */
-.checkout-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
-  flex: 1;
-}
-.checkout-card {
-  background: #fff;
-  padding: 2.5rem;
-  border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-  width: 100%;
-  max-width: 420px;
-  animation: fadeUp 0.6s ease-in-out;
-}
-.checkout-title {
-  text-align: center;
-  font-size: 1.7rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  color: #1e1e2f;
-}
-
-/* Course Summary */
-.course-summary {
-  background: linear-gradient(135deg, #f3f6fb, #e6eeff);
-  padding: 1.3rem;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.course-summary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-}
-.course-summary h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #333;
-}
-.course-summary .price {
-  font-weight: 700;
-  color: #0070f3;
-  font-size: 1.2rem;
-}
-
-/* Form */
-form {
-  display: flex;
-  flex-direction: column;
-}
-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  color: #333;
-}
-input {
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  margin-bottom: 1.4rem;
-  font-size: 1rem;
-  transition: border 0.3s, box-shadow 0.3s;
-}
-input:focus {
-  border-color: #0070f3;
-  box-shadow: 0 0 8px rgba(0,112,243,0.3);
-  outline: none;
-}
-
-/* Button */
-.checkout-btn {
-  padding: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  background: linear-gradient(90deg, #0070f3, #0051a3);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.5s ease, transform 0.2s ease;
-  background-size: 200% auto;
-  background-position: left center;
-}
-.checkout-btn:hover {
-  background-position: right center;
-  transform: translateY(-2px);
-}
-.checkout-btn:active {
-  transform: scale(0.97);
-}
-
-/* Footer */
-.footer {
-  text-align: center;
-  padding: 1.5rem;
-  background: #fff;
-  font-size: 0.9rem;
-  color: #666;
-  border-top: 1px solid #eee;
-}
-
-/* Animations */
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fade-in {
-  animation: fadeUp 0.8s ease-in-out;
-}
-.animate-slide-up {
-  animation: fadeUp 1s ease-in-out;
-}
-.animate-scale-up {
-  animation: scaleUp 0.6s ease-in-out;
-}
-.success-popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.8);
-  background: white;
-  padding: 30px 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-  text-align: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 0.25s cubic-bezier(0.68, -0.55, 0.27, 1.55), 
-              opacity 0.2s ease-in-out;
-  z-index: 1000;
-}
-
-.success-popup.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.success-popup h2 {
-  color: #28a745;
-  margin-bottom: 10px;
-  font-size: 1.6rem;
-  font-weight: bold;
-  animation: popupText 0.25s ease-out;
-}
-
-@keyframes popupText {
-  0% { transform: scale(0.7); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.checkmark {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: inline-block;
-  position: relative;
-  box-shadow: 0 0 0 4px #28a745 inset;
-  margin-bottom: 15px;
-  animation: popCheck 0.35s ease-out;
-}
-
-@keyframes popCheck {
-  0% { transform: scale(0.3); opacity: 0; }
-  80% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(1); }
-}
-
-.error-msg {
-  color: red;
-  font-size: 14px;
-  margin-top: 4px;
-  display: none; /* hidden by default */
-}
-
-.shake {
-  animation: shake 0.5s;
-}
-
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
-}
-
-/* Stylish red shake animation */
-.shake {
-  animation: shake 0.3s ease-in-out;
-}
-
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
-}
-
-.border-red-500 {
-  border: 2px solid #ef4444 !important; /* Tailwind red-500 */
-}
-/* Notification container positioning */
-#notification {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  width: min(480px, calc(100% - 48px));
-  z-index: 9999;
-  pointer-events: none; /* allow clicks through outside the card */
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-
-/* Card base */
-.notify-card {
-  pointer-events: auto; /* allow interacting with the card itself */
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(18, 27, 44, 0.08);
-  color: #fff;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02));
-  backdrop-filter: blur(6px);
-  transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
-  opacity: 0;
-  transform: translateY(-8px);
-  margin-bottom: 12px;
-}
-
-/* Show animation */
-.notify-card.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Success */
-.notify-success {
-  background: linear-gradient(90deg,#16a34a,#059669); /* green gradient */
-}
-
-/* Error */
-.notify-error {
-  background: linear-gradient(90deg,#dc2626,#b91c1c); /* red gradient */
-}
-
-/* Icon */
-.notify-card .icon {
-  display:inline-flex;
+/* Checkout page */
+.checkout-container{
+  min-height:70vh;
+  display:flex;
   align-items:center;
   justify-content:center;
-  width:34px;
-  height:34px;
-  border-radius:8px;
-  background: rgba(255,255,255,0.12);
-  font-weight:700;
-  font-size:16px;
-  color: #fff;
+  padding:40px 0;
+}
+.checkout-card{
+  width:720px;
+  max-width:95%;
+  border-radius:14px;
+  padding:22px;
+  background:linear-gradient(180deg,var(--card),#fbfdff);
+  box-shadow:var(--shadow-soft);
+}
+.checkout-title{font-size:20px;margin:0 0 12px}
+.course-summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;background:var(--glass);border-radius:10px;margin-bottom:14px}
+.course-summary h3{margin:0;font-size:16px}
+.price{font-weight:700;font-size:18px}
+
+/* Form */
+form label{display:block;margin:10px 0 6px;color:var(--muted);font-size:14px}
+.coupon-wrapper{display:flex;gap:8px}
+.coupon-wrapper input{flex:1}
+.checkout-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+#notification{min-height:28px}
+
+/* Buttons */
+#validate-btn, #verify-otp-btn, #payment-btn{padding:10px 14px;border-radius:10px}
+#payment-btn.btn--primary{min-width:160px}
+
+/* Responsive */
+@media (max-width:560px){
+  .checkout-card{padding:16px}
+  .checkout-actions{flex-direction:column}
 }
 
-/* Message text */
-.notify-card .msg {
-  font-size:14px;
-  line-height:1.2;
-  color: #ffffff;
-}
-
-/* Optional subtle close button (small) */
-.notify-card .close-btn {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  color: rgba(255,255,255,0.9);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 6px;
-  border-radius: 8px;
-}
-
-/* Keep input shake class if you used earlier */
-.shake { animation: shake 0.32s ease-in-out; }
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  50% { transform: translateX(6px); }
-  75% { transform: translateX(-6px); }
-  100% { transform: translateX(0); }
-}
-
-/* small responsive tweak */
-@media (max-width:520px) {
-  #notification { left: 12px; right: 12px; top: 12px; width: auto; }
-  .notify-card { padding: 12px; border-radius: 10px; }
-}
