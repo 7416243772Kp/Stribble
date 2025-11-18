@@ -80,7 +80,7 @@ export async function sendPaymentEmail(opts = {}) {
           <table width="680" cellpadding="0" cellspacing="0" role="presentation" style="max-width:680px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(11,22,39,0.08);">
             <tr>
               <td style="background:linear-gradient(90deg,#2563eb,#06b6d4);padding:24px 28px;color:#ffffff;">
-                <h1 style="margin:0;font-size:20px;">MadeMyCourse</h1>
+                <h1 style="margin:0;font-size:20px;">Stribble</h1>
                 <div style="margin-top:6px;font-size:13px;opacity:0.95;">Thanks for your purchase</div>
               </td>
             </tr>
@@ -121,7 +121,7 @@ export async function sendPaymentEmail(opts = {}) {
                 </div>
 
                 <p style="margin-top:18px;font-size:13px;color:#6b7280;">
-                  If you face any issues, reply to this email or contact <a href="mailto:${escapeHtml(
+                  If you face any issues, contact <a href="mailto:${escapeHtml(
                     supportEmail
                   )}">${escapeHtml(supportEmail)}</a>.
                 </p>
@@ -130,7 +130,8 @@ export async function sendPaymentEmail(opts = {}) {
 
             <tr>
               <td style="background:#f8fafc;padding:14px 18px;text-align:center;font-size:12px;color:#9aa3b2;">
-                MadeMyCourse • mademycourse.online
+                Stribble • stribble.site<br />
+                &copy; ${new Date().getFullYear()} Stribble. All rights reserved.
               </td>
             </tr>
           </table>

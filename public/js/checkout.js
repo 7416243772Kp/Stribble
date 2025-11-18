@@ -152,12 +152,19 @@ document.addEventListener("DOMContentLoaded", () => {
     _notifyTimer = setTimeout(() => { clearNotifications(); }, autoHideMs);
   }
   function showSuccess(msg) { showNotification("success", msg, 5000); }
-  function showError(inputEl, msg) {
+  function showError(inputElOrMsg, msgMaybe) {
+    let msg = msgMaybe;
+    let inputEl = null;
+    if (typeof inputElOrMsg === "string" && !msgMaybe) {
+      msg = inputElOrMsg;
+    } else {
+      inputEl = inputElOrMsg;
+    }
     if (inputEl && inputEl.classList) {
       inputEl.classList.add("input-error", "shake");
       setTimeout(() => inputEl.classList.remove("input-error", "shake"), 700);
     }
-    showNotification("error", msg, 6000);
+    showNotification("error", msg || "Something went wrong", 6000);
   }
 
   // small utility to set loading state on a button
@@ -176,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // keep an appliedCoupon object
   let appliedCoupon = null;
 
-  // fetch and show default coupon hint (if server provides)
+  // fetch and show default coupon hint (if server provides) — errors ignored
   async function fetchDefaultCoupon() {
     if (!couponHint || !defaultCouponTag) return;
     try {
@@ -193,35 +200,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // APPLY coupon handler (optional separate apply button)
+  // APPLY coupon handler (validate coupon-only)
   async function applyCoupon() {
     const code = (couponInput.value || "").trim();
     if (!code) { showError(couponInput, "Enter coupon code"); return; }
     if (!selectedCourseId && course?._id) selectedCourseId = course._id;
     setLoading(applyCouponBtn, true, "Checking…");
     try {
-      // try GET then POST
-      let result = null;
-      try {
-        result = await safeJsonFetch(`${API_BASE}/api/coupons/validate?code=${encodeURIComponent(code)}&courseId=${encodeURIComponent(selectedCourseId)}`);
-      } catch (err) {
-        result = await safeJsonFetch(`${API_BASE}/api/coupons/validate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, courseId: selectedCourseId })
-        });
-      }
+      // Validate coupon via public endpoint (POST)
+      const result = await safeJsonFetch(`${API_BASE}/api/validate/coupon`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode: code, courseId: selectedCourseId })
+      });
+      console.log("DEBUG coupon-validate result:", result);
+
       const coupon = result.coupon || result;
       if (!coupon) throw new Error("Invalid coupon");
 
-      // compute savings
+      // compute savings robustly:
       const base = Number(priceDataset.amount || (course?.price || 0));
       let savings = 0;
-      if (coupon.type === "percent" || coupon.percent) {
-        const pct = Number(coupon.value ?? coupon.percent ?? 0);
+
+      // server may return percent or fixed discount using different keys
+      const pct = Number(coupon?.percent ?? coupon?.value?.percent ?? 0);
+      const fixed = Number(coupon?.discount ?? coupon?.value ?? coupon?.amount ?? 0);
+
+      if (pct > 0) {
         savings = Math.round((base * pct) / 100);
       } else {
-        savings = Number(coupon.value ?? coupon.discount ?? 0);
+        savings = fixed;
       }
       appliedCoupon = coupon;
       const final = Math.max(0, base - savings);
@@ -231,8 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (priceNowEl) priceNowEl.textContent = "₹" + final;
       if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
 
+      const shownCode = code || coupon?.code || coupon?.code?.toString?.() || "coupon";
       sessionStorage.setItem("buyerCoupon", code);
-      showSuccess(`Coupon "${coupon.code}" applied — you saved ₹${savings}`);
+      showSuccess(`Coupon "${shownCode}" applied — you saved ₹${savings}`);
     } catch (err) {
       appliedCoupon = null;
       if (priceBeforeEl) priceBeforeEl.style.display = "none";
@@ -245,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (applyCouponBtn) applyCouponBtn.addEventListener("click", applyCoupon);
 
-  // Validate & Send OTP — coupon required
+  // Validate & Send OTP — coupon optional (allow empty coupon)
   if (validateBtn) {
     validateBtn.addEventListener("click", async () => {
       const email = (emailInput.value || "").trim();
@@ -254,93 +263,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) { showError(emailInput, "Enter a valid email address."); return; }
-      if (!couponCode) { showError(couponInput, "Coupon is required to proceed. Enter coupon code."); return; }
       if (!selectedCourseId) { showError(null, "No course selected. Choose a course first."); return; }
 
       setLoading(validateBtn, true, "Checking coupon…");
 
       try {
-        // try endpoint that validates coupon and sends OTP
-        let serverResp = null;
-        let usedCheckoutValidate = false;
-        try {
-          serverResp = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, couponCode, courseId: selectedCourseId })
-          });
-          usedCheckoutValidate = true;
-        } catch (err) {
-          // fallback to coupon validate only
-          try {
-            serverResp = await safeJsonFetch(`${API_BASE}/api/coupons/validate?code=${encodeURIComponent(couponCode)}&courseId=${encodeURIComponent(selectedCourseId)}`);
-          } catch (err2) {
-            serverResp = await safeJsonFetch(`${API_BASE}/api/coupons/validate`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: couponCode, courseId: selectedCourseId })
-            });
-          }
+        // Preferred: call /api/checkout/validate which validates coupon (optional) and sends OTP
+        const serverResp = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, couponCode: couponCode || "", courseId: selectedCourseId })
+        });
+
+        // serverResp.success === true and OTP was sent
+        // serverResp.coupon may be an object or null (if no coupon provided)
+        const serverCoupon = serverResp?.coupon || null;
+
+        // If coupon was provided but server returned null, treat as invalid
+        if (couponCode && !serverCoupon) {
+          throw new Error(serverResp?.message || "Invalid coupon");
         }
 
-        const serverCoupon = serverResp?.coupon || serverResp || serverResp?.appliedCoupon;
-        if (!serverCoupon || !serverCoupon.code) throw new Error(serverResp?.message || "Coupon validation failed");
-
-        // compute savings & set appliedCoupon
+        // compute savings & set appliedCoupon (or clear if none)
         const baseAmount = Number(priceDataset.amount || course?.price || 0);
-        let savings = 0;
-        if (serverCoupon.type === "percent" || serverCoupon.percent) {
-          const pct = Number(serverCoupon.value ?? serverCoupon.percent ?? 0);
-          savings = Math.round((baseAmount * pct) / 100);
-        } else {
-          savings = Number(serverCoupon.value ?? serverCoupon.discount ?? 0);
-        }
-        appliedCoupon = serverCoupon;
-        const final = Math.max(0, baseAmount - savings);
-        priceDataset.finalAmount = final;
-
-        if (priceBeforeEl) { priceBeforeEl.style.display = ""; priceBeforeEl.textContent = "₹" + baseAmount; }
-        if (priceNowEl) priceNowEl.textContent = "₹" + final;
-        if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
-
-        // store buyer email/coupon locally
-        sessionStorage.setItem("buyerEmail", email);
-        sessionStorage.setItem("buyerCoupon", couponCode);
-
-        // if we used coupons/validate fallback, explicitly request OTP send
-        if (!usedCheckoutValidate) {
-          let otpSent = false;
-          try {
-            // preferred endpoint
-            await safeJsonFetch(`${API_BASE}/api/checkout/send-otp`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email })
-            });
-            otpSent = true;
-          } catch (otpErr) {
-            try {
-              await safeJsonFetch(`${API_BASE}/api/validate/email`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email })
-              });
-              otpSent = true;
-            } catch (otpErr2) {
-              console.warn("OTP send failed after coupon-only validation:", otpErr2);
-            }
+        if (serverCoupon) {
+          let savings = 0;
+          if (serverCoupon.type === "percent" || serverCoupon.percent) {
+            const pct = Number(serverCoupon.value ?? serverCoupon.percent ?? 0);
+            savings = Math.round((baseAmount * pct) / 100);
+          } else {
+            savings = Number(serverCoupon.value ?? serverCoupon.discount ?? 0);
           }
-
-          if (otpSent) showSuccess(`Coupon "${appliedCoupon.code}" validated — OTP sent to ${email}.`);
-          else showSuccess(`Coupon validated. Please request OTP or try again to send OTP.`);
+          appliedCoupon = serverCoupon;
+          const final = Math.max(0, baseAmount - savings);
+          priceDataset.finalAmount = final;
+          if (priceBeforeEl) { priceBeforeEl.style.display = ""; priceBeforeEl.textContent = "₹" + baseAmount; }
+          if (priceNowEl) priceNowEl.textContent = "₹" + final;
+          if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
+          sessionStorage.setItem("buyerCoupon", couponCode);
+          showSuccess(`Coupon "${serverCoupon.code}" validated — OTP sent to ${email}.`);
         } else {
-          showSuccess(`Coupon "${appliedCoupon.code}" validated — OTP sent to ${email}.`);
+          // no coupon provided case: proceed with OTP sent and no discount
+          appliedCoupon = null;
+          priceDataset.finalAmount = baseAmount;
+          if (priceBeforeEl) priceBeforeEl.style.display = "none";
+          if (priceSavingsEl) priceSavingsEl.style.display = "none";
+          if (priceNowEl) priceNowEl.textContent = "₹" + baseAmount;
+          sessionStorage.setItem("buyerCoupon", "");
+          showSuccess(`OTP sent to ${email}.`);
         }
+
+        // store buyer email locally
+        sessionStorage.setItem("buyerEmail", email);
 
         // enable OTP input and verify button
         if (otpInput) otpInput.disabled = false;
         if (verifyOtpBtn) verifyOtpBtn.disabled = false;
       } catch (err) {
+        // If server returned a 400 for invalid coupon it will be caught here
         appliedCoupon = null;
         if (priceBeforeEl) priceBeforeEl.style.display = "none";
         if (priceSavingsEl) priceSavingsEl.style.display = "none";
@@ -380,11 +360,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Payment submit — require appliedCoupon
+  // Payment submit — coupon optional; server will reject if an invalid coupon somehow slipped through
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault(); // always prevent native submit
-      if (!appliedCoupon) { showError(couponInput, "A validated coupon is required to proceed to payment."); return; }
       if (!course) { showError(null, "No course selected!"); return; }
 
       const email = (emailInput.value || "").trim();
@@ -397,7 +376,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setLoading(paymentBtn, true, "Processing Payment...");
 
       try {
-        const payload = { amount: finalAmount, courseId: selectedCourseId, couponCode: coupon, email };
+        // Server expects email + courseId + couponCode (couponCode may be empty string)
+        const payload = { email, courseId: selectedCourseId, couponCode: coupon || "" };
         const data = await safeJsonFetch(`${API_BASE}/api/payment/order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -459,7 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Initialize UI: fetch default coupon and disable payment until OTP verify
-  fetchDefaultCoupon();
+  
   if (paymentBtn) paymentBtn.disabled = true;
 
   // small accessibility: show year

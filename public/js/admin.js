@@ -321,18 +321,21 @@ async function loadCoupons() {
 
 addCouponForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  // collect form values
   const formEntries = Object.fromEntries(new FormData(addCouponForm).entries());
+
+  // build payload — ensure numeric fields are numbers (not strings)
   const data = {
     ...formEntries,
     discount: Number(formEntries.discount || 0),
     influencerCommission: Number(formEntries.influencerCommission || 0),
     ebookCreatorCommission: Number(formEntries.ebookCreatorCommission || 0),
-    // read the checkbox explicitly to get a boolean
-    isDefault: !!document.getElementById("addCouponDefault") && document.getElementById("addCouponDefault").checked,
+    // NOTE: isDefault removed from frontend payload (server no longer relies on default coupon)
   };
-  data.discount = Number(data.discount);
-  data.influencerCommission = Number(data.influencerCommission || 0);
-  data.ebookCreatorCommission = Number(data.ebookCreatorCommission || 0);
+
+  // Normalize empty strings to undefined for optional fields so server sees intended defaults
+  if (data.influencerUPI === "") delete data.influencerUPI;
+  if (data.ebookCreatorUPI === "") delete data.ebookCreatorUPI;
 
   try {
     const res = await authFetch(`${window.API_BASE}/api/admin/coupons`, {
@@ -341,19 +344,23 @@ addCouponForm.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
+
     const result = await res.json();
     if (result.success) {
       showNotification("success", "Coupon added");
       addCouponForm.reset();
       loadCoupons();
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result.message || "Failed to add coupon");
     }
-  } catch {
+  } catch (err) {
+    console.error("Add coupon error:", err);
     showNotification("error", "Server error while adding coupon");
   }
 });
+
 
 async function deleteCoupon(id) {
   if (!confirm("Delete this coupon?")) return;

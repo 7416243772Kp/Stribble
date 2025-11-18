@@ -167,66 +167,6 @@ app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
 
-// ----------------------------
-// Public: GET default coupon
-// ----------------------------
-// Usage (public): GET /api/coupons/default?courseId=<optionalCourseId>
-// If courseId provided, tries to return default coupon for that course,
-// otherwise returns any global default coupon (first found).
-app.get("/api/coupons/default", async (req, res) => {
-  try {
-    const { courseId } = req.query;
-
-    // If courseId provided, try to find default coupon scoped to that course
-    if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
-      const coupon = await Coupon.findOne({
-        courseId: new mongoose.Types.ObjectId(courseId),
-        isDefault: true,
-        active: true,
-      }).lean();
-
-      if (coupon) {
-        return res.json({
-          success: true,
-          coupon: {
-            id: coupon._id,
-            code: coupon.code,
-            discount: coupon.discount || 0,
-            influencerCommission: coupon.influencerCommission || 0,
-            ebookCreatorCommission: coupon.ebookCreatorCommission || 0,
-            influencerUPI: coupon.influencerUPI || "",
-            ebookCreatorUPI: coupon.ebookCreatorUPI || "",
-            isDefault: coupon.isDefault || false,
-            courseId: coupon.courseId || null,
-          },
-        });
-      }
-    }
-
-    // Fallback: find any coupon marked isDefault for any course
-    const globalDefault = await Coupon.findOne({ isDefault: true, active: true }).lean();
-    if (!globalDefault) return res.status(404).json({ success: false, message: "No default coupon" });
-
-    return res.json({
-      success: true,
-      coupon: {
-        id: globalDefault._id,
-        code: globalDefault.code,
-        discount: globalDefault.discount || 0,
-        influencerCommission: globalDefault.influencerCommission || 0,
-        ebookCreatorCommission: globalDefault.ebookCreatorCommission || 0,
-        influencerUPI: globalDefault.influencerUPI || "",
-        ebookCreatorUPI: globalDefault.ebookCreatorUPI || "",
-        isDefault: globalDefault.isDefault || false,
-        courseId: globalDefault.courseId || null,
-      },
-    });
-  } catch (err) {
-    console.error("GET /api/coupons/default error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
 
 // ---- OTP & Email Validation ----
 // Validate and send OTP to email
@@ -248,7 +188,7 @@ app.post("/api/validate/email", async (req, res) => {
       Destination: { ToAddresses: [email] },
       Message: {
         Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
-        Subject: { Data: "CourseHub - Verify your email" },
+        Subject: { Data: "Stribble - Verify your email" },
       },
       Source: "no-reply@stribble.site",
     });
@@ -277,46 +217,24 @@ app.post("/api/validate/otp", otpLimiter, (req, res) => {
 // ---- Coupon Validation ----
 app.post("/api/validate/coupon", async (req, res) => {
   try {
-    const { couponCode, courseId } = req.body;
-    if (!couponCode || !courseId)
-      return res.status(400).json({ success: false, message: "Coupon and courseId required" });
+    const couponCode = req.body.couponCode ?? req.body.code ?? "";
+    const { courseId } = req.body;
+    if (!courseId) return res.status(400).json({ success: false, message: "courseId required" });
+    if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
 
-    if (!mongoose.Types.ObjectId.isValid(courseId))
-      return res.status(400).json({ success: false, message: "Invalid courseId" });
-
-    const code = couponCode.trim().toUpperCase();
-    let coupon = await Coupon.findOne({
-      code,
-      courseId: new mongoose.Types.ObjectId(courseId),
-      active: true,
-    });
-
-    if (!coupon) {
-      coupon = await Coupon.findOne({
-        courseId: new mongoose.Types.ObjectId(courseId),
-        isDefault: true,
-        active: true,
-      });
-      if (!coupon)
-        return res.status(400).json({ success: false, message: "Invalid coupon" });
+    // If no coupon code provided, respond success with no coupon (meaning: no discount)
+    if (!couponCode || String(couponCode).trim() === "") {
+      return res.json({ success: true, coupon: null });
     }
 
-    if (coupon.maxUses > 0 && coupon.uses >= coupon.maxUses)
-      return res.status(400).json({ success: false, message: "Coupon usage limit reached" });
+    const code = String(couponCode).trim().toUpperCase();
+    const coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
 
-    res.json({
-      success: true,
-      coupon: {
-        id: coupon._id,
-        code: coupon.code,
-        discount: coupon.discount || 0,
-        influencerCommission: coupon.influencerCommission || 0,
-        ebookCreatorCommission: coupon.ebookCreatorCommission || 0,
-        influencerUPI: coupon.influencerUPI || "",
-        ebookCreatorUPI: coupon.ebookCreatorUPI || "",
-        isDefault: coupon.isDefault,
-      },
-    });
+    if (!coupon) {
+      return res.status(400).json({ success: false, message: "Invalid coupon" });
+    }
+
+    res.json({ success: true, coupon: { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0, influencerUPI: coupon.influencerUPI || "", ebookCreatorUPI: coupon.ebookCreatorUPI || "", isDefault: coupon.isDefault, }, });
   } catch (err) {
     console.error("❌ Coupon validate error:", err);
     res.status(500).json({ success: false, message: "Error validating coupon" });
@@ -328,9 +246,9 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
   try {
     const { email, couponCode, courseId } = req.body;
 
-    // Basic checks
-    if (!email || !couponCode || !courseId) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+    // Only email and courseId required here — couponCode optional
+    if (!email || !courseId) {
+      return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
     }
 
     // Validate email format
@@ -339,34 +257,21 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Validate courseId and coupon (case-insensitive), fallback to default coupon for this course
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
       return res.status(400).json({ success: false, message: "Invalid courseId" });
     }
-    const code = String(couponCode).trim().toUpperCase();
 
-    let coupon = await Coupon.findOne({
-      code,
-      courseId: new mongoose.Types.ObjectId(courseId),
-      active: true,
-    });
+    let coupon = null;
+    const code = String(couponCode || "").trim().toUpperCase();
 
-    if (!coupon) {
-      coupon = await Coupon.findOne({
-        courseId: new mongoose.Types.ObjectId(courseId),
-        isDefault: true,
-        active: true,
-      });
+    if (code) {
+      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
       if (!coupon) {
         return res.status(400).json({ success: false, message: "Invalid coupon" });
       }
     }
 
-    if (coupon.maxUses > 0 && coupon.uses >= coupon.maxUses) {
-      return res.status(400).json({ success: false, message: "Coupon usage limit reached" });
-    }
-
-    // Generate OTP and send via SES
+    // Generate OTP and send via SES (same behavior irrespective of coupon)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // valid for 5 min
 
@@ -382,21 +287,14 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Coupon validated and OTP sent",
-      coupon: {
-        id: coupon._id,
-        code: coupon.code,
-        discount: coupon.discount || 0,
-        influencerCommission: coupon.influencerCommission || 0,
-        ebookCreatorCommission: coupon.ebookCreatorCommission || 0,
-      },
+      message: "OTP sent",
+      coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0 } : null,
     });
   } catch (err) {
     console.error("❌ Checkout validate error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 // ---- Checkout OTP verify (alias used by checkout.js) ----
 app.post("/api/checkout/verify-otp", otpLimiter, (req, res) => {
   const { email, otp } = req.body;
@@ -410,64 +308,43 @@ app.post("/api/checkout/verify-otp", otpLimiter, (req, res) => {
   res.json({ success: true, message: "OTP verified successfully" });
 });
 
-// ---- Payment: Create Order ----
 app.post("/api/payment/order", paymentLimiter, async (req, res) => {
   try {
     const { email, courseId, couponCode } = req.body;
-    if (!email || !courseId || !couponCode)
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing fields: email, courseId, couponCode are required" });
-
-    if (!mongoose.Types.ObjectId.isValid(courseId))
-      return res.status(400).json({ success: false, message: "Invalid courseId" });
+    if (!email || !courseId) return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
+    if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
 
     const course = await Course.findById(courseId);
-    if (!course)
-      return res.status(404).json({ success: false, message: "Course not found" });
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
 
-    const code = couponCode.trim().toUpperCase();
-    let coupon = await Coupon.findOne({
-      code,
-      courseId: new mongoose.Types.ObjectId(courseId),
-      active: true,
-    });
-
-    if (!coupon) {
-      coupon = await Coupon.findOne({
-        courseId: new mongoose.Types.ObjectId(courseId),
-        isDefault: true,
-        active: true,
-      });
-      if (!coupon)
+    // If couponCode provided, try to find coupon; if not provided or not found, proceed with no coupon
+    let coupon = null;
+    const code = String(couponCode || "").trim().toUpperCase();
+    if (code) {
+      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+      if (!coupon) {
         return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
+      }
     }
 
-    if (coupon.maxUses > 0 && coupon.uses >= coupon.maxUses)
-      return res.status(400).json({ success: false, message: "Coupon usage limit reached" });
-
-    const discount = Number(coupon.discount || 0);
+    const discount = Number((coupon && coupon.discount) || 0);
     const finalAmount = Math.max(1, Number(course.price) - discount);
-    const influencerCommission = Number(coupon.influencerCommission || 0);
-    const ebookCreatorCommission = Number(coupon.ebookCreatorCommission || 0);
+    const influencerCommission = Number((coupon && coupon.influencerCommission) || 0);
+    const ebookCreatorCommission = Number((coupon && coupon.ebookCreatorCommission) || 0);
     const ownerAmount = finalAmount - influencerCommission - ebookCreatorCommission;
-
-    if (ownerAmount < 0)
-      return res
-        .status(400)
-        .json({ success: false, message: "Commission exceeds price after discount" });
+    if (ownerAmount < 0) return res.status(400).json({ success: false, message: "Commission exceeds price after discount" });
 
     const amountPaise = Math.round(finalAmount * 100);
     const rzpOrder = await razorpay.orders.create({
       amount: amountPaise,
       currency: "INR",
       receipt: "rcpt_" + Date.now().toString().slice(-8),
-      notes: { email, courseId, couponCode: coupon.code },
+      notes: { email, courseId, couponCode: coupon ? coupon.code : "" },
     });
 
     await Order.create({
       courseId,
-      couponId: coupon._id,
+      couponId: coupon ? coupon._id : null,
       buyerEmail: email,
       influencerCommission,
       ebookCreatorCommission,
@@ -477,18 +354,13 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
       createdAt: new Date(),
     });
 
-    res.json({
-      success: true,
-      orderId: rzpOrder.id,
-      amountPaise: rzpOrder.amount,
-      currency: rzpOrder.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
-    });
+    res.json({ success: true, orderId: rzpOrder.id, amountPaise: rzpOrder.amount, currency: rzpOrder.currency, keyId: process.env.RAZORPAY_KEY_ID });
   } catch (err) {
     console.error("Order creation failed:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // ---- Payment Verification ----
 app.post("/api/payment/verify", paymentLimiter, async (req, res) => {

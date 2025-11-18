@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema({
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-  couponId: { type: mongoose.Schema.Types.ObjectId, ref: "Coupon", required: true },
+  couponId: { type: mongoose.Schema.Types.ObjectId, ref: "Coupon", required: false, default: null },
 
   buyerEmail: { type: String, required: true },
 

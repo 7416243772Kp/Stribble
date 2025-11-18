@@ -4,22 +4,15 @@ import Coupon from "../models/coupon.js";
 // Create coupon
 export const createCoupon = async (req, res) => {
   try {
-    const { code, course, influencerUPI, creatorUPI, influencerCommission, ebookCreatorCommission, isDefault } = req.body;
-
-    // Ensure only one default coupon exists
-    if (isDefault) {
-      await Coupon.updateMany({ isDefault: true }, { isDefault: false });
-    }
+    const { code, course, influencerUPI, creatorUPI, influencerCommission, ebookCreatorCommission,} = req.body;
 
     const newCoupon = new Coupon({
       code,
       course,
       influencerUPI,
       creatorUPI,
-      
       influencerCommission,
       ebookCreatorCommission,
-      isDefault,
     });
 
     await newCoupon.save();

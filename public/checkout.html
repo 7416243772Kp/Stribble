@@ -1,19 +1,20 @@
-<!DOCTYPE html>
+<!-- C:\Ebook\public\checkout.html -->
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Checkout | CourseHub</title>
+  <title>Checkout | Stribble</title>
   <link rel="stylesheet" href="css/theme.css">
   <script src="js/settings.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 </head>
 <body>
-  <nav class="navbar"><div class="logo">Course<span>Hub</span></div></nav>
+  <nav class="navbar"><div class="logo">Stribble</div></nav>
 
   <main class="checkout-container">
     <div class="checkout-card">
-      <h2 class="checkout-title">Secure Checkout</h2>
+      <h2 class="checkout-title">Checkout</h2>
 
       <!-- Price panel -->
       <div class="price-panel" id="pricePanel" aria-live="polite">
@@ -41,14 +42,9 @@
         <label for="coupon">Coupon Code</label>
         <div style="display:flex; gap:8px; align-items:center;">
           <div class="coupon-wrapper" style="flex:1; display:flex;">
-            <input type="text" id="coupon" placeholder="Enter coupon code" aria-describedby="couponHint" />
+            <input type="text" id="coupon" placeholder="Enter coupon code" />
           </div>
           <button type="button" id="apply-coupon-btn">Apply</button>
-        </div>
-
-        <div id="couponHint" class="coupon-hint" style="display:none">
-          <div class="hint-text">Don't have coupon?</div>
-          <div class="default-coupon" id="defaultCouponTag">TRYME10</div>
         </div>
 
         <div id="couponMessage" aria-live="polite"></div>
@@ -65,7 +61,7 @@
     </div>
   </main>
 
-  <footer class="footer"><p>© <span id="year"></span> CourseHub. All rights reserved.</p></footer>
+  <footer class="footer"><p>© <span id="year"></span> Stribble. All rights reserved.</p></footer>
 
   <script src="js/checkout.js" defer></script>
 </body>

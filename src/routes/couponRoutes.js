@@ -30,11 +30,6 @@ router.post("/", async (req, res) => {
     if (!course)
       return res.status(404).json({ success: false, message: "Course not found" });
 
-    // If this is a default coupon, remove previous defaults for THIS course
-    if (isDefault) {
-      await Coupon.updateMany({ courseId, isDefault: true }, { $set: { isDefault: false } });
-    }
-
     const coupon = await Coupon.create({
       code: String(code).trim().toUpperCase(),
       courseId,
@@ -60,10 +55,6 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-
-    if (updates.isDefault) {
-      await Coupon.updateMany({ isDefault: true }, { $set: { isDefault: false } });
-    }
 
     const coupon = await Coupon.findByIdAndUpdate(id, updates, { new: true });
     if (!coupon)
@@ -112,32 +103,21 @@ router.get("/", async (req, res) => {
 router.post("/validate", async (req, res) => {
   try {
     const { code, courseId } = req.body;
+    if (!courseId) return res.status(400).json({ success: false, message: "courseId required" });
 
-    const coupon = await Coupon.findOne({
-      code: code.trim().toUpperCase(),
-      courseId,
-      active: true,
-    });
-
-    if (!coupon) {
-      const defaultCoupon = await Coupon.findOne({
-        courseId,
-        isDefault: true,
-        active: true,
-      });
-      if (!defaultCoupon)
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid coupon" });
-
-      return res.json({ success: true, coupon: defaultCoupon });
+    if (!code || String(code).trim() === "") {
+      // No code: return success with null coupon (no discount)
+      return res.json({ success: true, coupon: null });
     }
 
+    const coupon = await Coupon.findOne({ code: code.trim().toUpperCase(), courseId, active: true });
+    if (!coupon) return res.status(400).json({ success: false, message: "Invalid coupon" });
     res.json({ success: true, coupon });
   } catch (err) {
     console.error("Coupon validate error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 export default router;
