@@ -34,10 +34,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // Creates order
+      const payload = {
+        email: document.getElementById("email").value,
+        courseId: courseId,
+        couponCode: ""
+      };
       const orderRes = await fetch(`${window.API_BASE}/api/payment/order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: course.price * 100 })
+        body: JSON.stringify(payload)
       });
       const orderData = await orderRes.json();
 
