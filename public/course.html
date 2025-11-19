@@ -67,11 +67,11 @@
         document.getElementById("enrollBtn").addEventListener("click", () => {
           // Save selected course in localStorage for checkout
           localStorage.setItem("selectedCourse", JSON.stringify({
-            id: course._id,
+            _id: course._id,         // note _id (not id) — matches checkout.js check
             title: course.title,
-            price: course.price
+            price: course.price,
+            thumbnail: course.thumbnail // <-- include this
           }));
-
           // Redirect to checkout page
           window.location.href = `checkout.html?courseId=${course._id}`;
         });
@@ -84,6 +84,7 @@
 
     document.addEventListener("DOMContentLoaded", loadCourseDetails);
   </script>
+  <script src="js/ui-helpers.js" defer></script>
 </body>
 </html>
      

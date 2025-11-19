@@ -20,15 +20,31 @@
   <header class="nav">
     <div class="container nav__inner">
       <a href="index.html" class="brand">
-        <span class="brand__dot"></span>
+        <span class="brand__dot" aria-hidden="true"></span>
         <span class="brand__name">Stribble</span>
       </a>
-      <!-- Removed Admin link -->
-      <nav class="nav__links">
+
+      <nav class="nav__links" role="navigation" aria-label="Main">
         <a href="#catalog" class="nav__link">Courses</a>
+        <a href="course.html" class="nav__link">Sample Course</a>
       </nav>
+
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-label="Open menu">☰</button>
     </div>
   </header>
+
+  <script>
+    // simple mobile nav toggle (add to bottom of body)
+    (function() {
+      const btn = document.getElementById('navToggle');
+      const links = document.querySelector('.nav__links');
+      btn?.addEventListener('click', () => {
+        const open = links.style.display === 'flex';
+        links.style.display = open ? '' : 'flex';
+        btn.setAttribute('aria-expanded', String(!open));
+      });
+    })();
+  </script>
 
   <!-- Hero -->
   <section class="hero">
@@ -192,5 +208,6 @@
     setYear();
     loadCourses();
   </script>
+  <script src="js/ui-helpers.js" defer></script>
 </body>
 </html>

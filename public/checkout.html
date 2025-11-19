@@ -10,7 +10,7 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 </head>
 <body>
-  <nav class="navbar"><div class="logo">Stribble</div></nav>
+  <nav class="navbar"><div class="logo"><strong>Stribble</strong></div></nav>
 
   <main class="checkout-container">
     <div class="checkout-card">
@@ -19,7 +19,6 @@
       <!-- Price panel -->
       <div class="price-panel" id="pricePanel" aria-live="polite">
         <div class="price-left">
-          <!-- set a placeholder so the image is never empty (avoid broken-icon layout) -->
           <img id="miniThumb" class="course-mini-thumb" src="/images/placeholder-course.png" alt="course thumbnail" />
           <div class="price-left__meta">
             <div id="miniTitle" class="mini-title">Untitled course</div>
@@ -65,5 +64,6 @@
   <footer class="footer"><p>© <span id="year"></span> Stribble. All rights reserved.</p></footer>
 
   <script src="js/checkout.js" defer></script>
+  <script src="js/ui-helpers.js" defer></script>
 </body>
 </html>
