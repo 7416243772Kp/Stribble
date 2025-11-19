@@ -270,10 +270,11 @@ header.nav, nav.navbar{
 
 /* buttons in checkout */
 #payment-btn{ min-width:160px; padding:10px 14px; border-radius:10px }
+
+
 /* ========================
    Checkout inputs & coupon UI
    ======================== */
-
 /* Improve inputs appearance */
 .checkout-card input[type="email"],
 .checkout-card input[type="text"],
@@ -288,6 +289,28 @@ header.nav, nav.navbar{
   box-shadow: 0 6px 20px rgba(15,23,36,0.03);
   font-size: 15px;
   color: var(--text);
+}
+
+/* --- Price panel improvements (desktop + mobile) --- */
+.price-left { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.price-left__meta { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.mini-title { font-weight:800; font-size:15px; white-space:normal; overflow:hidden; text-overflow:ellipsis; }
+.mini-type { font-size:13px; color:var(--muted); }
+
+/* make thumbnail a touch bigger & avoid layout shifts */
+.course-mini-thumb { width:56px; height:56px; border-radius:10px; object-fit:cover; background:#f3f6f6; flex:0 0 56px; }
+
+/* price-right: explicit class to control alignment instead of inline style */
+.price-right { text-align:right; min-width:110px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+
+/* Responsive: on small screens stack neatly */
+@media (max-width:560px) {
+  .price-panel { flex-direction:row; align-items:center; gap:12px; } /* keep thumbnail+title+price on same line if space allows */
+  .price-left { flex:1; }
+  .price-right { min-width:0; text-align:right; align-items:flex-end; }
+  /* If viewport too narrow, allow price to wrap under title (keeps order predictable) */
+  .price-panel.wrap-on-small { flex-wrap:wrap; }
+  .price-panel.wrap-on-small .price-right { width:100%; text-align:left; align-items:flex-start; margin-top:8px; }
 }
 
 /* Placeholder color */

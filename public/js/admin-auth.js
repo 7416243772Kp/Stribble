@@ -259,7 +259,10 @@
       });
       const data = await res.json();
       if (data.success) {
-        if (resetOverlay) resetOverlay.style.display = "flex";
+        if (resetOverlay) {
+          resetOverlay.classList.remove("hidden");
+          resetOverlay.setAttribute("aria-hidden", "false");
+       }
         startOtpTimer(600);
         toast("success", "OTP sent to admin email");
       } else {
@@ -314,7 +317,10 @@
         return showError(data.message || "Failed to reset password");
       }
 
-      if (resetOverlay) resetOverlay.style.display = "none";
+      if (resetOverlay) {
+        resetOverlay.classList.remove("hidden");
+        resetOverlay.setAttribute("aria-hidden", "true");
+      }
       if (passwordInput) passwordInput.value = "";
       toast("success", "Password reset successful. Please log in with the new password.");
     } catch (err) {
@@ -324,7 +330,10 @@
   });
 
   closeReset?.addEventListener("click", () => {
-    if (resetOverlay) resetOverlay.style.display = "none";
+    if (resetOverlay) {
+      resetOverlay.classList.remove("hidden");
+      resetOverlay.setAttribute("aria-hidden", "true");
+    }
   });
 
   document.addEventListener("DOMContentLoaded", () => {

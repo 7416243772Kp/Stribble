@@ -20,19 +20,18 @@
       <div class="price-panel" id="pricePanel" aria-live="polite">
         <div class="price-left">
           <img id="miniThumb" class="course-mini-thumb" src="" alt="course thumbnail" />
-          <div>
-            <div id="miniTitle" style="font-weight:800"></div>
-            <div id="miniType" style="font-size:13px;color:var(--muted)">Digital course</div>
-          </div>
+            <div class="price-left__meta">
+            <div id="miniTitle" class="mini-title">Untitled course</div>
+            <div id="miniType" class="mini-type">Digital course</div>
+            </div>
         </div>
 
-        <div style="text-align:right">
+        <div class="price-right" aria-hidden="false">
           <div id="priceBefore" class="price-original" style="display:none">₹0</div>
           <div id="priceNow" class="price-current">₹0</div>
           <div id="priceSavings" class="price-savings" style="display:none"></div>
           <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
         </div>
-      </div>
 
       <!-- Form -->
       <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>

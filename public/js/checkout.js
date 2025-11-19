@@ -88,7 +88,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (priceSavingsEl) priceSavingsEl.style.display = "none";
     // mini info
     if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
-    if (miniThumb && course.thumbnail) miniThumb.src = course.thumbnail;
+    // thumbnail: show placeholder if missing, or hide if intentionally not present
+    const placeholderThumb = "/images/placeholder-course.png"; // put a small placeholder file in public/images/
+    if (miniThumb) {
+      if (course.thumbnail && typeof course.thumbnail === "string" && course.thumbnail.trim() !== "") {
+      miniThumb.src = course.thumbnail;
+      miniThumb.style.display = ""; // ensure shown
+      } else {
+      // if you have a placeholder image, use it; otherwise hide the img to avoid broken icon
+      // set placeholderThumb to a real file path in your public folder
+      // If you prefer no image, comment out the next line and use miniThumb.style.display = "none";
+      miniThumb.src = placeholderThumb;
+      // If placeholder file doesn't exist, hide to avoid broken image:
+      // miniThumb.style.display = "none";
+      }
+    }
   } else {
     // nothing selected
     if (priceNowEl) priceNowEl.textContent = "₹0";
