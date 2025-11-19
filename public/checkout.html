@@ -19,11 +19,12 @@
       <!-- Price panel -->
       <div class="price-panel" id="pricePanel" aria-live="polite">
         <div class="price-left">
-          <img id="miniThumb" class="course-mini-thumb" src="" alt="course thumbnail" />
-            <div class="price-left__meta">
+          <!-- set a placeholder so the image is never empty (avoid broken-icon layout) -->
+          <img id="miniThumb" class="course-mini-thumb" src="/images/placeholder-course.png" alt="course thumbnail" />
+          <div class="price-left__meta">
             <div id="miniTitle" class="mini-title">Untitled course</div>
             <div id="miniType" class="mini-type">Digital course</div>
-            </div>
+          </div>
         </div>
 
         <div class="price-right" aria-hidden="false">
@@ -32,6 +33,7 @@
           <div id="priceSavings" class="price-savings" style="display:none"></div>
           <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
         </div>
+      </div>
 
       <!-- Form -->
       <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>

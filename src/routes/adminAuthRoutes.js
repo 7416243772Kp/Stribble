@@ -69,14 +69,16 @@ function setAdminCookie(req, res, token) {
   const viaHttps = req.secure || req.headers["x-forwarded-proto"] === "https";
   const secureCookie = forceSecure || viaHttps; // on localhost http, this is false
 
+  // Scope cookie tightly to admin API paths and use strict SameSite
   res.cookie("adminToken", token, {
     httpOnly: true,
-    sameSite: "lax",
     secure: secureCookie,
-    maxAge: 24 * 60 * 60 * 1000,
-    path: "/",
+    sameSite: "Strict",    // prevents most cross-site sends
+    maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
+    path: "/api/admin",    // cookie only sent for admin routes
   });
 }
+
 
 async function sendOTPEmail(email, otp) {
   const html = `<!doctype html>
@@ -396,11 +398,19 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// =============================
 // Logout
-// =============================
 router.post("/logout", (req, res) => {
-  res.clearCookie("adminToken", { path: "/" });
+  // clear the admin cookie using the same path and flags
+  const forceSecure = (process.env.COOKIE_SECURE || "").toLowerCase() === "true";
+  const viaHttps = req.secure || req.headers["x-forwarded-proto"] === "https";
+  const secureCookie = forceSecure || viaHttps;
+
+  res.clearCookie("adminToken", {
+    httpOnly: true,
+    secure: secureCookie,
+    sameSite: "Strict",
+    path: "/api/admin",
+  });
   res.json({ success: true, message: "Logged out successfully" });
 });
 

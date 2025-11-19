@@ -1,7 +1,7 @@
 //C:\Ebook\public\js\admin-auth.js
 (function () {
   "use strict";
-  
+
   const loginOverlay = document.getElementById("login-overlay");
   const loginForm = document.getElementById("adminLoginForm");
   const totpSetup = document.getElementById("totp-setup");
@@ -25,6 +25,14 @@
   const resendOtpBtn = document.getElementById("resend-otp-btn");
   const closeReset = document.getElementById("close-reset");
   const timerCountdown = document.getElementById("timer-countdown");
+
+  // choose a main content container to set aria-hidden on while modal open.
+  // fallbacks: main tag, .admin-root, #app, or body
+  const mainContent =
+    document.querySelector("main") ||
+    document.querySelector(".admin-root") ||
+    document.getElementById("app") ||
+    document.body;
 
   let tempLoginToken = null;
   let otpTimer = null;
@@ -130,6 +138,55 @@
     const m = Math.floor(otpTimeLeft / 60);
     const s = String(otpTimeLeft % 60).padStart(2, "0");
     timerCountdown.textContent = `${m}:${s}`;
+  }
+
+  // Accessible modal open/close utilities for reset overlay
+  function openResetOverlay() {
+    if (!resetOverlay) return;
+
+    // reveal overlay
+    resetOverlay.classList.remove("hidden");
+    resetOverlay.setAttribute("aria-hidden", "false");
+
+    // hide main content from assistive tech
+    if (mainContent) mainContent.setAttribute("aria-hidden", "true");
+
+    // focus the most meaningful input inside overlay
+    // prefer split OTP first, then single resetOtpInput, then newPasswordInput
+    const firstOtp =
+      document.getElementById("otp-1") ||
+      document.getElementById("reset-otp") ||
+      document.getElementById("new-password");
+    if (firstOtp) {
+      // slight delay to ensure element is focusable after becoming visible
+      setTimeout(() => firstOtp.focus(), 40);
+    }
+  }
+
+  function closeResetOverlay() {
+    if (!resetOverlay) return;
+
+    // move focus back to trigger (so aria-hidden won't be blocked)
+    const trigger = forgotPasswordLink || emailInput || document.querySelector("button[type='submit']");
+    if (trigger) {
+      try {
+        trigger.focus();
+      } catch (e) {
+        // ignore focus errors
+      }
+    } else {
+      // if nothing to focus, blur active element
+      try {
+        document.activeElement && document.activeElement.blur && document.activeElement.blur();
+      } catch (e) {}
+    }
+
+    // hide overlay visually and to assistive tech
+    resetOverlay.classList.add("hidden");
+    resetOverlay.setAttribute("aria-hidden", "true");
+
+    // reveal main content to assistive tech
+    if (mainContent) mainContent.setAttribute("aria-hidden", "false");
   }
 
   async function checkAuth() {
@@ -247,10 +304,17 @@
     }
   });
 
+  // wire TOTP inputs (if present on page)
   wireOtpInputs("totp", "totp-login-token");
 
+  // FORGOT PASSWORD: open overlay immediately (so user sees UI) and request OTP.
   forgotPasswordLink?.addEventListener("click", async (e) => {
     e.preventDefault();
+
+    // open overlay right away (so user can see input and focus is moved)
+    openResetOverlay();
+    startOtpTimer(600);
+
     try {
       const res = await fetch(`${window.API_BASE}/api/admin/auth/forgot-password`, {
         method: "POST",
@@ -258,14 +322,10 @@
         body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (data.success) {
-        if (resetOverlay) {
-          resetOverlay.classList.remove("hidden");
-          resetOverlay.setAttribute("aria-hidden", "false");
-       }
-        startOtpTimer(600);
+      if (res.ok && data.success) {
         toast("success", "OTP sent to admin email");
       } else {
+        // show message from server, and keep overlay open so user sees info
         showError(data.message || "Failed to send OTP");
       }
     } catch (err) {
@@ -274,6 +334,7 @@
     }
   });
 
+  // Resend OTP - keep overlay open
   resendOtpBtn?.addEventListener("click", async () => {
     resendOtpBtn.disabled = true;
     try {
@@ -283,7 +344,7 @@
         body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         startOtpTimer(600);
         toast("success", "OTP resent");
       } else {
@@ -293,12 +354,35 @@
       console.error("Resend OTP error:", err);
       showError("Server error. Please try again.");
     } finally {
+      // re-enable after 60s (UI-level guard)
       setTimeout(() => (resendOtpBtn.disabled = false), 60_000);
     }
   });
 
+  // Helper to collect OTP (either split inputs otp-1..otp-6 or single reset-otp)
+  function collectResetCode() {
+    const split = [];
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById(`otp-${i}`);
+      if (el) split.push(el.value || "");
+      else {
+        // if any expected split input is missing, abandon split approach
+        if (i === 1 && !document.getElementById("otp-1")) {
+          // no split inputs at all
+          return (resetOtpInput?.value || "").trim();
+        }
+      }
+    }
+    // if we found split inputs, join them
+    if (split.length === 6 && split.some((x) => x !== "")) {
+      return split.join("");
+    }
+    // fallback to single input
+    return (resetOtpInput?.value || "").trim();
+  }
+
   resetPasswordBtn?.addEventListener("click", async () => {
-    const code = (resetOtpInput?.value || "").trim();
+    const code = collectResetCode();
     const newPassword = newPasswordInput?.value || "";
     const confirmPassword = confirmPasswordInput?.value || "";
 
@@ -307,33 +391,51 @@
     if (newPassword !== confirmPassword) return showError("Passwords do not match");
 
     try {
+      resetPasswordBtn.disabled = true;
+      resetPasswordBtn.textContent = "Resetting...";
+
       const res = await fetch(`${window.API_BASE}/api/admin/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, newPassword }),
       });
       const data = await res.json();
+
       if (!res.ok || !data.success) {
-        return showError(data.message || "Failed to reset password");
+        // surface server message when available
+        showError(data.message || "Failed to reset password");
+        return;
       }
 
-      if (resetOverlay) {
-        resetOverlay.classList.remove("hidden");
-        resetOverlay.setAttribute("aria-hidden", "true");
-      }
+      // success -> close overlay and clear fields
+      closeResetOverlay();
+
       if (passwordInput) passwordInput.value = "";
+      // clear inputs (both split and single)
+      if (resetOtpInput) resetOtpInput.value = "";
+      for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById(`otp-${i}`);
+        if (el) {
+          el.value = "";
+          el.classList.remove("filled");
+        }
+      }
+      if (newPasswordInput) newPasswordInput.value = "";
+      if (confirmPasswordInput) confirmPasswordInput.value = "";
+
       toast("success", "Password reset successful. Please log in with the new password.");
     } catch (err) {
       console.error("Reset password error", err);
       showError("Server error. Please try again.");
+    } finally {
+      resetPasswordBtn.disabled = false;
+      resetPasswordBtn.textContent = "Reset Password";
     }
   });
 
+  // close button -> hide overlay
   closeReset?.addEventListener("click", () => {
-    if (resetOverlay) {
-      resetOverlay.classList.remove("hidden");
-      resetOverlay.setAttribute("aria-hidden", "true");
-    }
+    closeResetOverlay();
   });
 
   document.addEventListener("DOMContentLoaded", () => {
