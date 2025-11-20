@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-const JWT_SECRET = process.env.JWT_SECRET || "super-long-random-string-change-me";
+const JWT_SECRET = process.env.JWT_SECRET || "d5ed15b4956e460f84c7ff2ff41d3abbefa83526f215476ebfd19a678f235fa2";
 
 export default function authAdmin(req, res, next) {
   // Accept admin session only from the HttpOnly cookie
