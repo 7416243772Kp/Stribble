@@ -1,3 +1,5 @@
+<!-- C:\Ebook\public\checkout.html -->
+<!-- C:\Ebook\public\checkout.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,6 +24,59 @@
   <main class="checkout-container">
     <div class="checkout-card">
       <h2 class="checkout-title">Checkout</h2>
+
+      <!-- ====== Success notifications (premium green) - inserted, hidden by default ====== -->
+      <!-- These match the premium style described earlier. Your checkout.js can call showSuccessNotif(id, data) to display them. -->
+      <div id="notif-payment" class="notify-success" role="status" style="display:none">
+        <div class="notify-success__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+        </div>
+
+        <div class="notify-success__text">
+          <div class="notify-success__title">Payment successful! 🎉</div>
+          <div class="notify-success__desc">Course has been sent to your email.</div>
+        </div>
+
+        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+      </div>
+
+      <div id="notif-coupon" class="notify-success" role="status" style="display:none">
+        <div class="notify-success__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.59 13.41L13 21 3 11l7.59-7.59a2 2 0 012.82 0l7.18 7.18a2 2 0 010 2.82z"></path>
+            <circle cx="7" cy="7" r="1"></circle>
+          </svg>
+        </div>
+
+        <div class="notify-success__text">
+          <div class="notify-success__title">
+            Coupon <span id="notif-coupon-pill" class="notify-success__pill">CODE • 0% OFF</span>
+          </div>
+          <div id="notif-coupon-desc" class="notify-success__desc">Coupon applied — you saved ₹0.</div>
+        </div>
+
+        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+      </div>
+
+      <div id="notif-otp" class="notify-success" role="status" style="display:none">
+        <div class="notify-success__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20v-6"></path>
+            <path d="M12 4v4"></path>
+            <circle cx="12" cy="12" r="8"></circle>
+          </svg>
+        </div>
+
+        <div class="notify-success__text">
+          <div class="notify-success__title">OTP verified</div>
+          <div id="notif-otp-desc" class="notify-success__desc">Your phone number is confirmed. You can proceed to payment.</div>
+        </div>
+
+        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+      </div>
+      <!-- ====== end notifications ====== -->
 
       <!-- Price panel -->
       <div class="price-panel" id="pricePanel" aria-live="polite">
@@ -74,6 +129,104 @@
   <script src="js/ui-helpers.js" defer></script>
   <script src="js/checkout.js" defer></script>
 
+  <!-- ====== Notification helper JS (inserted) ====== -->
+  <script>
+    /**
+     * Minimal, safe helper to show/dismiss the premium success notifications.
+     * - Notifications are present in DOM but hidden by default (style="display:none").
+     * - Call showSuccessNotif('notif-coupon', { title, desc, pillText }) or
+     *   showSuccessNotif('notif-payment') etc to show them.
+     * - This script does not modify any of your existing code.
+     */
+
+    (function () {
+      function _get(nodeOrId) {
+        return (typeof nodeOrId === 'string') ? document.getElementById(nodeOrId) : nodeOrId;
+      }
+
+      function bindClose(btn, container) {
+        if (!btn || !container) return;
+        btn.addEventListener('click', function () {
+          container.style.opacity = '0';
+          setTimeout(function () { container.style.display = 'none'; }, 220);
+        });
+      }
+
+      function autoDismiss(container, timeout) {
+        if (!container) return;
+        if (!timeout || timeout <= 0) return;
+        setTimeout(function () {
+          if (!container) return;
+          container.style.opacity = '0';
+          setTimeout(function () {
+            if (container.parentNode) container.parentNode.removeChild(container);
+          }, 260);
+        }, timeout);
+      }
+
+      // initialize close buttons for all notify-success blocks present
+      document.addEventListener('DOMContentLoaded', function () {
+        var notifs = document.querySelectorAll('.notify-success');
+        notifs.forEach(function (n) {
+          var btn = n.querySelector('.notify-success__close');
+          bindClose(btn, n);
+          // keep hidden by default; nothing to do here
+        });
+      });
+
+      // Public show function
+      window.showSuccessNotif = function (id, opts) {
+        // id can be element or id string
+        var el = _get(id);
+        if (!el) return;
+        opts = opts || {};
+        // set content if provided
+        if (opts.title) {
+          var t = el.querySelector('.notify-success__title');
+          if (t) t.innerHTML = opts.title;
+        }
+        if (opts.desc) {
+          var d = el.querySelector('.notify-success__desc');
+          if (d) d.innerHTML = opts.desc;
+        }
+        if (opts.pillText) {
+          var pill = el.querySelector('.notify-success__pill') || document.getElementById('notif-coupon-pill');
+          if (pill) pill.textContent = opts.pillText;
+        }
+        // show
+        el.style.display = 'flex';
+        // reset opacity/transform in case it was hidden previously
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0) scale(1)';
+        // optional auto-dismiss (default 6s, pass 0 to keep)
+        var timeout = (typeof opts.timeout === 'number') ? opts.timeout : 6000;
+        if (timeout > 0) autoDismiss(el, timeout);
+      };
+
+      // Small convenience wrappers for your common events
+      window.showPaymentSuccess = function () {
+        window.showSuccessNotif('notif-payment', { timeout: 5000 });
+      };
+      window.showCouponApplied = function (code, savedText) {
+        var pill = (code ? (code + ' •') : '') + ' ' + (optsPercentOrLabel(code) || '');
+        // you probably want to set pill to something like "SAVE20 • 20% OFF"
+        var pillText = code ? (code + ' • ' + (savedText || 'Coupon')) : (savedText || 'Coupon');
+        window.showSuccessNotif('notif-coupon', {
+          pillText: pillText,
+          desc: savedText ? ('Coupon ' + (code||'') + ' applied — you saved ' + savedText + '.') : ('Coupon applied.'),
+          timeout: 7000
+        });
+      };
+
+      // Helper: safe fallback for pill label (you can remove/replace this in your checkout.js)
+      function optsPercentOrLabel(code) {
+        return '';
+      }
+
+    })();
+  </script>
+  <!-- ====== end notification helper JS ====== -->
+  
   <script>
     // populate checkout UI from localStorage (fallback to ?courseId fetch if needed)
     document.addEventListener('DOMContentLoaded', () => {
