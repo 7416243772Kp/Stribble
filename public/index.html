@@ -1,4 +1,3 @@
-<!--C:\Ebook\public\index.html-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stribble</title>
 
-  
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 rx=%2718%27 fill=%27%232563eb%27/%3E%3Ctext x=%2750%25%27 y=%2758%25%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27white%27 font-family=%27Arial,Helvetica,sans-serif%27%3ECH%3C/text%3E%3C/svg%3E" />
   <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Styles -->
   <link rel="stylesheet" href="css/theme.css">
-  
-  
 </head>
 <body>
   <!-- Nav -->
@@ -26,25 +22,14 @@
 
       <nav class="nav__links" role="navigation" aria-label="Main">
         <a href="#catalog" class="nav__link">Courses</a>
-        <a href="course.html" class="nav__link">Sample Course</a>
       </nav>
 
-      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-label="Open menu">☰</button>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button id="themeToggle" class="btn" title="Toggle dark mode" aria-pressed="false">🌙</button>
+        <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-label="Open menu">☰</button>
+      </div>
     </div>
   </header>
-
-  <script>
-    // simple mobile nav toggle (add to bottom of body)
-    (function() {
-      const btn = document.getElementById('navToggle');
-      const links = document.querySelector('.nav__links');
-      btn?.addEventListener('click', () => {
-        const open = links.style.display === 'flex';
-        links.style.display = open ? '' : 'flex';
-        btn.setAttribute('aria-expanded', String(!open));
-      });
-    })();
-  </script>
 
   <!-- Hero -->
   <section class="hero">
@@ -67,7 +52,7 @@
         </div>
       </div>
       <div class="hero__visual">
-        <div class="visual__card">
+        <div class="visual__card hover-lift">
           <div class="visual__badge">New</div>
           <div class="visual__title">Zero to Pro in YouTube</div>
           <div class="visual__line"></div>
@@ -80,7 +65,7 @@
   <!-- Catalog -->
   <main id="catalog" class="section">
     <div class="container">
-      <div class="section__head">
+      <div class="section__head" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <h2 class="section__title">Available Courses</h2>
         <div class="tools">
           <div class="search">
@@ -89,11 +74,11 @@
         </div>
       </div>
 
-      <div id="courses" class="grid">
-        <!-- Cards/Skeletons injected here -->
+      <div id="courses" class="grid" aria-live="polite">
+        <!-- Cards injected by JS -->
       </div>
 
-      <div id="emptyState" class="empty hidden">
+      <div id="emptyState" class="empty hidden" role="status" aria-hidden="true">
         <div class="empty__card">
           <div class="empty__emoji">📭</div>
           <h3>No courses available</h3>
@@ -117,6 +102,8 @@
   </footer>
 
   <script src="js/settings.js"></script>
+  <script src="js/ui-helpers.js" defer></script>
+
   <script>
     const wrap = document.getElementById("courses");
     const empty = document.getElementById("emptyState");
@@ -146,17 +133,19 @@
 
     function card(course){
       const a = document.createElement("a");
-      a.className = "card";
+      a.className = "card hover-lift";
       a.href = `course.html?id=${course._id}`;
       a.setAttribute("data-title", (course.title || "").toLowerCase());
       a.setAttribute("data-desc", (course.description || "").toLowerCase());
 
+      // Use data-src for lazy load; fallback src is a small placeholder
+      const thumb = course.thumbnail || '/images/placeholder-course.png';
       a.innerHTML = `
-        <div class="card__media">
-          <img src="${course.thumbnail}" alt="${course.title}" loading="lazy" />
+        <div class="card__media skeleton">
+          <img data-src="${thumb}" alt="${(course.title || '').replace(/\"/g,'')}" loading="lazy" class="skeleton" />
         </div>
         <div class="card__body">
-          <h3 class="card__title">${course.title}</h3>
+          <h3 class="card__title">${course.title || 'Untitled'}</h3>
           <p class="card__desc">${(course.description || "").slice(0, 96)}${course.description && course.description.length > 96 ? "…" : ""}</p>
           <div class="card__footer">
             <span class="price">${INR(course.price)}</span>
@@ -192,9 +181,19 @@
           return;
         }
         empty.classList.add("hidden");
-        items.forEach(c => wrap.appendChild(card(c)));
+        items.forEach(c => {
+          const el = card(c);
+          wrap.appendChild(el);
+        });
+
+        // after injecting, run lazy loader
+        if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
+          window.UI.lazyLoadImages(document);
+        }
+
         applySearch();
       } catch (e) {
+        console.error(e);
         wrap.innerHTML = `
           <div class="empty__card">
             <div class="empty__emoji">⚠️</div>
@@ -207,7 +206,17 @@
     searchInput.addEventListener("input", applySearch);
     setYear();
     loadCourses();
+
+    // mobile nav toggle
+    (function() {
+      const navToggle = document.getElementById('navToggle');
+      const links = document.querySelector('.nav__links');
+      navToggle?.addEventListener('click', () => {
+        const open = links.style.display === 'flex';
+        links.style.display = open ? '' : 'flex';
+        navToggle.setAttribute('aria-expanded', String(!open));
+      });
+    })();
   </script>
-  <script src="js/ui-helpers.js" defer></script>
 </body>
 </html>

@@ -1,22 +1,40 @@
-<!-- C:\Ebook\public\admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel</title>
+  <title>Admin Panel | Stribble</title>
 
   <!-- app settings (keeps API_BASE etc) -->
   <script src="js/settings.js" defer></script>
 
   <!-- unified theme (single stylesheet) -->
   <link rel="stylesheet" href="css/theme.css">
+
+  <style>
+    /* visually-hidden helper */
+    .sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+  </style>
 </head>
 <body>
-  <!-- Admin root: all admin UI must be inside this so styles stay scoped -->
-  <div class="admin-root">
+  <div class="admin-root" id="adminRoot">
 
-    <!-- Notification container (placed inside admin-root so styling is scoped) -->
+    <!-- theme / nav (kept minimal) -->
+    <header class="nav" aria-hidden="false" style="position:sticky;top:0;z-index:90">
+      <div class="container nav__inner">
+        <a href="index.html" class="brand" aria-label="Stribble Home">
+          <span class="brand__dot" aria-hidden="true"></span>
+          <span class="brand__name">Stribble</span>
+        </a>
+
+        <div style="display:flex;align-items:center;gap:12px">
+          <button id="themeToggle" class="btn" title="Toggle dark mode" aria-pressed="false">🌙</button>
+          <button id="navToggle" class="nav-toggle" aria-label="Toggle navigation">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Notification container -->
     <div id="notification" class="notification-container" aria-live="polite" role="status"></div>
 
     <!-- Login Overlay -->
@@ -25,7 +43,7 @@
         <div id="login-form-container">
           <h3 id="login-heading">🔐 Admin Login</h3>
 
-          <form id="adminLoginForm" autocomplete="on">
+          <form id="adminLoginForm" autocomplete="on" novalidate>
             <div class="field">
               <label for="adminEmail">Email Address</label>
               <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required />
@@ -39,7 +57,6 @@
             <button type="submit" class="btn btn--primary btn--block">Sign In</button>
           </form>
 
-          <!-- Forgot Password Link -->
           <div style="text-align:center;margin-top:12px">
             <a href="#" id="forgotPasswordLink" style="color:inherit;text-decoration:underline;font-size:14px">
               Forgot your password?
@@ -47,10 +64,10 @@
           </div>
         </div>
 
-        <!-- TOTP Setup (first login) -->
+        <!-- Optional TOTP setup / challenge (hidden by default) -->
         <div id="totp-setup" class="totp-setup hidden" aria-hidden="true">
           <h3>📱 Setup Two-Factor Authentication</h3>
-          <p style="color:var(--muted);font-size:14px">Scan this QR code with your authenticator app (Google/Microsoft Authenticator)</p>
+          <p style="color:var(--muted);font-size:14px">Scan this QR code with your authenticator app (Google/Microsoft)</p>
           <img id="totp-qr" alt="TOTP QR" class="qr-img" style="margin:16px auto;display:block;max-width:220px" />
           <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin:8px 0">
             <small>Manual entry code:</small><br/>
@@ -65,17 +82,16 @@
           <button id="verify-totp-btn" class="btn btn--primary btn--block" style="margin-top:8px">Verify & Enable 2FA</button>
         </div>
 
-        <!-- TOTP Challenge -->
         <div id="totp-challenge" class="totp-challenge hidden" aria-hidden="true">
           <h3>🔐 Two-Factor Authentication</h3>
           <p>Enter the 6-digit code from your authenticator app</p>
-          <div class="otp-input-group">
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-1" />
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-2" />
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-3" />
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-4" />
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-5" />
-            <input type="text" class="otp-input-single" maxlength="1" id="totp-6" />
+          <div class="otp-input-group" role="group" aria-label="TOTP inputs">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-1" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-2" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-3" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-4" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-5" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1" id="totp-6" />
           </div>
 
           <input type="hidden" id="totp-login-token" />
@@ -122,20 +138,22 @@
       </div>
     </div>
 
-    <!-- Sidebar (fixed) -->
+    <!-- Sidebar -->
     <aside class="sidebar" aria-label="Admin Navigation">
+      <button class="sidebar-collapse" id="toggleSidebar" title="Toggle sidebar" aria-label="Toggle sidebar">⟵</button>
+
       <h2>Admin</h2>
       <nav class="sidebar-nav" role="navigation" aria-label="Admin sections">
-        <a href="#" data-section="dashboard" class="active">📊 Dashboard</a>
-        <a href="#" data-section="courses">📚 Courses</a>
-        <a href="#" data-section="coupons">🎟️ Coupons</a>
-        <a href="#" data-section="sales">💰 Sales</a>
-        <a href="#" onclick="logout()">🚪 Logout</a>
+        <a href="#" data-section="dashboard" class="active" id="nav-dashboard">📊 Dashboard</a>
+        <a href="#" data-section="courses" id="nav-courses">📚 Courses</a>
+        <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
+        <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
+        <a href="#" id="nav-logout" onclick="logout()">🚪 Logout</a>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="content" role="main">
+    <!-- Main -->
+    <main class="content" role="main" id="mainContent" tabindex="-1">
       <div class="topbar">
         <span id="section-title">Dashboard</span>
       </div>
@@ -156,21 +174,21 @@
         <h2>Manage Courses</h2>
         <form id="add-course-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:10px; max-width:700px;">
           <input type="text" name="title" placeholder="Course Title" required />
-          <textarea name="description" placeholder="Course Description" required></textarea>
+          <textarea name="description" placeholder="Course Description" required rows="4"></textarea>
           <input type="number" name="price" placeholder="Course Price" required />
           <input type="text" name="googleDriveLink" placeholder="Google Drive Link" required />
           <label>Thumbnail Image</label>
           <input type="file" name="thumbnail" accept="image/*" required />
           <button type="submit" class="btn btn--primary" style="width:160px">Add Course</button>
         </form>
-        <div id="course-list" style="margin-top:18px"></div>
+        <div id="course-list" style="margin-top:18px" aria-live="polite"></div>
       </section>
 
       <!-- COUPONS -->
       <section id="coupons" class="content-section hidden" aria-hidden="true">
         <h2>Manage Coupons</h2>
         <form id="add-coupon-form" style="display:flex;flex-direction:column;gap:10px;max-width:700px">
-          <label>Select Course</label>
+          <label for="coupon-course-select">Select Course</label>
           <select name="courseId" id="coupon-course-select" required>
             <option value="">-- Select Course --</option>
           </select>
@@ -184,7 +202,7 @@
         </form>
 
         <h3 style="margin-top:18px">All Coupons</h3>
-        <div id="coupon-list" style="margin-top:12px;"></div>
+        <div id="coupon-list" style="margin-top:12px;" aria-live="polite"></div>
       </section>
 
       <!-- SALES -->
@@ -193,29 +211,31 @@
 
         <div class="chart-container" style="margin-top:12px;">
           <h3>Daily Sales (Last 7 Days)</h3>
-          <canvas id="salesChart" width="600" height="300"></canvas>
+          <canvas id="salesChart" width="600" height="300" aria-label="Sales chart" role="img"></canvas>
         </div>
 
         <div class="sales-cards" style="margin-top:18px;">
           <h3>Total Sales per Course</h3>
-          <div id="course-sales" class="cards-grid" style="margin-top:10px"></div>
+          <div id="course-sales" class="cards-grid" style="margin-top:10px" aria-live="polite"></div>
         </div>
 
         <div class="coupon-usage-cards" style="margin-top:18px;">
           <h3>Coupon Usage</h3>
-          <div id="coupon-usage" class="cards-grid" style="margin-top:10px"></div>
+          <div id="coupon-usage" class="cards-grid" style="margin-top:10px" aria-live="polite"></div>
         </div>
 
         <div class="failed-emails-section mt-30" style="margin-top:22px;">
           <h3>📧 Failed Email Deliveries</h3>
           <button id="resendAllBtn" class="btn btn--ghost mb-12" style="margin-top:10px">Resend All Failed Emails</button>
 
-          <table class="failed-emails-table" style="margin-top:12px;">
-            <thead>
-              <tr><th>Email</th><th>Course</th><th>Order ID</th><th>Paid At</th><th>Action</th></tr>
-            </thead>
-            <tbody id="failedEmailsList"></tbody>
-          </table>
+          <div class="table-wrap" style="margin-top:12px;">
+            <table class="failed-emails-table" role="table" aria-label="Failed emails">
+              <thead>
+                <tr><th>Email</th><th>Course</th><th>Order ID</th><th>Paid At</th><th>Action</th></tr>
+              </thead>
+              <tbody id="failedEmailsList"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
@@ -223,8 +243,67 @@
 
   <!-- Scripts -->
   <script src="js/admin-auth.js" defer></script>
+  <script src="js/ui-helpers.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="js/admin.js" defer></script>
-  <script src="js/ui-helpers.js" defer></script>
+
+  <!-- Inline admin UI glue (collapse toggle + simple nav) -->
+  <script>
+    (function() {
+      const root = document.getElementById('adminRoot');
+      const btn = document.getElementById('toggleSidebar');
+      const navToggle = document.getElementById('navToggle');
+
+      // Toggle collapsed class and update button visual
+      btn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        root.classList.toggle('collapsed');
+        btn.textContent = root.classList.contains('collapsed') ? '⟶' : '⟵';
+        if (root.classList.contains('collapsed')) {
+          document.getElementById('mainContent')?.focus?.();
+        } else {
+          btn.focus();
+        }
+      });
+
+      // basic nav switching
+      const sections = ['dashboard','courses','coupons','sales'];
+      function showSection(name) {
+        sections.forEach(s => {
+          const el = document.getElementById(s);
+          if (!el) return;
+          const active = s === name;
+          el.classList.toggle('hidden', !active);
+          el.setAttribute('aria-hidden', String(!active));
+        });
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.section === name));
+        document.getElementById('section-title').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+        document.getElementById('mainContent').scrollTop = 0;
+      }
+
+      document.querySelectorAll('.sidebar-nav a[data-section]').forEach(a => {
+        a.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          const target = a.getAttribute('data-section');
+          if (target) showSection(target);
+        });
+      });
+
+      // Nav toggle (for small screens) — opens sidebar (as simple show/hide)
+      navToggle?.addEventListener('click', () => {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) return;
+        const visible = getComputedStyle(sidebar).transform === 'none' && !root.classList.contains('collapsed');
+        if (visible) {
+          root.classList.add('collapsed');
+        } else {
+          root.classList.remove('collapsed');
+        }
+      });
+
+      // expose to window
+      window.adminShowSection = showSection;
+    })();
+  </script>
 </body>
 </html>

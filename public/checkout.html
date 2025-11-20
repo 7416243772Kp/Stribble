@@ -1,5 +1,4 @@
-<!-- C:\Ebook\public\checkout.html -->
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -10,7 +9,15 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 </head>
 <body>
-  <nav class="navbar"><div class="logo"><strong>Stribble</strong></div></nav>
+  <nav class="navbar" style="position:sticky;top:0;z-index:90">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
+      <div class="logo"><a href="index.html" class="brand"><span class="brand__dot"></span> <strong>Stribble</strong></a></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button id="themeToggle" class="btn" title="Toggle dark mode">🌙</button>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu">☰</button>
+      </div>
+    </div>
+  </nav>
 
   <main class="checkout-container">
     <div class="checkout-card">
@@ -19,7 +26,8 @@
       <!-- Price panel -->
       <div class="price-panel" id="pricePanel" aria-live="polite">
         <div class="price-left">
-          <img id="miniThumb" class="course-mini-thumb" src="/images/placeholder-course.png" alt="course thumbnail" />
+          <!-- lazy thumbnail -->
+          <img id="miniThumb" class="course-mini-thumb skeleton" data-src="/images/placeholder-course.png" alt="course thumbnail" loading="lazy" />
           <div class="price-left__meta">
             <div id="miniTitle" class="mini-title">Untitled course</div>
             <div id="miniType" class="mini-type">Digital course</div>
@@ -44,7 +52,7 @@
           <div class="coupon-wrapper" style="flex:1; display:flex;">
             <input type="text" id="coupon" placeholder="Enter coupon code" />
           </div>
-          <button type="button" id="apply-coupon-btn">Apply</button>
+          <button type="button" id="apply-coupon-btn" class="btn">Apply</button>
         </div>
 
         <div id="couponMessage" aria-live="polite"></div>
@@ -53,8 +61,8 @@
         <input type="text" id="otp" placeholder="Enter OTP" disabled />
 
         <div class="checkout-actions">
-          <button type="button" id="validate-btn">Validate & Send OTP</button>
-          <button type="button" id="verify-otp-btn" disabled>Verify OTP</button>
+          <button type="button" id="validate-btn" class="btn">Validate & Send OTP</button>
+          <button type="button" id="verify-otp-btn" class="btn" disabled>Verify OTP</button>
           <button type="submit" id="payment-btn" class="btn" disabled>Proceed to Pay</button>
         </div>
       </form>
@@ -63,7 +71,66 @@
 
   <footer class="footer"><p>© <span id="year"></span> Stribble. All rights reserved.</p></footer>
 
-  <script src="js/checkout.js" defer></script>
   <script src="js/ui-helpers.js" defer></script>
+  <script src="js/checkout.js" defer></script>
+
+  <script>
+    // populate checkout UI from localStorage (fallback to ?courseId fetch if needed)
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      const selected = localStorage.getItem('selectedCourse');
+      if (selected) {
+        try {
+          const c = JSON.parse(selected);
+          const thumb = c.thumbnail || '/images/placeholder-course.png';
+          const title = c.title || 'Untitled course';
+          const price = Number(c.price || 0);
+
+          // set UI
+          document.getElementById('miniTitle').textContent = title;
+          document.getElementById('priceNow').textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(price);
+          document.getElementById('totalAmount').dataset.amount = price;
+          document.getElementById('totalAmount').dataset.finalAmount = price;
+
+          const thumbImg = document.getElementById('miniThumb');
+          thumbImg.setAttribute('data-src', thumb);
+          if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
+            window.UI.lazyLoadImages(document);
+          }
+        } catch(e) {
+          console.error('Invalid selectedCourse in localStorage', e);
+        }
+      } else {
+        // Optionally: fetch course via query param courseId
+        const params = new URLSearchParams(window.location.search);
+        const courseId = params.get('courseId');
+        if (courseId) {
+          // fetch minimal course data to populate UI
+          fetch(`${window.API_BASE}/api/courses/${courseId}`).then(r => r.json()).then(data => {
+            const cr = data.course || data;
+            if (!cr) return;
+            const price = Number(cr.price || 0);
+            document.getElementById('miniTitle').textContent = cr.title || 'Untitled';
+            document.getElementById('priceNow').textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(price);
+            document.getElementById('totalAmount').dataset.amount = price;
+            document.getElementById('totalAmount').dataset.finalAmount = price;
+
+            const thumbImg = document.getElementById('miniThumb');
+            thumbImg.setAttribute('data-src', cr.thumbnail || '/images/placeholder-course.png');
+            if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
+              window.UI.lazyLoadImages(document);
+            }
+          }).catch(console.error);
+        }
+      }
+
+      // mobile nav toggle (simple)
+      const navToggle = document.getElementById('navToggle');
+      navToggle?.addEventListener('click', () => {
+        alert('Open menu (mobile)');
+      });
+    });
+  </script>
 </body>
 </html>
