@@ -1,60 +1,15 @@
-//C:\Ebook\src\routes\adminAuthRoutes.js
-// import express from "express";
-// import bcrypt from "bcrypt";
-// import jwt from "jsonwebtoken";
-// import speakeasy from "speakeasy";
-// import QRCode from "qrcode";
-// import crypto from "crypto";
-// import dotenv from "dotenv";
-// import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
-// import AdminUser from "../models/AdminUser.js";
-// import authAdmin from "../middleware/authAdmin.js";
-// import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-
-// TEMP DEBUG IMPORT BLOCK
-console.log("[DEBUG] loading adminAuthRoutes - start");
-
-let express, bcrypt, jwt, speakeasy, QRCode, crypto, dotenv, encryptDecryptUtils, AdminUser, authAdmin, awsSes;
-try {
-  express = await import("express").then(m => m.default || m);
-  console.log("[DEBUG] imported express");
-
-  bcrypt = await import("bcrypt").then(m => m.default || m);
-  console.log("[DEBUG] imported bcrypt");
-
-  jwt = await import("jsonwebtoken").then(m => m.default || m);
-  console.log("[DEBUG] imported jsonwebtoken");
-
-  speakeasy = await import("speakeasy").then(m => m.default || m);
-  console.log("[DEBUG] imported speakeasy");
-
-  QRCode = await import("qrcode").then(m => m.default || m);
-  console.log("[DEBUG] imported qrcode");
-
-  crypto = await import("crypto").then(m => m.default || m);
-  console.log("[DEBUG] imported crypto");
-
-  dotenv = await import("dotenv").then(m => m.default || m);
-  console.log("[DEBUG] imported dotenv");
-
-  encryptDecryptUtils = await import("../utils/crypto.js");
-  console.log("[DEBUG] imported ../utils/crypto.js");
-
-  AdminUser = await import("../models/AdminUser.js").then(m => m.default || m);
-  console.log("[DEBUG] imported ../models/AdminUser.js");
-
-  authAdmin = await import("../middleware/authAdmin.js").then(m => m.default || m);
-  console.log("[DEBUG] imported ../middleware/authAdmin.js");
-
-  awsSes = await import("@aws-sdk/client-ses");
-  console.log("[DEBUG] imported @aws-sdk/client-ses");
-
-} catch (err) {
-  console.error("[DEBUG] import failed:", err);
-  throw err;
-}
-
-console.log("[DEBUG] loading adminAuthRoutes - imports done");
+// C:\Ebook\src\routes\adminAuthRoutes.js
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import speakeasy from "speakeasy";
+import QRCode from "qrcode";
+import crypto from "crypto";
+import dotenv from "dotenv";
+import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
+import AdminUser from "../models/AdminUser.js";
+import authAdmin from "../middleware/authAdmin.js";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 dotenv.config();
 const router = express.Router();
@@ -71,15 +26,17 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "praveenkunche975@gmail.com").to
 
 // Build SES client safely (avoid invalid credentials object)
 const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-const ses = new SESClient({
-  region: REGION,
-  credentials: hasAwsCreds
+const ses = new SESClient(
+  hasAwsCreds
     ? {
-        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+        region: REGION,
+        credentials: {
+          accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+          secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+        },
       }
-    : undefined, // fall back to default provider chain if running on AWS with role
-});
+    : { region: REGION } // fall back to default provider chain if running on AWS with role
+);
 
 // =============================
 // In-memory stores
@@ -102,8 +59,9 @@ function isLocalhostIp(ip) {
 function checkIPWhitelist(req) {
   const allowedIps = (process.env.ALLOWED_IPS || "192.168.1.11,192.168.1.8,127.0.0.1,::1")
     .split(",")
-    .map((s) => s.trim());
-  const clientIp = req.ip || req.connection?.remoteAddress || "";
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const clientIp = (req.ip || req.connection?.remoteAddress || "").replace("::ffff:", "");
   if (isLocalhostIp(clientIp)) return true;
   return allowedIps.some((ip) => clientIp.includes(ip));
 }
@@ -118,12 +76,11 @@ function setAdminCookie(req, res, token) {
   res.cookie("adminToken", token, {
     httpOnly: true,
     secure: secureCookie,
-    sameSite: "Strict",    // prevents most cross-site sends
+    sameSite: "Strict", // prevents most cross-site sends
     maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
-    path: "/api/admin",    // cookie only sent for admin routes
+    path: "/api/admin", // cookie only sent for admin routes
   });
 }
-
 
 async function sendOTPEmail(email, otp) {
   const html = `<!doctype html>
@@ -149,7 +106,7 @@ async function sendOTPEmail(email, otp) {
   </html>`;
 
   if (!hasAwsCreds) {
-    console.warn("⚠️ AWS credentials not found in env. SES will use default provider chain.");
+    console.warn("⚠️ AWS credentials not found in env. SES will use default provider chain or fail if not available.");
   }
 
   const command = new SendEmailCommand({
@@ -163,7 +120,8 @@ async function sendOTPEmail(email, otp) {
     },
     Source: FROM_EMAIL,
   });
-  await ses.send(command);
+
+  return ses.send(command);
 }
 
 // =============================
@@ -195,6 +153,7 @@ router.get("/totp-status", authAdmin, async (req, res) => {
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
     res.json({ success: true, totpEnabled: !!admin.totpEnabled });
   } catch (err) {
+    console.error("TOTP status error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -219,12 +178,7 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, admin.passwordHash);
     if (!ok) return res.status(401).json({ success: false, message: "Invalid credentials" });
 
-    console.log("[AUTH] /login →", {
-      email: admin.email,
-      totpEnabled: admin.totpEnabled,
-      hasSecret: !!admin.totpSecret,
-    });
-
+    // If TOTP enabled and secret present -> require second step
     if (admin.totpEnabled && admin.totpSecret) {
       const tempToken = generateTempToken();
       tempTokenStore.set(tempToken, {
@@ -247,11 +201,10 @@ router.post("/login", async (req, res) => {
         totpSecret: secret.base32,
         expiresAt: Date.now() + 10 * 60 * 1000,
       });
-      console.log("[AUTH] First-time TOTP setup issued for", admin.email);
       return res.json({ success: true, setupTotp: true, qrCode, secret: secret.base32, tempToken });
     }
 
-    // Fallback (unlikely path)
+    // Fallback (unlikely path) — sign and set cookie
     const token = jwt.sign({ id: admin._id, email: admin.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     setAdminCookie(req, res, token);
     return res.json({ success: true, message: "Login successful" });
@@ -289,7 +242,6 @@ router.post("/setup-totp", async (req, res) => {
     );
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
 
-    console.log("[AUTH] TOTP enabled and saved for", admin.email);
     tempTokenStore.delete(tempToken);
 
     const jwtToken = jwt.sign({ id: admin._id, email: admin.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -324,7 +276,7 @@ router.post("/verify-totp", async (req, res) => {
       encoding: "base32",
       token,
       window: 2,
-    })
+    });
     if (!ok) return res.status(400).json({ success: false, message: "Invalid code. Please try again." });
 
     tempTokenStore.delete(tempToken);
@@ -430,7 +382,7 @@ router.post("/reset-password", async (req, res) => {
 
     const admin = await AdminUser.findByIdAndUpdate(
       record.adminId,
-      { passwordHash: await bcrypt.hash(newPassword, 12)},
+      { passwordHash: await bcrypt.hash(newPassword, 12) },
       { new: true }
     );
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });

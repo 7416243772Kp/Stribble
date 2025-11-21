@@ -7,35 +7,19 @@ const REGION = process.env.AWS_REGION || "ap-south-1";
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 
 // create SES client (will use env creds or default chain)
-const sesClient = new SESClient({
-  region: REGION,
-  ...(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+const sesClient = new SESClient(
+  process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
     ? {
+        region: REGION,
         credentials: {
           accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
           secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
         },
       }
-    : {}),
-});
+    : { region: REGION }
+) ;
 
-/**
- * sendPaymentEmail(opts)
- * opts:
- *   - to (string) REQUIRED
- *   - customerName (string)
- *   - courseId (string) optional if downloadLink provided
- *   - courseName (string)
- *   - amount (number)
- *   - orderId (string)
- *   - paymentId (string)
- *   - dateTime (string)
- *   - downloadLink (string) optional
- *   - supportEmail (string)
- *
- * Returns: { success: true, messageId } on success
- * Throws: on SES / transport errors
- */
+// Send payment confirmation email with course access link
 export async function sendPaymentEmail(opts = {}) {
   const {
     to,
