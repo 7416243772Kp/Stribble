@@ -29,6 +29,10 @@ const OrderSchema = new mongoose.Schema({
 
   createdAt: { type: Date, default: Date.now, index: true },
   paidAt: { type: Date },
+
+  referrer: { type: String, default: null, index: true }, 
+  promoterCommission: { type: Number, default: 0 },
+  promoterPaid: { type: Boolean, default: false },
 });
 
 // Indexes for analytics

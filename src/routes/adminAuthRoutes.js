@@ -1,15 +1,60 @@
 //C:\Ebook\src\routes\adminAuthRoutes.js
-import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import speakeasy from "speakeasy";
-import QRCode from "qrcode";
-import crypto from "crypto";
-import dotenv from "dotenv";
-import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
-import AdminUser from "../models/AdminUser.js";
-import authAdmin from "../middleware/authAdmin.js";
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+// import express from "express";
+// import bcrypt from "bcrypt";
+// import jwt from "jsonwebtoken";
+// import speakeasy from "speakeasy";
+// import QRCode from "qrcode";
+// import crypto from "crypto";
+// import dotenv from "dotenv";
+// import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
+// import AdminUser from "../models/AdminUser.js";
+// import authAdmin from "../middleware/authAdmin.js";
+// import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+
+// TEMP DEBUG IMPORT BLOCK
+console.log("[DEBUG] loading adminAuthRoutes - start");
+
+let express, bcrypt, jwt, speakeasy, QRCode, crypto, dotenv, encryptDecryptUtils, AdminUser, authAdmin, awsSes;
+try {
+  express = await import("express").then(m => m.default || m);
+  console.log("[DEBUG] imported express");
+
+  bcrypt = await import("bcrypt").then(m => m.default || m);
+  console.log("[DEBUG] imported bcrypt");
+
+  jwt = await import("jsonwebtoken").then(m => m.default || m);
+  console.log("[DEBUG] imported jsonwebtoken");
+
+  speakeasy = await import("speakeasy").then(m => m.default || m);
+  console.log("[DEBUG] imported speakeasy");
+
+  QRCode = await import("qrcode").then(m => m.default || m);
+  console.log("[DEBUG] imported qrcode");
+
+  crypto = await import("crypto").then(m => m.default || m);
+  console.log("[DEBUG] imported crypto");
+
+  dotenv = await import("dotenv").then(m => m.default || m);
+  console.log("[DEBUG] imported dotenv");
+
+  encryptDecryptUtils = await import("../utils/crypto.js");
+  console.log("[DEBUG] imported ../utils/crypto.js");
+
+  AdminUser = await import("../models/AdminUser.js").then(m => m.default || m);
+  console.log("[DEBUG] imported ../models/AdminUser.js");
+
+  authAdmin = await import("../middleware/authAdmin.js").then(m => m.default || m);
+  console.log("[DEBUG] imported ../middleware/authAdmin.js");
+
+  awsSes = await import("@aws-sdk/client-ses");
+  console.log("[DEBUG] imported @aws-sdk/client-ses");
+
+} catch (err) {
+  console.error("[DEBUG] import failed:", err);
+  throw err;
+}
+
+console.log("[DEBUG] loading adminAuthRoutes - imports done");
 
 dotenv.config();
 const router = express.Router();

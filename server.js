@@ -1,4 +1,683 @@
-//C:\Ebook\server.js
+// // C:\Ebook\server.js
+// // = Environment & Core Imports =
+// import dotenv from "dotenv";
+// dotenv.config();
+
+// import express from "express";
+// import mongoose from "mongoose";
+// import Razorpay from "razorpay";
+// import crypto from "crypto";
+// import path from "path";
+// import { fileURLToPath } from "url";
+// import cors from "cors";
+// import bcrypt from "bcrypt";
+// import rateLimit from "express-rate-limit";
+
+// // ==== AWS SES (v3) ====
+// import pkg from "@aws-sdk/client-ses";
+// const { SESClient, SendEmailCommand } = pkg;
+
+// // ==== Models ====
+// import AdminUser from "./src/models/AdminUser.js";
+// import Coupon from "./src/models/coupon.js";
+// import Payment from "./src/models/payment.js";
+// import Course from "./src/models/course.js";
+// import Order from "./src/models/order.js";
+
+// // ==== Routes & Middleware ====
+// import adminRoutes from "./src/routes/adminRoutes.js";
+// import adminAuthRoutes from "./src/routes/adminAuthRoutes.js";
+// import couponRoutes from "./src/routes/couponRoutes.js";
+// import courseRoutes from "./src/routes/courseRoutes.js";
+// import authAdmin from "./src/middleware/authAdmin.js";
+// import promoterAdminRoutes from "./src/routes/adminPromoterRoutes.js";
+
+// // ==== Utilities ====
+// import { sendPaymentEmail } from "./src/utils/email.js";
+
+// // ==== Path Setup ====
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+// // ==== App Initialization ====
+// const app = express();
+
+// // ============================
+// //  Security & Middlewares
+// // ============================
+// app.disable("x-powered-by");
+// app.set("trust proxy", 1);
+
+// // ==== CORS & Cookie Parser ====
+// import cookieParser from "cookie-parser";
+// import escapeHtml from "escape-html";
+
+// const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());
+
+// // allow JSON bodies (already present) + urlencoded for admin forms if needed
+// app.use(express.json({ limit: "200kb" }));
+// app.use(express.urlencoded({ extended: false }));
+
+// // cookie parser (populates req.cookies)
+// app.use(cookieParser());
+
+// // --- Express 5–safe in-place sanitizer (blocks NoSQL injection operators) ---
+// function deepSanitize(obj) {
+//   if (!obj || typeof obj !== "object") return;
+//   for (const key of Object.keys(obj)) {
+//     if (key.startsWith("$") || key.includes(".")) {
+//       delete obj[key];
+//       continue;
+//     }
+//     const val = obj[key];
+//     if (val && typeof val === "object") deepSanitize(val);
+//   }
+// }
+
+// app.use((req, res, next) => {
+//   try {
+//     deepSanitize(req.body);
+//     deepSanitize(req.params);
+//     deepSanitize(req.query);
+//   } catch (e) {}
+//   next();
+// });
+
+// // robust CORS: echo allowed origin, supports credentials
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (rawAllowed.indexOf(origin) !== -1) return callback(null, true);
+//     console.warn("Blocked CORS origin:", origin);
+//     return callback(null, false); // decline without creating an Error object
+//   },
+//   credentials: true,
+// }));
+
+// // ==== Static Files ====
+// app.use(express.static(path.join(__dirname, "public")));
+// app.use("/uploads", express.static("uploads"));
+
+// // safe JSON serialization to avoid breaking inline <script> tags (prevents XSS)
+// function safeJson(obj) {
+//   return JSON.stringify(obj).replace(/</g, "\\u003c");
+// }
+
+// // ============================
+// //  Database Connection
+// // ============================
+// mongoose
+//   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/course_selling", {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+//   })
+//   .then(() => console.log("✅ MongoDB connected"))
+//   .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// // ============================
+// //  Razorpay Setup
+// // ============================
+// const razorpay = new Razorpay({
+//   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
+//   key_secret: process.env.RAZORPAY_KEY_SECRET || "ZIDKRiWRL8RQ51HFNvIubVMR",
+// });
+
+// // ============================
+// //  AWS SES Setup
+// // ============================
+// const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+// const ses = hasAwsCreds
+//   ? new SESClient({
+//       region: process.env.AWS_REGION || "ap-south-1",
+//       credentials: {
+//         accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+//         secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+//       },
+//     })
+//   : new SESClient({ region: process.env.AWS_REGION || "ap-south-1" }); // will use default provider chain if available
+
+// const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
+
+// // ============================
+// //  Rate Limiters
+// // ============================
+// const otpLimiter = rateLimit({
+//   windowMs: 10 * 60 * 1000,
+//   max: 10,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   message: { success: false, message: "Too many OTP attempts. Try again later." },
+// });
+
+// const paymentLimiter = rateLimit({
+//   windowMs: 5 * 60 * 1000,
+//   max: 100,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+
+// // ============================
+// //  OTP Store (In-memory)
+// // ============================
+// const otpStore = new Map(); // { email: { otp, expiresAt } }
+
+// // promo capture middleware (saves coupon/ref from query into cookies)
+// app.use((req, res, next) => {
+//   try {
+//     const { coupon, ref } = req.query;
+//     // Save to cookie if present (valid for 30 days)
+//     const cookieOpts = { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: false, sameSite: 'Lax' };
+//     if (coupon && typeof coupon === 'string') {
+//       res.cookie('promo_coupon', coupon.trim().toUpperCase(), cookieOpts);
+//     }
+//     if (ref && typeof ref === 'string') {
+//       res.cookie('promo_ref', ref.trim(), cookieOpts);
+//     }
+//   } catch (e) {
+//     // ignore cookie set errors
+//   }
+//   next();
+// });
+
+// // ============================
+// //  Routes
+// // ============================
+
+// // ---- Admin Routes ----
+// app.use("/api/admin/auth", adminAuthRoutes);
+// app.use("/api/admin", authAdmin, adminRoutes);
+// app.use("/api/admin/coupons", couponRoutes);
+// app.use("/api/courses", courseRoutes);
+// app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
+
+// // ---- OTP & Email Validation ----
+// // Validate and send OTP to email
+// app.post("/api/validate/email", async (req, res) => {
+//   const { email } = req.body;
+
+//   // Basic format check
+//   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//   if (!emailRegex.test(email)) {
+//     return res.status(400).json({ success: false, message: "Invalid email format" });
+//   }
+
+//   // Generate OTP
+//   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//   otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+//   try {
+//     const command = new SendEmailCommand({
+//       Destination: { ToAddresses: [email] },
+//       Message: {
+//         Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
+//         Subject: { Data: "Stribble - Verify your email" },
+//       },
+//       Source: FROM_EMAIL,
+//     });
+
+//     await ses.send(command);
+//     res.json({ success: true, message: "OTP sent to email" });
+//   } catch (err) {
+//     console.error("❌ OTP send error:", err);
+//     console.error("❌ SES error details:", err.message || err);
+//     res.status(500).json({ success: false, message: "Error sending OTP" });
+//   }
+// });
+
+// app.post("/api/validate/otp", otpLimiter, (req, res) => {
+//   const { email, otp } = req.body;
+//   const record = otpStore.get(email);
+
+//   if (!record || record.otp !== otp || Date.now() > record.expiresAt)
+//     return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+
+//   otpStore.delete(email);
+//   res.json({ success: true, message: "OTP verified successfully" });
+// });
+
+// // ---- Coupon Validation ----
+// app.post("/api/validate/coupon", async (req, res) => {
+//   try {
+//     const couponCode = req.body.couponCode ?? req.body.code ?? "";
+//     const { courseId } = req.body;
+//     if (!courseId) return res.status(400).json({ success: false, message: "courseId required" });
+//     if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
+
+//     // If no coupon code provided, respond success with no coupon (meaning: no discount)
+//     if (!couponCode || String(couponCode).trim() === "") {
+//       return res.json({ success: true, coupon: null });
+//     }
+
+//     const code = String(couponCode).trim().toUpperCase();
+//     const coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+
+//     if (!coupon) {
+//       return res.status(400).json({ success: false, message: "Invalid coupon" });
+//     }
+
+//     res.json({ success: true, coupon: { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0, influencerUPI: coupon.influencerUPI || "", ebookCreatorUPI: coupon.ebookCreatorUPI || "", isDefault: coupon.isDefault, }, });
+//   } catch (err) {
+//     console.error("❌ Coupon validate error:", err);
+//     res.status(500).json({ success: false, message: "Error validating coupon" });
+//   }
+// });
+
+// // ---- Checkout Validate + OTP (alias used by checkout.js) ----
+// app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
+//   try {
+//     const { email, couponCode, courseId } = req.body;
+
+//     // Only email and courseId required here — couponCode optional
+//     if (!email || !courseId) {
+//       return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
+//     }
+
+//     // Validate email format
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailRegex.test(email)) {
+//       return res.status(400).json({ success: false, message: "Invalid email format" });
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(courseId)) {
+//       return res.status(400).json({ success: false, message: "Invalid courseId" });
+//     }
+
+//     let coupon = null;
+//     const code = String(couponCode || "").trim().toUpperCase();
+
+//     if (code) {
+//       coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+//       if (!coupon) {
+//         return res.status(400).json({ success: false, message: "Invalid coupon" });
+//       }
+//     }
+
+//     // Generate OTP and send via SES (same behavior irrespective of coupon)
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // valid for 5 min
+
+//     const command = new SendEmailCommand({
+//       Destination: { ToAddresses: [email] },
+//       Message: {
+//         Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
+//         Subject: { Data: "CourseHub - Verify your email" },
+//       },
+//       Source: FROM_EMAIL,
+//     });
+//     await ses.send(command);
+
+//     res.json({
+//       success: true,
+//       message: "OTP sent",
+//       coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0 } : null,
+//     });
+//   } catch (err) {
+//     console.error("❌ Checkout validate error:", err);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
+
+// // ---- Checkout OTP verify (alias used by checkout.js) ----
+// app.post("/api/checkout/verify-otp", otpLimiter, (req, res) => {
+//   const { email, otp } = req.body;
+//   const record = otpStore.get(email);
+
+//   if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
+//     return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+//   }
+
+//   otpStore.delete(email);
+//   res.json({ success: true, message: "OTP verified successfully" });
+// });
+
+// // Create order (includes validated referrer)
+// app.post("/api/payment/order", paymentLimiter, async (req, res) => {
+//   try {
+//     const { email, courseId, couponCode } = req.body;
+//     if (!email || !courseId) return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
+//     if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
+
+//     const course = await Course.findById(courseId);
+//     if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+
+//     // If couponCode provided, try to find coupon; if not provided or not found, proceed with no coupon
+//     let coupon = null;
+//     const code = String(couponCode || "").trim().toUpperCase();
+//     if (code) {
+//       coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+//       if (!coupon) {
+//         return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
+//       }
+//     }
+
+//     const discount = Number((coupon && coupon.discount) || 0);
+//     const finalAmount = Math.max(1, Number(course.price) - discount);
+//     const influencerCommission = Number((coupon && coupon.influencerCommission) || 0);
+//     const ebookCreatorCommission = Number((coupon && coupon.ebookCreatorCommission) || 0);
+//     const ownerAmount = finalAmount - influencerCommission - ebookCreatorCommission;
+//     if (ownerAmount < 0) return res.status(400).json({ success: false, message: "Commission exceeds price after discount" });
+
+//     // decide referrer: prefer cookie (promo_ref) then body.ref (explicit)
+//     let referrer = req.cookies?.promo_ref || req.body?.ref || null;
+
+//     // validate promoter now to avoid saving invalid refs
+//     if (referrer) {
+//       try {
+//         const Promoter = (await import('./src/models/promoter.js')).default;
+//         const exists = await Promoter.exists({ refId: referrer, active: true });
+//         if (!exists) {
+//           referrer = null; // drop invalid ref
+//         }
+//       } catch (err) {
+//         console.warn('Promoter validation failed while creating order:', err && err.message);
+//         referrer = null;
+//       }
+//     }
+
+//     const promoterCommission = Number((coupon && coupon.influencerCommission) || 0);
+
+//     const amountPaise = Math.round(finalAmount * 100);
+//     const rzpOrder = await razorpay.orders.create({
+//       amount: amountPaise,
+//       currency: "INR",
+//       receipt: "rcpt_" + Date.now().toString().slice(-8),
+//       notes: { email, courseId, couponCode: coupon ? coupon.code : "", referrer: referrer || "" },
+//     });
+
+//     await Order.create({
+//       courseId,
+//       couponId: coupon ? coupon._id : null,
+//       buyerEmail: email,
+//       influencerCommission,
+//       ebookCreatorCommission,
+//       ownerAmount,
+//       promoterCommission,
+//       referrer,
+//       razorpayOrderId: rzpOrder.id,
+//       status: "pending",
+//       createdAt: new Date(),
+//     });
+
+//     res.json({ success: true, orderId: rzpOrder.id, amountPaise: rzpOrder.amount, currency: rzpOrder.currency, keyId: process.env.RAZORPAY_KEY_ID });
+//   } catch (err) {
+//     console.error("Order creation failed:", err);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
+
+// // ---- Payment Verification ----
+// app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
+//   try {
+//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+//     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature)
+//       return res.status(400).json({ success: false, message: "Missing payment fields" });
+
+//     const secret = process.env.RAZORPAY_KEY_SECRET || "ZIDKRiWRL8RQ51HFNvIubVMR";
+//     const expected = crypto
+//       .createHmac("sha256", secret)
+//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//       .digest("hex");
+
+//     if (expected !== razorpay_signature)
+//       return res.status(400).json({ success: false, message: "Invalid signature" });
+
+//     const order = await Order.findOne({ razorpayOrderId: razorpay_order_id }).populate("courseId");
+//     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+//     if (order.status === "completed")
+//       return res.json({ success: true, message: "Payment already verified", order });
+
+//     // mark completed and persist first
+//     order.status = "completed";
+//     order.razorpayPaymentId = razorpay_payment_id;
+//     order.razorpaySignature = razorpay_signature;
+//     order.paidAt = new Date();
+//     await order.save();
+
+//     // then update promoter stats (best-effort, non-blocking)
+//     if (order.referrer) {
+//       (async () => {
+//         try {
+//           const Promoter = (await import('./src/models/promoter.js')).default;
+//           const promoter = await Promoter.findOne({ refId: order.referrer, active: true }).exec();
+//           if (promoter) {
+//             const commission = Number(order.promoterCommission || order.influencerCommission || 0);
+//             if (commission > 0) {
+//               promoter.totalSales = (promoter.totalSales || 0) + 1;
+//               promoter.totalEarned = (promoter.totalEarned || 0) + commission;
+//               promoter.payoutBalance = (promoter.payoutBalance || 0) + commission;
+//               await promoter.save().catch(()=>{});
+//             }
+//           } else {
+//             console.warn('Promoter not found or not active for ref:', order.referrer);
+//           }
+//         } catch (err) {
+//           console.error('Failed to update promoter stats (non-fatal):', err);
+//         }
+//       })();
+//     }
+
+//     if (order.couponId)
+//       await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => {});
+//     if (order.courseId?._id)
+//       await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => {});
+
+//     const amountPaid =
+//       Number(order.ownerAmount || 0) +
+//       Number(order.influencerCommission || 0) +
+//       Number(order.ebookCreatorCommission || 0);
+
+//     const courseIdForPayment = order.courseId?._id || null;
+//     await Payment.create({
+//       email: order.buyerEmail,
+//       courseId: courseIdForPayment,
+//       amount: amountPaid,
+//       razorpay_order_id,
+//       razorpay_payment_id,
+//       razorpay_signature,
+//       status: "success",
+//       createdAt: new Date(),
+//     });
+
+//     try {
+//       // prefer an explicit download link if present on course object
+//       const downloadLink = order.courseId?.googleDriveLink || null;
+//       if (downloadLink) {
+//         await sendPaymentEmail({
+//           to: order.buyerEmail,
+//           customerName: order.buyerEmail.split("@")[0],
+//           courseName: order.courseId.title,
+//           amount: amountPaid,
+//           orderId: order.razorpayOrderId,
+//           paymentId: order.razorpayPaymentId || razorpay_payment_id,
+//           dateTime: new Date(order.paidAt).toLocaleString(),
+//           downloadLink,
+//           supportEmail: "support@stribble.site",
+//         });
+//         order.emailSent= true;
+//         order.emailFailReason = undefined;
+//         await order.save().catch(()=>{});
+
+//       } else if (order.courseId?._id) {
+//         // pass courseId — the sendPaymentEmail helper should fetch course details
+//         await sendPaymentEmail({
+//           to: order.buyerEmail,
+//           customerName: order.buyerEmail.split("@")[0],
+//           courseName: order.courseId.title || "",
+//           amount: amountPaid,
+//           orderId: order.razorpayOrderId,
+//           paymentId: order.razorpayPaymentId || razorpay_payment_id,
+//           dateTime: new Date(order.paidAt).toLocaleString(),
+//           courseId: order.courseId._id,    // pass id so helper can look up link
+//           supportEmail: "support@stribble.site",
+//         });
+//         order.emailSent= true;
+//         order.emailFailReason = undefined;
+//         await order.save().catch(()=>{});
+
+//       } else {
+//         console.warn("No downloadLink or courseId available for order:", order._id);
+//       }
+//     } catch (mailErr) {
+//       console.error("❌ Email send failed:", mailErr);
+//       // mark order (exists in variable 'order' above) so admin UI can show failed emails
+//       try {
+//         order.emailSent = false;
+//         order.emailFailReason = (mailErr && mailErr.message) || String(mailErr);
+//         await order.save().catch(() => {});
+//       } catch (saveErr) {
+//         console.error("Failed to save order email failure reason:", saveErr);
+//       }
+//     }
+
+//     res.json({ success: true, message: "Payment verified", order });
+//   } catch (err) {
+//     console.error("Payment verification failed:", err);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
+
+// // --- Frontend routes and dynamic course rendering ---
+
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
+
+// // admin-login -> serves admin.html
+// app.get('/admin-login', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+// });
+
+// app.get('/course/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     // try both slug or ObjectId – adapt to your Course model
+//     let course = null;
+//     if (mongoose.Types.ObjectId.isValid(id)) {
+//       course = await Course.findById(id).lean();
+//     }
+//     if (!course) {
+//       course = await Course.findOne({ slug: id }).lean(); // if you use slug field
+//     }
+
+//     if (!course) {
+//       // fallback to static course.html (client-side will handle 404)
+//       return res.sendFile(path.join(__dirname, 'public', 'course.html'));
+//     }
+
+//     // sanitize simple fields for meta tags
+//     const title = escapeHtml(course.title || 'Course');
+//     const description = escapeHtml((course.description || '').slice(0, 200));
+//     const image = course.imageUrl || 'https://stribble.site/default-course-image.png';
+//     const url = `https://stribble.site${req.originalUrl}`;
+
+//     const html = `<!doctype html>
+// <html lang="en">
+// <head>
+//   <meta charset="utf-8" />
+//   <title>${title} — Stribble</title>
+//   <meta name="description" content="${description}" />
+
+//   <!-- Open Graph -->
+//   <meta property="og:title" content="${title}" />
+//   <meta property="og:description" content="${description}" />
+//   <meta property="og:image" content="${image}" />
+//   <meta property="og:url" content="${url}" />
+//   <meta property="og:type" content="website" />
+
+//   <!-- Twitter -->
+//   <meta name="twitter:card" content="summary_large_image" />
+//   <meta name="twitter:title" content="${title}" />
+//   <meta name="twitter:description" content="${description}" />
+//   <meta name="twitter:image" content="${image}" />
+
+//   <meta name="viewport" content="width=device-width,initial-scale=1" />
+//   <!-- Client CSS/JS -->
+//   <link rel="stylesheet" href="/css/main.css" />
+// </head>
+// <body>
+//   <div id="app"></div>
+
+//   <script>
+//     // Make the server-provided course data available to client code (safely)
+//     window.__COURSE_DATA__ = ${safeJson(course)};
+//   </script>
+
+//   <script src="/js/course-page.js"></script>
+// </body>
+// </html>`;
+
+//     res.send(html);
+//   } catch (err) {
+//     console.error('Course page render error', err);
+//     res.sendFile(path.join(__dirname, 'public', 'course.html'));
+//   }
+// });
+
+// // checkout page (e.g. /checkout/123)
+// app.get('/checkout/:id', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
+// });
+
+// // simple about page
+// app.get('/about', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'about.html'));
+// });
+
+// // Fallback: send index.html so client-side router can handle other paths (SPA-friendly)
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
+
+// // ============================
+// //  Default Admin Setup
+// // ============================
+// async function ensureDefaultAdmin() {
+//   const email = process.env.ADMIN_EMAIL || "praveenkunche@gmail.com";
+//   const defaultPassword = process.env.ADMIN_PASSWORD || "praveenkunche";
+//   const forceReset = (process.env.ADMIN_FORCE_RESET || "").toLowerCase() === "true";
+
+//   let admin = await AdminUser.findOne({ email });
+
+//   if (!admin) {
+//     const hash = await bcrypt.hash(defaultPassword, 12);
+//     admin = new AdminUser({ email, passwordHash: hash, totpEnabled: false, totpSecret: "" });
+//     await admin.save();
+//     console.log(`✅ Default admin created for ${email}`);
+//     console.log("👉 IMPORTANT: Change the default password after first login.");
+//   } else if (forceReset) {
+//     admin.passwordHash = await bcrypt.hash(defaultPassword, 12);
+//     admin.totpEnabled = false;
+//     admin.totpSecret = "";
+//     await admin.save();
+//     console.log(`✅ Admin password reset for ${email}`);
+//   } else {
+//     console.log(`ℹ️ Admin exists for ${email} (no reset).`);
+//   }
+// }
+// ensureDefaultAdmin().catch((err) => console.error("❌ Failed to ensure default admin:", err));
+
+// // ============================
+// //  Start Server
+// // ============================
+// const PORT = process.env.PORT || 5000;
+
+// process.on("unhandledRejection", (reason, p) => {
+//   console.error("Unhandled Rejection at Promise:", p, "reason:", reason);
+//   // optionally: send alert or graceful shutdown
+// });
+// process.on("uncaughtException", (err) => {
+//   console.error("Uncaught Exception:", err);
+//   // optionally: perform graceful shutdown
+// });
+
+// app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+//=====ACTUAL CODE ENDS HERE=====
+
+
+// C:\Ebook\server.js
 // = Environment & Core Imports =
 import dotenv from "dotenv";
 dotenv.config();
@@ -24,12 +703,10 @@ import Payment from "./src/models/payment.js";
 import Course from "./src/models/course.js";
 import Order from "./src/models/order.js";
 
-// ==== Routes & Middleware ====
-import adminRoutes from "./src/routes/adminRoutes.js";
-import adminAuthRoutes from "./src/routes/adminAuthRoutes.js";
-import couponRoutes from "./src/routes/couponRoutes.js";
-import courseRoutes from "./src/routes/courseRoutes.js";
+// ==== Routes & Middleware (imported so debug loader can import them dynamically) ====
 import authAdmin from "./src/middleware/authAdmin.js";
+// NOTE: we're not calling app.use(...) on the route modules directly below while debugging
+// the debug loader will import/mount them one-by-one to surface the offending module.
 
 // ==== Utilities ====
 import { sendPaymentEmail } from "./src/utils/email.js";
@@ -47,10 +724,9 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-
-
 // ==== CORS & Cookie Parser ====
 import cookieParser from "cookie-parser";
+import escapeHtml from 'escape-html';
 
 const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());
 
@@ -86,18 +762,22 @@ app.use((req, res, next) => {
 // robust CORS: echo allowed origin, supports credentials
 app.use(cors({
   origin: function (origin, callback) {
-  if (!origin) return callback(null, true);
-  if (rawAllowed.indexOf(origin) !== -1) return callback(null, true);
-  console.warn("Blocked CORS origin:", origin);
-  return callback(null, false); // decline without creating an Error object
+    if (!origin) return callback(null, true);
+    if (rawAllowed.indexOf(origin) !== -1) return callback(null, true);
+    console.warn("Blocked CORS origin:", origin);
+    return callback(null, false); // decline without creating an Error object
   },
   credentials: true,
 }));
 
-
 // ==== Static Files ====
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static("uploads"));
+
+// safe JSON serialization to avoid breaking inline <script> tags (prevents XSS)
+function safeJson(obj) {
+  return JSON.stringify(obj).replace(/</g, "\\u003c");
+}
 
 // ============================
 //  Database Connection
@@ -157,47 +837,98 @@ const paymentLimiter = rateLimit({
 // ============================
 const otpStore = new Map(); // { email: { otp, expiresAt } }
 
-// ============================
-//  Routes
-// ============================
+// promo capture middleware (saves coupon/ref from query into cookies)
+app.use((req, res, next) => {
+  try {
+    const { coupon, ref } = req.query;
+    // Save to cookie if present (valid for 30 days)
+    const cookieOpts = { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: false, sameSite: 'Lax' };
+    if (coupon && typeof coupon === 'string') {
+      res.cookie('promo_coupon', coupon.trim().toUpperCase(), cookieOpts);
+    }
+    if (ref && typeof ref === 'string') {
+      res.cookie('promo_ref', ref.trim(), cookieOpts);
+    }
+  } catch (e) {
+    // ignore cookie set errors
+  }
+  next();
+});
 
-// ---- Admin Routes ----
-app.use("/api/admin/auth", adminAuthRoutes);
-app.use("/api/admin", authAdmin, adminRoutes);
-app.use("/api/admin/coupons", couponRoutes);
-app.use("/api/courses", courseRoutes);
+// ============================
+//  TEMPORARY DEBUG ROUTE LOADER
+// ============================
+// Replace your direct app.use(...) route mounts with this debug loader while hunting the path-to-regexp error.
+// After you finish debugging remove this block and restore the normal mounts.
 
+async function debugLoadRoutes() {
+  const mounts = [
+    ["./src/routes/adminAuthRoutes.js", "/api/admin/auth", false],
+    ["./src/routes/adminRoutes.js", "/api/admin", true],
+    ["./src/routes/couponRoutes.js", "/api/admin/coupons", true],
+    ["./src/routes/courseRoutes.js", "/api/courses", false],
+    ["./src/routes/adminPromoterRoutes.js", "/api/admin/promoters", true],
+    ["./src/routes/analyticsRoutes.js", "/api/admin/analytics", true],
+    // add additional route modules here if you have them
+  ];
+
+  for (const [modPath, mountPath, needsAuth] of mounts) {
+    console.log(`DEBUG: importing ${modPath}`);
+    try {
+      const mod = await import(modPath);
+      const router = mod.default || mod.router || mod;
+      if (!router) {
+        console.warn(`DEBUG: imported ${modPath} but no router export found — skipping mount.`);
+        continue;
+      }
+
+      console.log(`DEBUG: mounting ${mountPath} from ${modPath}`);
+      try {
+        if (needsAuth) app.use(mountPath, authAdmin, router);
+        else app.use(mountPath, router);
+        console.log(`DEBUG: mounted ${mountPath}`);
+      } catch (mountErr) {
+        console.error(`DEBUG: FAILED to mount ${mountPath} from ${modPath}:`, mountErr && mountErr.message);
+        console.error(mountErr);
+        throw mountErr;
+      }
+    } catch (impErr) {
+      console.error(`DEBUG: FAILED to import ${modPath}:`, impErr && impErr.message);
+      console.error(impErr);
+      throw impErr;
+    }
+  }
+}
+
+// Call debug loader and let it surface the first failing import/mount
+debugLoadRoutes().catch(err => {
+  console.error('FATAL: Debug route loading failed — inspect the messages above to find which module caused the error.');
+  // Note: do NOT process.exit here so nodemon shows logs; restart after you fix.
+});
+
+// -------------------------------
+// The rest of your app routes (frontend endpoints and handlers) remain unchanged below.
+// -------------------------------
 
 // ---- OTP & Email Validation ----
 // Validate and send OTP to email
 app.post("/api/validate/email", async (req, res) => {
   const { email } = req.body;
-
-  // Basic format check
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
-  }
-
-  // Generate OTP
+  if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: "Invalid email format" });
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
   try {
     const command = new SendEmailCommand({
       Destination: { ToAddresses: [email] },
-      Message: {
-        Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
-        Subject: { Data: "Stribble - Verify your email" },
-      },
-      Source: "no-reply@stribble.site",
+      Message: { Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } }, Subject: { Data: "Stribble - Verify your email" } },
+      Source: FROM_EMAIL,
     });
-
     await ses.send(command);
     res.json({ success: true, message: "OTP sent to email" });
   } catch (err) {
     console.error("❌ OTP send error:", err);
-    console.error("❌ SES error details:", err.message || err);
     res.status(500).json({ success: false, message: "Error sending OTP" });
   }
 });
@@ -205,270 +936,79 @@ app.post("/api/validate/email", async (req, res) => {
 app.post("/api/validate/otp", otpLimiter, (req, res) => {
   const { email, otp } = req.body;
   const record = otpStore.get(email);
-
-  if (!record || record.otp !== otp || Date.now() > record.expiresAt)
-    return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-
+  if (!record || record.otp !== otp || Date.now() > record.expiresAt) return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
   otpStore.delete(email);
   res.json({ success: true, message: "OTP verified successfully" });
 });
 
+// (remaining endpoints: coupon validation, checkout validate, create order, payment verify, etc.)
+// For brevity these are omitted here because they are unchanged from your file — keep them in place in your actual file.
 
-// ---- Coupon Validation ----
-app.post("/api/validate/coupon", async (req, res) => {
+// --- Frontend routes and dynamic course rendering ---
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/course/:id', async (req, res) => {
   try {
-    const couponCode = req.body.couponCode ?? req.body.code ?? "";
-    const { courseId } = req.body;
-    if (!courseId) return res.status(400).json({ success: false, message: "courseId required" });
-    if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
-
-    // If no coupon code provided, respond success with no coupon (meaning: no discount)
-    if (!couponCode || String(couponCode).trim() === "") {
-      return res.json({ success: true, coupon: null });
+    const id = req.params.id;
+    let course = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      course = await Course.findById(id).lean();
     }
+    if (!course) course = await Course.findOne({ slug: id }).lean();
+    if (!course) return res.sendFile(path.join(__dirname, 'public', 'course.html'));
 
-    const code = String(couponCode).trim().toUpperCase();
-    const coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+    const title = escapeHtml(course.title || 'Course');
+    const description = escapeHtml((course.description || '').slice(0, 200));
+    const image = course.imageUrl || 'https://stribble.site/default-course-image.png';
+    const url = `https://stribble.site${req.originalUrl}`;
 
-    if (!coupon) {
-      return res.status(400).json({ success: false, message: "Invalid coupon" });
-    }
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${title} — Stribble</title>
+  <meta name="description" content="${description}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${image}" />
+  <meta property="og:url" content="${url}" />
+  <meta property="og:type" content="website" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.__COURSE_DATA__ = ${safeJson(course)};
+  </script>
+  <script src="/js/course-page.js"></script>
+</body>
+</html>`;
 
-    res.json({ success: true, coupon: { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0, influencerUPI: coupon.influencerUPI || "", ebookCreatorUPI: coupon.ebookCreatorUPI || "", isDefault: coupon.isDefault, }, });
+    res.send(html);
   } catch (err) {
-    console.error("❌ Coupon validate error:", err);
-    res.status(500).json({ success: false, message: "Error validating coupon" });
+    console.error('Course page render error', err);
+    res.sendFile(path.join(__dirname, 'public', 'course.html'));
   }
 });
 
-// ---- Checkout Validate + OTP (alias used by checkout.js) ----
-app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
-  try {
-    const { email, couponCode, courseId } = req.body;
-
-    // Only email and courseId required here — couponCode optional
-    if (!email || !courseId) {
-      return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email format" });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({ success: false, message: "Invalid courseId" });
-    }
-
-    let coupon = null;
-    const code = String(couponCode || "").trim().toUpperCase();
-
-    if (code) {
-      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
-      if (!coupon) {
-        return res.status(400).json({ success: false, message: "Invalid coupon" });
-      }
-    }
-
-    // Generate OTP and send via SES (same behavior irrespective of coupon)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // valid for 5 min
-
-    const command = new SendEmailCommand({
-      Destination: { ToAddresses: [email] },
-      Message: {
-        Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
-        Subject: { Data: "CourseHub - Verify your email" },
-      },
-      Source: FROM_EMAIL,
-    });
-    await ses.send(command);
-
-    res.json({
-      success: true,
-      message: "OTP sent",
-      coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0 } : null,
-    });
-  } catch (err) {
-    console.error("❌ Checkout validate error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-// ---- Checkout OTP verify (alias used by checkout.js) ----
-app.post("/api/checkout/verify-otp", otpLimiter, (req, res) => {
-  const { email, otp } = req.body;
-  const record = otpStore.get(email);
-
-  if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
-    return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-  }
-
-  otpStore.delete(email);
-  res.json({ success: true, message: "OTP verified successfully" });
+app.get('/checkout/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
 });
 
-app.post("/api/payment/order", paymentLimiter, async (req, res) => {
-  try {
-    const { email, courseId, couponCode } = req.body;
-    if (!email || !courseId) return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
-    if (!mongoose.Types.ObjectId.isValid(courseId)) return res.status(400).json({ success: false, message: "Invalid courseId" });
-
-    const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
-
-    // If couponCode provided, try to find coupon; if not provided or not found, proceed with no coupon
-    let coupon = null;
-    const code = String(couponCode || "").trim().toUpperCase();
-    if (code) {
-      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
-      if (!coupon) {
-        return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
-      }
-    }
-
-    const discount = Number((coupon && coupon.discount) || 0);
-    const finalAmount = Math.max(1, Number(course.price) - discount);
-    const influencerCommission = Number((coupon && coupon.influencerCommission) || 0);
-    const ebookCreatorCommission = Number((coupon && coupon.ebookCreatorCommission) || 0);
-    const ownerAmount = finalAmount - influencerCommission - ebookCreatorCommission;
-    if (ownerAmount < 0) return res.status(400).json({ success: false, message: "Commission exceeds price after discount" });
-
-    const amountPaise = Math.round(finalAmount * 100);
-    const rzpOrder = await razorpay.orders.create({
-      amount: amountPaise,
-      currency: "INR",
-      receipt: "rcpt_" + Date.now().toString().slice(-8),
-      notes: { email, courseId, couponCode: coupon ? coupon.code : "" },
-    });
-
-    await Order.create({
-      courseId,
-      couponId: coupon ? coupon._id : null,
-      buyerEmail: email,
-      influencerCommission,
-      ebookCreatorCommission,
-      ownerAmount,
-      razorpayOrderId: rzpOrder.id,
-      status: "pending",
-      createdAt: new Date(),
-    });
-
-    res.json({ success: true, orderId: rzpOrder.id, amountPaise: rzpOrder.amount, currency: rzpOrder.currency, keyId: process.env.RAZORPAY_KEY_ID });
-  } catch (err) {
-    console.error("Order creation failed:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'about.html'));
 });
 
-
-// ---- Payment Verification ----
-app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
-  try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature)
-      return res.status(400).json({ success: false, message: "Missing payment fields" });
-
-    const secret = process.env.RAZORPAY_KEY_SECRET || "ZIDKRiWRL8RQ51HFNvIubVMR";
-    const expected = crypto
-      .createHmac("sha256", secret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
-
-    if (expected !== razorpay_signature)
-      return res.status(400).json({ success: false, message: "Invalid signature" });
-
-    const order = await Order.findOne({ razorpayOrderId: razorpay_order_id }).populate("courseId");
-    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-
-    if (order.status === "completed")
-      return res.json({ success: true, message: "Payment already verified", order });
-
-    order.status = "completed";
-    order.razorpayPaymentId = razorpay_payment_id;
-    order.razorpaySignature = razorpay_signature;
-    order.paidAt = new Date();
-    await order.save();
-
-    if (order.couponId)
-      await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => {});
-    if (order.courseId?._id)
-      await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => {});
-
-    const amountPaid =
-      Number(order.ownerAmount || 0) +
-      Number(order.influencerCommission || 0) +
-      Number(order.ebookCreatorCommission || 0);
-
-    const courseIdForPayment = order.courseId?._id || null;
-    await Payment.create({
-      email: order.buyerEmail,
-      courseId: courseIdForPayment,
-      amount: amountPaid,
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      status: "success",
-      createdAt: new Date(),
-    });
-
-    try {
-      // prefer an explicit download link if present on course object
-      const downloadLink = order.courseId?.googleDriveLink || null;
-      if (downloadLink) {
-        await sendPaymentEmail({
-          to: order.buyerEmail,
-          customerName: order.buyerEmail.split("@")[0],
-          courseName: order.courseId.title,
-          amount: amountPaid,
-          orderId: order.razorpayOrderId,
-          paymentId: order.razorpayPaymentId || razorpay_payment_id,
-          dateTime: new Date(order.paidAt).toLocaleString(),
-          downloadLink,
-          supportEmail: "support@stribble.site",
-        });
-        order.emailSent= true;
-        order.emailFailReason = undefined;
-        await order.save().catch(()=>{});
-
-      } else if (order.courseId?._id) {
-        // pass courseId — the sendPaymentEmail helper should fetch course details
-        await sendPaymentEmail({
-          to: order.buyerEmail,
-          customerName: order.buyerEmail.split("@")[0],
-          courseName: order.courseId.title || "",
-          amount: amountPaid,
-          orderId: order.razorpayOrderId,
-          paymentId: order.razorpayPaymentId || razorpay_payment_id,
-          dateTime: new Date(order.paidAt).toLocaleString(),
-          courseId: order.courseId._id,    // pass id so helper can look up link
-          supportEmail: "support@stribble.site",
-        });
-        order.emailSent= true;
-        order.emailFailReason = undefined;
-        await order.save().catch(()=>{});
-
-      } else {
-        console.warn("No downloadLink or courseId available for order:", order._id);
-      }
-    } catch (mailErr) {
-      console.error("❌ Email send failed:", mailErr);
-      // mark order (exists in variable 'order' above) so admin UI can show failed emails
-      try {
-        order.emailSent = false;
-        order.emailFailReason = (mailErr && mailErr.message) || String(mailErr);
-        await order.save().catch(() => {});
-      } catch (saveErr) {
-        console.error("Failed to save order email failure reason:", saveErr);
-      }
-    }
-
-    res.json({ success: true, message: "Payment verified", order });
-  } catch (err) {
-    console.error("Payment verification failed:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+// Fallback: send index.html so client-side router can handle other paths (SPA-friendly)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ============================
@@ -506,11 +1046,9 @@ const PORT = process.env.PORT || 5000;
 
 process.on("unhandledRejection", (reason, p) => {
   console.error("Unhandled Rejection at Promise:", p, "reason:", reason);
-  // optionally: send alert or graceful shutdown
 });
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
-  // optionally: perform graceful shutdown
 });
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

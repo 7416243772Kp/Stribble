@@ -27,6 +27,59 @@
       <!-- Course details will load dynamically -->
     </div>
   </main>
+  
+  <!-- Share buttons -->
+  <div id="share-bar">
+    <button id="copy-link">Copy Link</button>
+    <a id="whatsapp-link" target="_blank" rel="noopener">WhatsApp</a>
+    <a id="facebook-link" target="_blank" rel="noopener">Facebook</a>
+    <a id="x-link" target="_blank" rel="noopener">X</a>
+    <a id="linkedin-link" target="_blank" rel="noopener">LinkedIn</a>
+  </div>
+
+  <script>
+    (function() {
+      const course = window.__COURSE_DATA__ || {};
+      // build canonical URL (promoters will add ?coupon=...&ref=...)
+      const slugOrId = course.slug || course._id || window.location.pathname.replace('/course/', '');
+      const base = window.location.origin + '/course/' + encodeURIComponent(slugOrId);
+
+      // If cookie promo exists, include it in the share link (promoter won't want that usually)
+      function readCookie(name) {
+        const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        return m ? decodeURIComponent(m[1]) : null;
+      }
+
+      // Create share link that promoters will use: (promoters should append their own ?ref=...&coupon=...)
+      const shareBase = base;
+
+      const copyBtn = document.getElementById('copy-link');
+      const whatsapp = document.getElementById('whatsapp-link');
+      const facebook = document.getElementById('facebook-link');
+      const xlink = document.getElementById('x-link');
+      const linkedin = document.getElementById('linkedin-link');
+
+      // If you want to pre-add promoter/coupon for a logged-in promoter, you can append ?ref=...&coupon=...
+      // For public share, don't include coupon/ref automatically.
+      const shareUrl = shareBase; // promoters will manually add their ref/coupon or use your promoter dashboard
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(()=> copyBtn.textContent='Copy Link', 1500);
+        } catch (e) {
+          prompt('Copy this link', shareUrl);
+        }
+      });
+
+      const text = encodeURIComponent(course.title || document.title + ' — Learn on Stribble');
+      whatsapp.href = `https://wa.me/?text=${text}%20${encodeURIComponent(shareUrl)}`;
+      facebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+      xlink.href = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(shareUrl)}`;
+      linkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    })();
+  </script>
 
   <!-- Footer -->
   <footer class="footer">

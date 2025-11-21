@@ -1,4 +1,4 @@
-<!-- C:\Ebook\public\admin.html -->
+<!-- C:\Ebook\public\admin.html (UPDATED: promoters section added) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +13,13 @@
   <style>
     /* visually-hidden helper */
     .sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+    /* small promoter table styling */
+    #promoterTable td, #promoterTable th { padding:8px; text-align:left; }
+    #promoterTable button { margin-right:6px; }
+    .prom-notice { margin-top:8px; color:var(--muted); font-size:13px; }
+    .flex-row { display:flex; gap:8px; align-items:center; }
+    .mini { font-size:13px; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -147,6 +154,7 @@
         <a href="#" data-section="courses" id="nav-courses">📚 Courses</a>
         <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
         <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
+        <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
         <a href="#" id="nav-logout" onclick="logout()">🚪 Logout</a>
       </nav>
     </aside>
@@ -237,6 +245,70 @@
           </div>
         </div>
       </section>
+
+      <!-- PROMOTERS (NEW) -->
+      <section id="promoters" class="content-section hidden" aria-hidden="true">
+        <h2>Promoters</h2>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+          <!-- Create promoter -->
+          <div style="flex:1; min-width:320px; max-width:520px;">
+            <h3>Create Promoter</h3>
+            <form id="createPromoterForm" style="display:flex;flex-direction:column;gap:8px">
+              <input name="name" placeholder="Name (required)" required />
+              <input name="email" placeholder="Email (optional)" />
+              <input name="upi" placeholder="UPI (for payouts)" />
+              <input name="defaultCoupon" placeholder="Default coupon code (optional)" />
+              <input name="refId" placeholder="Optional refId (auto if blank)" />
+              <div class="flex-row">
+                <button type="submit" class="btn btn--primary">Create Promoter</button>
+                <div id="createPromoterMsg" class="mini"></div>
+              </div>
+            </form>
+
+            <div class="prom-notice">Promoters can share: <code>https://stribble.site/course/&lt;courseId&gt;?ref=&lt;refId&gt;&amp;coupon=&lt;coupon&gt;</code></div>
+          </div>
+
+          <!-- Payout -->
+          <div style="flex:1; min-width:320px; max-width:520px;">
+            <h3>Pay Promoter</h3>
+            <form id="promoterPayoutForm" style="display:flex;flex-direction:column;gap:8px">
+              <input name="refId" placeholder="prom_xxx (required)" required />
+              <input name="amount" type="number" placeholder="Amount (₹) (required)" required />
+              <select name="method">
+                <option value="manual">Manual</option>
+                <option value="razorpayx">RazorpayX</option>
+                <option value="bank">Bank Transfer</option>
+              </select>
+              <input name="notes" placeholder="Notes (optional)" />
+              <div class="flex-row">
+                <button type="submit" class="btn btn--primary">Record Payout</button>
+                <div id="payoutMsg" class="mini"></div>
+              </div>
+            </form>
+            <div class="prom-notice">Records create an auditable payout and debit the promoter's balance. Use this after you transfer funds externally (or integrate RazorpayX).</div>
+          </div>
+        </div>
+
+        <hr style="margin:18px 0">
+
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+          <input id="promoterSearch" placeholder="Search promoters by name / email / ref" style="flex:1" />
+          <button id="promoterRefresh" class="btn btn--ghost">Refresh</button>
+        </div>
+
+        <div style="overflow:auto">
+          <table id="promoterTable" style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr>
+                <th>Ref</th><th>Name</th><th>Email</th><th>UPI</th><th>Balance (₹)</th><th>Sales</th><th>Active</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+      </section>
     </main>
   </div> <!-- .admin-root -->
 
@@ -245,6 +317,169 @@
   <script src="js/ui-helpers.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="js/admin.js" defer></script>
+
+  <!-- Promoters client-side code (inline to keep single file) -->
+  <script>
+    (function(){
+      // Wait until settings.js sets window.API_BASE and admin auth handled by admin-auth.js
+      function apiPath(p) { return (window.API_BASE || "") + p; }
+
+      async function safeJsonFetch(url, opts = {}) {
+        const res = await fetch(url, opts);
+        const text = await res.text();
+        let parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch(e){ parsed = null; }
+        if (!res.ok) {
+          const msg = parsed?.message || parsed?.error || `HTTP ${res.status}`;
+          const err = new Error(msg);
+          err.status = res.status;
+          err.body = parsed;
+          throw err;
+        }
+        return parsed;
+      }
+
+      // create promoter
+      const createForm = document.getElementById('createPromoterForm');
+      const createMsg = document.getElementById('createPromoterMsg');
+      createForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        createMsg.textContent = 'Creating...';
+        const fd = new FormData(createForm);
+        const body = Object.fromEntries(fd.entries());
+        try {
+          const j = await safeJsonFetch(apiPath('/api/admin/promoters'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(body)
+          });
+          if (j.success) {
+            createMsg.textContent = 'Created: ' + (j.promoter.refId || '');
+            loadPromoters();
+            createForm.reset();
+          } else {
+            createMsg.textContent = 'Error: ' + (j.message || 'failed');
+          }
+        } catch (err) {
+          createMsg.textContent = 'Error: ' + (err.message || 'failed');
+          console.error(err);
+        } finally {
+          setTimeout(()=> createMsg.textContent = '', 3000);
+        }
+      });
+
+      // payout form
+      const payoutForm = document.getElementById('promoterPayoutForm');
+      const payoutMsg = document.getElementById('payoutMsg');
+      payoutForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        payoutMsg.textContent = 'Processing...';
+        const fd = new FormData(payoutForm);
+        const body = Object.fromEntries(fd.entries());
+        body.amount = Number(body.amount || 0);
+        body.markOrdersPaid = true;
+        const ref = body.refId;
+        if (!ref) { payoutMsg.textContent = 'Enter refId'; return; }
+        try {
+          const j = await safeJsonFetch(apiPath('/api/admin/promoters/' + encodeURIComponent(ref) + '/payout'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(body)
+          });
+          if (j.success) {
+            payoutMsg.textContent = 'Payout recorded';
+            payoutForm.reset();
+            loadPromoters();
+          } else {
+            payoutMsg.textContent = 'Error: ' + (j.message || 'failed');
+          }
+        } catch (err) {
+          payoutMsg.textContent = 'Error: ' + (err.message || 'failed');
+          console.error(err);
+        } finally {
+          setTimeout(()=> payoutMsg.textContent = '', 4000);
+        }
+      });
+
+      // load promoters list
+      const promoterTableBody = document.querySelector('#promoterTable tbody');
+      async function loadPromoters(q='') {
+        try {
+          const url = apiPath('/api/admin/promoters') + (q ? '?q=' + encodeURIComponent(q) : '');
+          const j = await safeJsonFetch(url, { credentials: 'include' });
+          if (!j.success) { promoterTableBody.innerHTML = '<tr><td colspan="8">Failed to load</td></tr>'; return; }
+          const rows = j.promoters || [];
+          promoterTableBody.innerHTML = rows.map(p => {
+            const name = p.name || '';
+            const email = p.email || '';
+            const upi = p.upi || '';
+            const balance = Number(p.payoutBalance || 0).toFixed(2);
+            const sales = p.totalSales || 0;
+            const active = p.active ? 'Yes' : 'No';
+            const actions = `
+              <button class="toggleBtn" data-ref="${p.refId}">${p.active ? 'Disable' : 'Enable'}</button>
+              <button class="copyBtn" data-ref="${p.refId}">Copy Link</button>
+              <button class="impCopy" data-ref="${p.refId}">Copy Promo Link</button>
+            `;
+            return `<tr>
+              <td>${p.refId}</td>
+              <td>${name}</td>
+              <td>${email}</td>
+              <td>${upi}</td>
+              <td>₹${balance}</td>
+              <td>${sales}</td>
+              <td>${active}</td>
+              <td>${actions}</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="8">No promoters</td></tr>';
+        } catch (err) {
+          console.error('loadPromoters', err);
+          promoterTableBody.innerHTML = '<tr><td colspan="8">Error loading promoters</td></tr>';
+        }
+      }
+
+      // actions: toggle, copy
+      document.querySelector('#promoterTable')?.addEventListener('click', async (ev) => {
+        const btn = ev.target;
+        if (btn.matches('.toggleBtn')) {
+          const ref = btn.dataset.ref;
+          btn.disabled = true;
+          try {
+            const j = await safeJsonFetch(apiPath('/api/admin/promoters/' + encodeURIComponent(ref) + '/toggle'), { method: 'POST', credentials: 'include' });
+            if (j.success) { loadPromoters(); } else { alert('Toggle failed'); }
+          } catch (err) { console.error(err); alert('Error toggling'); }
+          btn.disabled = false;
+        } else if (btn.matches('.copyBtn')) {
+          const ref = btn.dataset.ref;
+          const link = location.origin + '/course/<courseId>?ref=' + encodeURIComponent(ref) + '&coupon=YOUR_COUPON';
+          try { await navigator.clipboard.writeText(link); alert('Copied share template'); } catch (e) { prompt('Copy this link', link); }
+        } else if (btn.matches('.impCopy')) {
+          // useful quick copy where you copy a sample link for promoters (they edit courseId/coupon)
+          const ref = btn.dataset.ref;
+          const link = location.origin + '/course/<courseId>?ref=' + encodeURIComponent(ref);
+          try { await navigator.clipboard.writeText(link); alert('Copied promo link'); } catch (e) { prompt('Copy this link', link); }
+        }
+      });
+
+      // search / refresh
+      document.getElementById('promoterRefresh')?.addEventListener('click', () => loadPromoters(document.getElementById('promoterSearch').value.trim()));
+      document.getElementById('promoterSearch')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') loadPromoters(e.target.value.trim()); });
+
+      // Expose for admin code to call when showing promoter tab
+      window.loadPromoters = loadPromoters;
+
+      // When promoters tab is shown, auto-load
+      const navPromoters = document.getElementById('nav-promoters');
+      navPromoters?.addEventListener('click', () => { setTimeout(() => loadPromoters(), 100); });
+
+      // initial
+      document.addEventListener('DOMContentLoaded', () => {
+        // nothing here — admin.js handles auth and then user switches sections
+      });
+    })();
+  </script>
 
   <!-- Inline admin UI glue (collapse toggle + simple nav) -->
   <script>
@@ -266,7 +501,7 @@
       });
 
       // basic nav switching
-      const sections = ['dashboard','courses','coupons','sales'];
+      const sections = ['dashboard','courses','coupons','sales','promoters'];
       function showSection(name) {
         sections.forEach(s => {
           const el = document.getElementById(s);
@@ -278,6 +513,11 @@
         document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.section === name));
         document.getElementById('section-title').textContent = name.charAt(0).toUpperCase() + name.slice(1);
         document.getElementById('mainContent').scrollTop = 0;
+
+        // if promoters tab, call loader
+        if (name === 'promoters' && typeof window.loadPromoters === 'function') {
+          window.loadPromoters();
+        }
       }
 
       document.querySelectorAll('.sidebar-nav a[data-section]').forEach(a => {
