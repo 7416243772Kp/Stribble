@@ -1,4 +1,3 @@
-C:\Ebook\robots.txt
 User-agent: *
 # Allow Public Pages
 Allow: /

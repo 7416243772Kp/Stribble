@@ -31,6 +31,7 @@ import couponRoutes from "./src/routes/couponRoutes.js";
 import courseRoutes from "./src/routes/courseRoutes.js";
 import authAdmin from "./src/middleware/authAdmin.js";
 import promoterAdminRoutes from "./src/routes/adminPromoterRoutes.js";
+import reviewRoutes from "./src/routes/reviewRoutes.js";
 
 // ==== Utilities ====
 import { sendPaymentEmail } from "./src/utils/email.js";
@@ -79,7 +80,7 @@ app.use((req, res, next) => {
     deepSanitize(req.body);
     deepSanitize(req.params);
     deepSanitize(req.query);
-  } catch (e) {}
+  } catch (e) { }
   next();
 });
 
@@ -128,12 +129,12 @@ const razorpay = new Razorpay({
 const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
 const ses = hasAwsCreds
   ? new SESClient({
-      region: process.env.AWS_REGION || "ap-south-1",
-      credentials: {
-        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-      },
-    })
+    region: process.env.AWS_REGION || "ap-south-1",
+    credentials: {
+      accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+      secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+    },
+  })
   : new SESClient({ region: process.env.AWS_REGION || "ap-south-1" }); // will use default provider chain if available
 
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
@@ -189,6 +190,7 @@ app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // ---- OTP & Email Validation ----
 // Validate and send OTP to email
@@ -447,7 +449,7 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
               promoter.totalSales = (promoter.totalSales || 0) + 1;
               promoter.totalEarned = (promoter.totalEarned || 0) + commission;
               promoter.payoutBalance = (promoter.payoutBalance || 0) + commission;
-              await promoter.save().catch(()=>{});
+              await promoter.save().catch(() => { });
             }
           } else {
             console.warn('Promoter not found or not active for ref:', order.referrer);
@@ -459,9 +461,9 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
     }
 
     if (order.couponId)
-      await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => {});
+      await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => { });
     if (order.courseId?._id)
-      await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => {});
+      await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => { });
 
     const amountPaid =
       Number(order.ownerAmount || 0) +
@@ -495,9 +497,9 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
           downloadLink,
           supportEmail: "support@stribble.site",
         });
-        order.emailSent= true;
+        order.emailSent = true;
         order.emailFailReason = undefined;
-        await order.save().catch(()=>{});
+        await order.save().catch(() => { });
 
       } else if (order.courseId?._id) {
         // pass courseId — the sendPaymentEmail helper should fetch course details
@@ -512,9 +514,9 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
           courseId: order.courseId._id,    // pass id so helper can look up link
           supportEmail: "support@stribble.site",
         });
-        order.emailSent= true;
+        order.emailSent = true;
         order.emailFailReason = undefined;
-        await order.save().catch(()=>{});
+        await order.save().catch(() => { });
 
       } else {
         console.warn("No downloadLink or courseId available for order:", order._id);
@@ -525,7 +527,7 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
       try {
         order.emailSent = false;
         order.emailFailReason = (mailErr && mailErr.message) || String(mailErr);
-        await order.save().catch(() => {});
+        await order.save().catch(() => { });
       } catch (saveErr) {
         console.error("Failed to save order email failure reason:", saveErr);
       }

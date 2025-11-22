@@ -1,9 +1,4 @@
-// public/js/checkout.js
-// Checkout script matched to the provided checkout.html structure
-// - Uses priceNow/priceBefore/priceSavings from HTML
-// - Creates #notification container if missing
-// - Enforces coupon validation before sending OTP/payment
-
+// C:\Ebook\public\js\checkout.js
 const urlParams = new URLSearchParams(window.location.search);
 let selectedCourseId = urlParams.get("courseId");
 
@@ -62,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let notificationBox = document.getElementById("notification");
   // if not present, create one inside the checkout card for consistent UI
   if (!notificationBox) {
-    const checkoutCard = document.querySelector(".checkout-card");
+    const checkoutCard = document.querySelector(".checkout-form");
     if (checkoutCard) {
       notificationBox = document.createElement("div");
       notificationBox.id = "notification";
@@ -88,19 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (priceSavingsEl) priceSavingsEl.style.display = "none";
     // mini info
     if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
-    // thumbnail: show placeholder if missing, or hide if intentionally not present
-    const placeholderThumb = "/images/placeholder-course.png"; // put a small placeholder file in public/images/
+
+    const placeholderThumb = "/images/placeholder-course.png";
     if (miniThumb) {
       if (course.thumbnail && typeof course.thumbnail === "string" && course.thumbnail.trim() !== "") {
-      miniThumb.src = course.thumbnail;
-      miniThumb.style.display = ""; // ensure shown
+        miniThumb.src = course.thumbnail;
+        miniThumb.style.display = "";
       } else {
-      // if you have a placeholder image, use it; otherwise hide the img to avoid broken icon
-      // set placeholderThumb to a real file path in your public folder
-      // If you prefer no image, comment out the next line and use miniThumb.style.display = "none";
-      miniThumb.src = placeholderThumb;
-      // If placeholder file doesn't exist, hide to avoid broken image:
-      // miniThumb.style.display = "none";
+        miniThumb.src = placeholderThumb;
       }
     }
   } else {
@@ -166,22 +156,86 @@ document.addEventListener("DOMContentLoaded", () => {
     _notifyTimer = setTimeout(() => { clearNotifications(); }, autoHideMs);
   }
   function showSuccess(msg) { showNotification("success", msg, 5000); }
+
+  function clearError(inputId) {
+    const input = document.getElementById(inputId);
+    const errDiv = document.getElementById("err-" + inputId);
+
+    if (input) input.classList.remove("input-error", "shake");
+    if (errDiv) {
+      errDiv.style.display = "none";
+      errDiv.textContent = "";
+    }
+  }
+
+
+  ["email", "coupon", "otp"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", () => clearError(id));
+      el.addEventListener("focus", () => clearError(id));
+    }
+  });
+
+
   function showError(inputElOrMsg, msgMaybe) {
     let msg = msgMaybe;
     let inputEl = null;
+
+
     if (typeof inputElOrMsg === "string" && !msgMaybe) {
       msg = inputElOrMsg;
     } else {
       inputEl = inputElOrMsg;
     }
-    if (inputEl && inputEl.classList) {
+
+
+    if (inputEl && inputEl.id) {
+
       inputEl.classList.add("input-error", "shake");
-      setTimeout(() => inputEl.classList.remove("input-error", "shake"), 700);
+      setTimeout(() => inputEl.classList.remove("shake"), 500);
+
+
+      const errorDiv = document.getElementById("err-" + inputEl.id);
+      if (errorDiv) {
+        errorDiv.textContent = msg || "Invalid entry";
+        errorDiv.style.display = "block";
+        return;
+      }
     }
-    showNotification("error", msg || "Something went wrong", 6000);
+
+    if (typeof showNotification === "function") {
+      showNotification("error", msg || "Something went wrong", 5000);
+    } else {
+      alert(msg);
+    }
   }
 
-  // small utility to set loading state on a button
+  // REUSABLE INLINE SUCCESS FUNCTION
+  function showInlineSuccess(elementId, message) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    // 1. Render HTML (Green Box with Checkmark)
+    el.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>${message}</span>
+    `;
+
+    // 2. Apply Styles
+    el.className = "field-success"; // Uses the green CSS we added earlier
+    el.style.display = "flex";
+
+    // 3. Timer: Auto-hide after 3 seconds
+    if (el.dataset.timer) clearTimeout(el.dataset.timer);
+    el.dataset.timer = setTimeout(() => {
+      el.style.display = "none";
+      el.className = "";
+    }, 3000);
+  }
+
   function setLoading(btn, loading, text) {
     if (!btn) return;
     if (loading) {
@@ -230,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("DEBUG coupon-validate result:", result);
 
       const coupon = result.coupon || result;
-      if (!coupon) throw new Error("Invalid coupon");
+      if (!coupon) throw new Error("Invalid coupon code. Please enter a valid coupon code");
 
       // compute savings robustly:
       const base = Number(priceDataset.amount || (course?.price || 0));
@@ -255,7 +309,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const shownCode = code || coupon?.code || coupon?.code?.toString?.() || "coupon";
       sessionStorage.setItem("buyerCoupon", code);
-      showSuccess(`Coupon "${shownCode}" applied — you saved ₹${savings}`);
+      const msgDiv = document.getElementById("couponMessage");
+      if (msgDiv) {
+        // 1. Render the message
+        msgDiv.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Coupon <strong>'${shownCode}'</strong> applied! You saved ₹${savings}</span>
+        `;
+
+        // 2. Show it with the green style
+        msgDiv.className = "field-success";
+        msgDiv.style.display = "flex";
+
+        // 3. AUTO-HIDE LOGIC (The Fix)
+        // Clear any existing timer so we don't hide the new message too early
+        if (window.couponTimer) clearTimeout(window.couponTimer);
+
+        window.couponTimer = setTimeout(() => {
+          msgDiv.style.display = "none";
+          msgDiv.className = ""; // Remove style class
+        }, 3000);
+      }
+
+      // Change "Apply" button to "Applied" visual state (Optional but nice)
+      if (applyCouponBtn) {
+        applyCouponBtn.textContent = "Applied";
+        applyCouponBtn.style.backgroundColor = "#10b981"; // Green
+        applyCouponBtn.style.borderColor = "#10b981";
+        setTimeout(() => {
+          applyCouponBtn.textContent = "Apply";
+          applyCouponBtn.style.backgroundColor = ""; // Reset
+          applyCouponBtn.style.borderColor = "";
+        }, 2000);
+      }
+
+      // Clear any previous error messages on the coupon field
+      clearError('coupon');
     } catch (err) {
       appliedCoupon = null;
       if (priceBeforeEl) priceBeforeEl.style.display = "none";
@@ -269,77 +360,117 @@ document.addEventListener("DOMContentLoaded", () => {
   if (applyCouponBtn) applyCouponBtn.addEventListener("click", applyCoupon);
 
   // Validate & Send OTP — coupon optional (allow empty coupon)
+  // VALIDATE & SEND OTP
   if (validateBtn) {
     validateBtn.addEventListener("click", async () => {
       const email = (emailInput.value || "").trim();
       const couponCode = (couponInput.value || "").trim();
       if (!selectedCourseId && course?._id) selectedCourseId = course._id;
 
+      // 1. Validate Email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) { showError(emailInput, "Enter a valid email address."); return; }
-      if (!selectedCourseId) { showError(null, "No course selected. Choose a course first."); return; }
+      if (!emailRegex.test(email)) {
+        showError(emailInput, "Invalid email. Please enter a valid email");
+        return;
+      }
 
-      setLoading(validateBtn, true, "Checking coupon…");
+      if (!selectedCourseId) {
+        showError(null, "No course selected.");
+        return;
+      }
+
+      setLoading(validateBtn, true, "Checking…");
 
       try {
-        // Preferred: call /api/checkout/validate which validates coupon (optional) and sends OTP
+        // 2. Call API
         const serverResp = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, couponCode: couponCode || "", courseId: selectedCourseId })
         });
 
-        // serverResp.success === true and OTP was sent
-        // serverResp.coupon may be an object or null (if no coupon provided)
         const serverCoupon = serverResp?.coupon || null;
 
-        // If coupon was provided but server returned null, treat as invalid
+        // Check if coupon was entered but rejected by server
         if (couponCode && !serverCoupon) {
-          throw new Error(serverResp?.message || "Invalid coupon");
+          throw new Error("Invalid coupon code. Please enter a valid coupon code");
         }
 
-        // compute savings & set appliedCoupon (or clear if none)
+        // 3. Handle Success (Coupon vs No Coupon)
         const baseAmount = Number(priceDataset.amount || course?.price || 0);
+
         if (serverCoupon) {
+          // --- COUPON VALID LOGIC ---
           let savings = 0;
-          if (serverCoupon.type === "percent" || serverCoupon.percent) {
-            const pct = Number(serverCoupon.value ?? serverCoupon.percent ?? 0);
-            savings = Math.round((baseAmount * pct) / 100);
-          } else {
-            savings = Number(serverCoupon.value ?? serverCoupon.discount ?? 0);
+          const pct = Number(serverCoupon.value ?? serverCoupon.percent ?? 0);
+          const fixed = Number(serverCoupon.value ?? serverCoupon.discount ?? 0);
+          if (pct > 0) savings = Math.round((baseAmount * pct) / 100);
+          else savings = fixed;
+
+          priceDataset.finalAmount = Math.max(0, baseAmount - savings);
+
+          // Update Price Panel
+          if (priceNowEl) {
+            priceNowEl.textContent = "₹" + priceDataset.finalAmount;
+            priceNowEl.classList.add("text-green");
           }
-          appliedCoupon = serverCoupon;
-          const final = Math.max(0, baseAmount - savings);
-          priceDataset.finalAmount = final;
-          if (priceBeforeEl) { priceBeforeEl.style.display = ""; priceBeforeEl.textContent = "₹" + baseAmount; }
-          if (priceNowEl) priceNowEl.textContent = "₹" + final;
-          if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
+          if (priceBeforeEl) {
+            priceBeforeEl.textContent = "₹" + baseAmount;
+            priceBeforeEl.style.display = "";
+          }
+          if (priceSavingsEl) {
+            priceSavingsEl.textContent = `You saved ₹${savings}`;
+            priceSavingsEl.style.display = "";
+          }
+
           sessionStorage.setItem("buyerCoupon", couponCode);
-          showSuccess(`Coupon "${serverCoupon.code}" validated — OTP sent to ${email}.`);
+
+          // SHOW INLINE SUCCESS (Green text below email)
+          showInlineSuccess("msg-email", "Coupon Validated & OTP Sent!");
+
         } else {
-          // no coupon provided case: proceed with OTP sent and no discount
-          appliedCoupon = null;
+          // --- NO COUPON LOGIC ---
           priceDataset.finalAmount = baseAmount;
+          if (priceNowEl) {
+            priceNowEl.textContent = "₹" + baseAmount;
+            priceNowEl.classList.remove("text-green");
+          }
           if (priceBeforeEl) priceBeforeEl.style.display = "none";
           if (priceSavingsEl) priceSavingsEl.style.display = "none";
-          if (priceNowEl) priceNowEl.textContent = "₹" + baseAmount;
+
           sessionStorage.setItem("buyerCoupon", "");
-          showSuccess(`OTP sent to ${email}.`);
+
+          // SHOW INLINE SUCCESS (Green text below email)
+          showInlineSuccess("msg-email", `OTP sent to ${email}`);
         }
 
-        // store buyer email locally
         sessionStorage.setItem("buyerEmail", email);
 
-        // enable OTP input and verify button
+        // 4. Enable Next Steps
         if (otpInput) otpInput.disabled = false;
         if (verifyOtpBtn) verifyOtpBtn.disabled = false;
+
+        // Clear any previous errors
+        clearError('email');
+        clearError('coupon');
+
       } catch (err) {
-        // If server returned a 400 for invalid coupon it will be caught here
-        appliedCoupon = null;
+        // Handle specific errors
+        let msg = err.message;
+        if (msg.toLowerCase().includes("coupon")) {
+          showError(couponInput, "Invalid coupon code. Please enter a valid coupon code");
+        } else {
+          showError(emailInput, msg || "Validation failed");
+        }
+
+        // Reset Prices on error
+        if (priceNowEl) {
+          priceNowEl.textContent = "₹" + (priceDataset.amount || 0);
+          priceNowEl.classList.remove("text-green");
+        }
         if (priceBeforeEl) priceBeforeEl.style.display = "none";
         if (priceSavingsEl) priceSavingsEl.style.display = "none";
-        if (priceNowEl) priceNowEl.textContent = "₹" + (priceDataset.amount || (course?.price || 0));
-        showError(couponInput, err.message || "Coupon validation failed. Enter valid coupon.");
+
       } finally {
         setLoading(validateBtn, false, "Validate & Send OTP");
       }
@@ -347,27 +478,46 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Verify OTP
+  // VERIFY OTP
   if (verifyOtpBtn) {
     verifyOtpBtn.addEventListener("click", async () => {
       const email = (emailInput.value || "").trim();
       const otp = (otpInput.value || "").trim();
-      if (!otp) { showError(otpInput, "Enter OTP"); return; }
+
+      // 1. Basic Check
+      if (!otp) {
+        showError(otpInput, "Please enter the OTP");
+        return;
+      }
 
       setLoading(verifyOtpBtn, true, "Verifying…");
+
       try {
+        // 2. Call API
         const data = await safeJsonFetch(`${API_BASE}/api/checkout/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, otp })
         });
+
+        // 3. Handle Error
         if (!data?.success) {
-          showError(otpInput, data?.message || "OTP verification failed");
+          showError(otpInput, "Invalid OTP. Please enter a valid OTP");
           return;
         }
-        showSuccess("OTP verified! You can now proceed to payment.");
+
+        // 4. Handle Success
+        // SHOW INLINE SUCCESS (Green text below OTP)
+        showInlineSuccess("msg-otp", "OTP Verified Successfully!");
+
+        // Clear any error styles
+        clearError('otp');
+
+        // Enable Payment
         if (paymentBtn) paymentBtn.disabled = false;
+
       } catch (err) {
-        showError(otpInput, err.message || "OTP verification failed");
+        showError(otpInput, "Invalid OTP. Please enter a valid OTP");
       } finally {
         setLoading(verifyOtpBtn, false, "Verify OTP");
       }
@@ -453,7 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Initialize UI: fetch default coupon and disable payment until OTP verify
-  
+
   if (paymentBtn) paymentBtn.disabled = true;
 
   // small accessibility: show year

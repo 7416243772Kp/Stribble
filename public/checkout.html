@@ -1,289 +1,247 @@
 <!-- C:\Ebook\public\checkout.html -->
-<!-- C:\Ebook\public\checkout.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Checkout | Stribble</title>
   <link rel="stylesheet" href="css/theme.css">
   <script src="js/settings.js" defer></script>
+  <script src="js/checkout.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 </head>
-<body>
-  <nav class="navbar" style="position:sticky;top:0;z-index:90">
-    <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
-      <div class="logo"><a href="index.html" class="brand"><span class="brand__dot"></span> <strong>Stribble</strong></a></div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button id="themeToggle" class="btn" title="Toggle dark mode">🌙</button>
-        <button class="nav-toggle" id="navToggle" aria-label="Open menu">☰</button>
-      </div>
+<h2 class="checkout-title">Checkout</h2>
+
+<div id="notif-payment" class="notify-success" role="status" style="display:none">
+  <div class="notify-success__icon" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20 6L9 17l-5-5"></path>
+    </svg>
+  </div>
+
+  <div class="notify-success__text">
+    <div class="notify-success__title">Payment successful! 🎉</div>
+    <div class="notify-success__desc">Course has been sent to your email.</div>
+  </div>
+
+  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+</div>
+
+<div id="notif-coupon" class="notify-success" role="status" style="display:none">
+  <div class="notify-success__icon" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.59 13.41L13 21 3 11l7.59-7.59a2 2 0 012.82 0l7.18 7.18a2 2 0 010 2.82z"></path>
+      <circle cx="7" cy="7" r="1"></circle>
+    </svg>
+  </div>
+
+  <div class="notify-success__text">
+    <div class="notify-success__title">
+      Coupon <span id="notif-coupon-pill" class="notify-success__pill">CODE • 0% OFF</span>
     </div>
-  </nav>
+    <div id="notif-coupon-desc" class="notify-success__desc">Coupon applied — you saved ₹0.</div>
+  </div>
 
-  <main class="checkout-container">
-    <div class="checkout-card">
-      <h2 class="checkout-title">Checkout</h2>
+  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+</div>
 
-      <!-- ====== Success notifications (premium green) - inserted, hidden by default ====== -->
-      <!-- These match the premium style described earlier. Your checkout.js can call showSuccessNotif(id, data) to display them. -->
-      <div id="notif-payment" class="notify-success" role="status" style="display:none">
-        <div class="notify-success__icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 6L9 17l-5-5"></path>
-          </svg>
-        </div>
+<div id="notif-otp" class="notify-success" role="status" style="display:none">
+  <div class="notify-success__icon" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 20v-6"></path>
+      <path d="M12 4v4"></path>
+      <circle cx="12" cy="12" r="8"></circle>
+    </svg>
+  </div>
 
-        <div class="notify-success__text">
-          <div class="notify-success__title">Payment successful! 🎉</div>
-          <div class="notify-success__desc">Course has been sent to your email.</div>
-        </div>
+  <div class="notify-success__text">
+    <div class="notify-success__title">OTP verified</div>
+    <div id="notif-otp-desc" class="notify-success__desc">Your Email is confirmed. You can proceed to
+      pay.</div>
+  </div>
 
-        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-      </div>
+  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
+</div>
+<!-- ====== end notifications ====== -->
 
-      <div id="notif-coupon" class="notify-success" role="status" style="display:none">
-        <div class="notify-success__icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.59 13.41L13 21 3 11l7.59-7.59a2 2 0 012.82 0l7.18 7.18a2 2 0 010 2.82z"></path>
-            <circle cx="7" cy="7" r="1"></circle>
-          </svg>
-        </div>
-
-        <div class="notify-success__text">
-          <div class="notify-success__title">
-            Coupon <span id="notif-coupon-pill" class="notify-success__pill">CODE • 0% OFF</span>
-          </div>
-          <div id="notif-coupon-desc" class="notify-success__desc">Coupon applied — you saved ₹0.</div>
-        </div>
-
-        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-      </div>
-
-      <div id="notif-otp" class="notify-success" role="status" style="display:none">
-        <div class="notify-success__icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 20v-6"></path>
-            <path d="M12 4v4"></path>
-            <circle cx="12" cy="12" r="8"></circle>
-          </svg>
-        </div>
-
-        <div class="notify-success__text">
-          <div class="notify-success__title">OTP verified</div>
-          <div id="notif-otp-desc" class="notify-success__desc">Your phone number is confirmed. You can proceed to payment.</div>
-        </div>
-
-        <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-      </div>
-      <!-- ====== end notifications ====== -->
-
-      <!-- Price panel -->
-      <div class="price-panel" id="pricePanel" aria-live="polite">
-        <div class="price-left">
-          <!-- lazy thumbnail -->
-          <img id="miniThumb" class="course-mini-thumb skeleton" data-src="/images/placeholder-course.png" alt="course thumbnail" loading="lazy" />
-          <div class="price-left__meta">
-            <div id="miniTitle" class="mini-title">Untitled course</div>
-            <div id="miniType" class="mini-type">Digital course</div>
-          </div>
-        </div>
-
-        <div class="price-right" aria-hidden="false">
-          <div id="priceBefore" class="price-original" style="display:none">₹0</div>
-          <div id="priceNow" class="price-current">₹0</div>
-          <div id="priceSavings" class="price-savings" style="display:none"></div>
-          <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
-        </div>
-      </div>
-
-      <!-- Form -->
-      <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
-        <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="you@example.com" required />
-
-        <label for="coupon">Coupon Code</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <div class="coupon-wrapper" style="flex:1; display:flex;">
-            <input type="text" id="coupon" placeholder="Enter coupon code" />
-          </div>
-          <button type="button" id="apply-coupon-btn" class="btn">Apply</button>
-        </div>
-
-        <div id="couponMessage" aria-live="polite"></div>
-
-        <label for="otp">OTP</label>
-        <input type="text" id="otp" placeholder="Enter OTP" disabled />
-
-        <div class="checkout-actions">
-          <button type="button" id="validate-btn" class="btn">Validate & Send OTP</button>
-          <button type="button" id="verify-otp-btn" class="btn" disabled>Verify OTP</button>
-          <button type="submit" id="payment-btn" class="btn" disabled>Proceed to Pay</button>
-        </div>
-      </form>
+<!-- Price panel -->
+<div class="price-panel" id="pricePanel" aria-live="polite">
+  <div class="price-left">
+    <!-- lazy thumbnail -->
+    <img id="miniThumb" class="course-mini-thumb skeleton" data-src="/images/placeholder-course.png"
+      alt="course thumbnail" loading="lazy" />
+    <div class="price-left__meta">
+      <div id="miniTitle" class="mini-title">Untitled course</div>
+      <div id="miniType" class="mini-type">Digital course</div>
     </div>
-  </main>
+  </div>
 
-  <footer class="footer"><p>© <span id="year"></span> Stribble. All rights reserved.</p></footer>
+  <div class="price-right" aria-hidden="false">
+    <div id="priceBefore" class="price-original" style="display:none">₹0</div>
+    <div id="priceNow" class="price-current">₹0</div>
+    <div id="priceSavings" class="price-savings" style="display:none"></div>
+    <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
+  </div>
+</div>
 
-  <script src="js/ui-helpers.js" defer></script>
-  <script src="js/checkout.js" defer></script>
+<!-- Form -->
+<form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
 
-  <!-- ====== Notification helper JS (inserted) ====== -->
-  <script>
-    /**
-     * Minimal, safe helper to show/dismiss the premium success notifications.
-     * - Notifications are present in DOM but hidden by default (style="display:none").
-     * - Call showSuccessNotif('notif-coupon', { title, desc, pillText }) or
-     *   showSuccessNotif('notif-payment') etc to show them.
-     * - This script does not modify any of your existing code.
-     */
+  <label for="email">Email Address</label>
+  <input type="email" id="email" placeholder="you@example.com" required />
+  <div id="err-email" class="field-error"></div>
+  <div id="msg-email" aria-live="polite"></div>
 
-    (function () {
-      function _get(nodeOrId) {
-        return (typeof nodeOrId === 'string') ? document.getElementById(nodeOrId) : nodeOrId;
+  <label for="coupon">Coupon Code</label>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <div class="coupon-wrapper" style="flex:1; display:flex;">
+      <input type="text" id="coupon" placeholder="Enter coupon code" />
+    </div>
+    <button type="button" id="apply-coupon-btn" class="btn">Apply</button>
+  </div>
+  <div id="err-coupon" class="field-error"></div>
+  <div id="couponMessage" aria-live="polite"></div>
+
+  <label for="otp">OTP</label>
+  <input type="text" id="otp" placeholder="Enter OTP" disabled />
+  <div id="err-otp" class="field-error"></div>
+  <div id="msg-otp" aria-live="polite"></div>
+
+  <div class="checkout-actions">
+    <button type="button" id="validate-btn" class="btn">Validate & Send OTP</button>
+    <button type="button" id="verify-otp-btn" class="btn" disabled>Verify OTP</button>
+    <button type="submit" id="payment-btn" class="btn" disabled>Proceed to Pay</button>
+  </div>
+</form>
+</div>
+
+<script>
+  function _get(nodeOrId) {
+    return (typeof nodeOrId === 'string') ? document.getElementById(nodeOrId) : nodeOrId;
+  }
+
+  function bindClose(btn, container) {
+    if (!btn || !container) return;
+    btn.addEventListener('click', function () {
+      container.style.opacity = '0';
+      setTimeout(function () {
+        container.style.display = 'none';
+      }, 220);
+    });
+  }
+
+  function autoDismiss(container, timeout) {
+    if (!container) return;
+    if (!timeout || timeout <= 0) return;
+    setTimeout(function () {
+      if (!container) return;
+      container.style.opacity = '0';
+      setTimeout(function () {
+        if (container.parentNode) container.parentNode.removeChild(container);
+      }, 260);
+    }, timeout);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var notifs = document.querySelectorAll('.notify-success');
+    notifs.forEach(function (n) {
+      var btn = n.querySelector('.notify-success__close');
+      bindClose(btn, n);
+    });
+  });
+
+  window.showSuccessNotif = function (id, opts) {
+    var el = _get(id);
+    if (!el) return;
+    opts = opts || {};
+    if (opts.title) {
+      var t = el.querySelector('.notify-success__title');
+      if (t) t.innerHTML = opts.title;
+    }
+    if (opts.desc) {
+      var d = el.querySelector('.notify-success__desc');
+      if (d) d.innerHTML = opts.desc;
+    }
+    if (opts.pillText) {
+      var pill = el.querySelector('.notify-success__pill') || document.getElementById('notif-coupon-pill');
+      if (pill) pill.textContent = opts.pillText;
+    }
+    el.style.display = 'flex';
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0) scale(1)';
+    var timeout = (typeof opts.timeout === 'number') ? opts.timeout : 6000;
+    if (timeout > 0) autoDismiss(el, timeout);
+  };
+
+  window.showPaymentSuccess = function () {
+    window.showSuccessNotif('notif-payment', {
+      timeout: 5000
+    });
+  };
+
+  window.showCouponApplied = function (code, savedText) {
+    var pillText = code ? (code + ' • ' + (savedText || 'Coupon')) : (savedText || 'Coupon');
+    window.showSuccessNotif('notif-coupon', {
+      pillText: pillText,
+      desc: savedText ? ('Coupon ' + (code || '') + ' applied — you saved ' + savedText + '.') : ('Coupon applied.'),
+      timeout: 7000
+    });
+  };
+
+  function optsPercentOrLabel(code) {
+    return '';
+  }
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get('courseId');
+
+    const selected = localStorage.getItem('selectedCourse');
+    if (selected) {
+      try {
+
+        const title = c.title || 'Untitled course';
+        document.getElementById('miniTitle').textContent = title;
+      } catch (e) {
+        console.error("Error parsing selected course", e);
       }
+    }
 
-      function bindClose(btn, container) {
-        if (!btn || !container) return;
-        btn.addEventListener('click', function () {
-          container.style.opacity = '0';
-          setTimeout(function () { container.style.display = 'none'; }, 220);
-        });
-      }
-
-      function autoDismiss(container, timeout) {
-        if (!container) return;
-        if (!timeout || timeout <= 0) return;
-        setTimeout(function () {
-          if (!container) return;
-          container.style.opacity = '0';
-          setTimeout(function () {
-            if (container.parentNode) container.parentNode.removeChild(container);
-          }, 260);
-        }, timeout);
-      }
-
-      // initialize close buttons for all notify-success blocks present
-      document.addEventListener('DOMContentLoaded', function () {
-        var notifs = document.querySelectorAll('.notify-success');
-        notifs.forEach(function (n) {
-          var btn = n.querySelector('.notify-success__close');
-          bindClose(btn, n);
-          // keep hidden by default; nothing to do here
-        });
-      });
-
-      // Public show function
-      window.showSuccessNotif = function (id, opts) {
-        // id can be element or id string
-        var el = _get(id);
-        if (!el) return;
-        opts = opts || {};
-        // set content if provided
-        if (opts.title) {
-          var t = el.querySelector('.notify-success__title');
-          if (t) t.innerHTML = opts.title;
-        }
-        if (opts.desc) {
-          var d = el.querySelector('.notify-success__desc');
-          if (d) d.innerHTML = opts.desc;
-        }
-        if (opts.pillText) {
-          var pill = el.querySelector('.notify-success__pill') || document.getElementById('notif-coupon-pill');
-          if (pill) pill.textContent = opts.pillText;
-        }
-        // show
-        el.style.display = 'flex';
-        // reset opacity/transform in case it was hidden previously
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0) scale(1)';
-        // optional auto-dismiss (default 6s, pass 0 to keep)
-        var timeout = (typeof opts.timeout === 'number') ? opts.timeout : 6000;
-        if (timeout > 0) autoDismiss(el, timeout);
-      };
-
-      // Small convenience wrappers for your common events
-      window.showPaymentSuccess = function () {
-        window.showSuccessNotif('notif-payment', { timeout: 5000 });
-      };
-      window.showCouponApplied = function (code, savedText) {
-        var pill = (code ? (code + ' •') : '') + ' ' + (optsPercentOrLabel(code) || '');
-        // you probably want to set pill to something like "SAVE20 • 20% OFF"
-        var pillText = code ? (code + ' • ' + (savedText || 'Coupon')) : (savedText || 'Coupon');
-        window.showSuccessNotif('notif-coupon', {
-          pillText: pillText,
-          desc: savedText ? ('Coupon ' + (code||'') + ' applied — you saved ' + savedText + '.') : ('Coupon applied.'),
-          timeout: 7000
-        });
-      };
-
-      // Helper: safe fallback for pill label (you can remove/replace this in your checkout.js)
-      function optsPercentOrLabel(code) {
-        return '';
-      }
-
-    })();
-  </script>
-  <!-- ====== end notification helper JS ====== -->
-  
-  <script>
-    // populate checkout UI from localStorage (fallback to ?courseId fetch if needed)
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('year').textContent = new Date().getFullYear();
-
-      const selected = localStorage.getItem('selectedCourse');
-      if (selected) {
-        try {
-          const c = JSON.parse(selected);
-          const thumb = c.thumbnail || '/images/placeholder-course.png';
-          const title = c.title || 'Untitled course';
-          const price = Number(c.price || 0);
-
-          // set UI
-          document.getElementById('miniTitle').textContent = title;
-          document.getElementById('priceNow').textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(price);
+    if (courseId) {
+      fetch(`${window.API_BASE}/api/courses/${courseId}`)
+        .then(r => r.json())
+        .then(data => {
+          const cr = data.course || data;
+          if (!cr) return;
+          const price = Number(cr.price || 0);
+          document.getElementById('miniTitle').textContent = cr.title || 'Untitled';
+          document.getElementById('priceNow').textContent = new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+          }).format(price);
           document.getElementById('totalAmount').dataset.amount = price;
           document.getElementById('totalAmount').dataset.finalAmount = price;
 
           const thumbImg = document.getElementById('miniThumb');
-          thumbImg.setAttribute('data-src', thumb);
+          thumbImg.setAttribute('data-src', cr.thumbnail || '/images/placeholder-course.png');
           if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
             window.UI.lazyLoadImages(document);
           }
-        } catch(e) {
-          console.error('Invalid selectedCourse in localStorage', e);
-        }
-      } else {
-        // Optionally: fetch course via query param courseId
-        const params = new URLSearchParams(window.location.search);
-        const courseId = params.get('courseId');
-        if (courseId) {
-          // fetch minimal course data to populate UI
-          fetch(`${window.API_BASE}/api/courses/${courseId}`).then(r => r.json()).then(data => {
-            const cr = data.course || data;
-            if (!cr) return;
-            const price = Number(cr.price || 0);
-            document.getElementById('miniTitle').textContent = cr.title || 'Untitled';
-            document.getElementById('priceNow').textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(price);
-            document.getElementById('totalAmount').dataset.amount = price;
-            document.getElementById('totalAmount').dataset.finalAmount = price;
+        }).catch(console.error);
+    }
 
-            const thumbImg = document.getElementById('miniThumb');
-            thumbImg.setAttribute('data-src', cr.thumbnail || '/images/placeholder-course.png');
-            if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
-              window.UI.lazyLoadImages(document);
-            }
-          }).catch(console.error);
-        }
-      }
-
-      // mobile nav toggle (simple)
-      const navToggle = document.getElementById('navToggle');
-      navToggle?.addEventListener('click', () => {
-        alert('Open menu (mobile)');
-      });
+    const navToggle = document.getElementById('navToggle');
+    navToggle?.addEventListener('click', () => {
+      alert('Open menu (mobile)');
     });
-  </script>
+  });
+</script>
 </body>
+
 </html>

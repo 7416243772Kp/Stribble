@@ -1,19 +1,18 @@
-<!-- C:\Ebook\public\index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stribble</title>
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 rx=%2718%27 fill=%27%232563eb%27/%3E%3Ctext x=%2750%25%27 y=%2758%25%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27white%27 font-family=%27Arial,Helvetica,sans-serif%27%3ECH%3C/text%3E%3C/svg%3E" />
-  <!-- Font -->
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 rx=%2718%27 fill=%27%232563eb%27/%3E%3Ctext x=%2750%25%27 y=%2758%25%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27white%27 font-family=%27Arial,Helvetica,sans-serif%27%3ECH%3C/text%3E%3C/svg%3E" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <!-- Styles -->
   <link rel="stylesheet" href="css/theme.css">
 </head>
+
 <body>
-  <!-- Nav -->
   <header class="nav">
     <div class="container nav__inner">
       <a href="index.html" class="brand">
@@ -21,20 +20,17 @@
         <span class="brand__name">Stribble</span>
       </a>
 
-      <nav class="nav__links" role="navigation" aria-label="Main">
-        <a href="#catalog" class="nav__link">Courses</a>
-      </nav>
+      <button id="navToggle" class="nav__toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
 
-      <div style="display:flex;gap:10px;align-items:center">
-        <button id="themeToggle" class="btn" title="Toggle dark mode" aria-pressed="false">🌙</button>
-        <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-label="Open menu">☰</button>
-      </div>
+      <nav class="nav__links">
+      </nav>
     </div>
   </header>
 
-  <!-- Hero -->
   <section class="hero">
-    <div class="container hero__grid">
+    <div class="container">
       <div class="hero__content">
         <h1 class="hero__title">
           A great way to learn YouTube <span class="accent">with proven strategies</span>
@@ -44,7 +40,7 @@
         </p>
         <div class="hero__actions">
           <a href="#catalog" class="btn btn--primary">Browse Courses</a>
-          <a href="course.html" class="btn btn--ghost">View a Course</a>
+          <a href="#catalog" class="btn btn--ghost">View a Course</a>
         </div>
         <div class="hero__meta">
           <span>Secure payments</span>
@@ -52,21 +48,13 @@
           <span>Lifetime updates</span>
         </div>
       </div>
-      <div class="hero__visual">
-        <div class="visual__card hover-lift">
-          <div class="visual__badge">New</div>
-          <div class="visual__title">Zero to Pro in YouTube</div>
-          <div class="visual__line"></div>
-          <div class="visual__foot">Premium YouTube Course</div>
-        </div>
-      </div>
     </div>
   </section>
 
-  <!-- Catalog -->
   <main id="catalog" class="section">
     <div class="container">
-      <div class="section__head" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div class="section__head"
+        style="display:flex;align-items:center;justify-content:space-between;gap:12px; flex-wrap:wrap;">
         <h2 class="section__title">Available Courses</h2>
         <div class="tools">
           <div class="search">
@@ -76,7 +64,6 @@
       </div>
 
       <div id="courses" class="grid" aria-live="polite">
-        <!-- Cards injected by JS -->
       </div>
 
       <div id="emptyState" class="empty hidden" role="status" aria-hidden="true">
@@ -89,7 +76,6 @@
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container footer__inner">
       <div class="brand brand--muted">
@@ -103,7 +89,6 @@
   </footer>
 
   <script src="js/settings.js"></script>
-  <script src="js/ui-helpers.js" defer></script>
 
   <script>
     const wrap = document.getElementById("courses");
@@ -111,7 +96,7 @@
     const searchInput = document.getElementById("searchInput");
     const INR = (v) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v || 0);
 
-    function setYear(){ document.getElementById("year").textContent = new Date().getFullYear(); }
+    function setYear() { document.getElementById("year").textContent = new Date().getFullYear(); }
 
     function skeleton(count = 8) {
       wrap.innerHTML = "";
@@ -132,18 +117,19 @@
       }
     }
 
-    function card(course){
+    function card(course) {
       const a = document.createElement("a");
       a.className = "card hover-lift";
       a.href = `course.html?id=${course._id}`;
       a.setAttribute("data-title", (course.title || "").toLowerCase());
       a.setAttribute("data-desc", (course.description || "").toLowerCase());
 
-      // Use data-src for lazy load; fallback src is a small placeholder
+      // FIXED: Changed data-src to src so images load without extra JS
       const thumb = course.thumbnail || '/images/placeholder-course.png';
+
       a.innerHTML = `
-        <div class="card__media skeleton">
-          <img data-src="${thumb}" alt="${(course.title || '').replace(/\"/g,'')}" loading="lazy" class="skeleton" />
+        <div class="card__media">
+          <img src="${thumb}" alt="${(course.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" />
         </div>
         <div class="card__body">
           <h3 class="card__title">${course.title || 'Untitled'}</h3>
@@ -156,68 +142,78 @@
       return a;
     }
 
-    function applySearch(){
+    function applySearch() {
       const q = (searchInput.value || "").toLowerCase().trim();
       let shown = 0;
       document.querySelectorAll(".grid .card").forEach(c => {
+        // Skip skeleton cards
+        if (c.classList.contains('skeleton')) return;
+
         const t = c.getAttribute("data-title") || "";
         const d = c.getAttribute("data-desc") || "";
         const visible = !q || t.includes(q) || d.includes(q);
         c.style.display = visible ? "" : "none";
         if (visible) shown++;
       });
-      empty.classList.toggle("hidden", shown !== 0);
-    }
 
-    async function loadCourses(){
-      try {
-        skeleton(8);
-        const res = await fetch(`${window.API_BASE}/api/courses`);
-        const data = await res.json();
-
-        wrap.innerHTML = "";
-        const items = Array.isArray(data?.courses) ? data.courses : (Array.isArray(data) ? data : []);
-        if (!items.length) {
-          empty.classList.remove("hidden");
-          return;
-        }
-        empty.classList.add("hidden");
-        items.forEach(c => {
-          const el = card(c);
-          wrap.appendChild(el);
-        });
-
-        // after injecting, run lazy loader
-        if (window.UI && typeof window.UI.lazyLoadImages === 'function') {
-          window.UI.lazyLoadImages(document);
-        }
-
-        applySearch();
-      } catch (e) {
-        console.error(e);
-        wrap.innerHTML = `
-          <div class="empty__card">
-            <div class="empty__emoji">⚠️</div>
-            <h3>Couldn’t load courses</h3>
-            <p>Please refresh and try again.</p>
-          </div>`;
+      // Show empty state if no results found (and we aren't currently loading skeletons)
+      if (!wrap.querySelector('.skeleton')) {
+        empty.classList.toggle("hidden", shown !== 0);
       }
     }
 
+    // Connect Search Event
     searchInput.addEventListener("input", applySearch);
-    setYear();
-    loadCourses();
 
-    // mobile nav toggle
-    (function() {
+    async function loadCourses() {
+      try {
+        setYear();
+        skeleton(8); // Show loading state
+
+        const apiBase = window.API_BASE || '';
+        const res = await fetch(`${apiBase}/api/courses`);
+
+        if (!res.ok) throw new Error("Failed to fetch");
+
+        const data = await res.json();
+
+        // Handle different API response structures (array vs object)
+        const courses = Array.isArray(data) ? data : (data.courses || []);
+
+        // Clear skeleton
+        wrap.innerHTML = "";
+
+        if (courses.length === 0) {
+          empty.classList.remove("hidden");
+        } else {
+          courses.forEach(c => {
+            wrap.appendChild(card(c));
+          });
+          empty.classList.add("hidden");
+        }
+
+      } catch (err) {
+        console.error(err);
+        wrap.innerHTML = `<p style="color:red; text-align:center; width:100%;">Failed to load courses.</p>`;
+      }
+    }
+
+    // Mobile Nav Logic
+    document.addEventListener("DOMContentLoaded", () => {
+      loadCourses();
+
       const navToggle = document.getElementById('navToggle');
       const links = document.querySelector('.nav__links');
-      navToggle?.addEventListener('click', () => {
-        const open = links.style.display === 'flex';
-        links.style.display = open ? '' : 'flex';
-        navToggle.setAttribute('aria-expanded', String(!open));
-      });
-    })();
+
+      if (navToggle && links) {
+        navToggle.addEventListener('click', () => {
+          const isFlex = links.style.display === 'flex';
+          links.style.display = isFlex ? 'none' : 'flex'; // Simple toggle
+          navToggle.setAttribute('aria-expanded', String(!isFlex));
+        });
+      }
+    });
   </script>
 </body>
+
 </html>
