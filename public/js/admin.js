@@ -6,6 +6,14 @@ const links = document.querySelectorAll(".sidebar-nav a");
 const sections = document.querySelectorAll(".content-section");
 const sectionTitle = document.getElementById("section-title");
 
+const editOverlay = document.getElementById('edit-course-overlay');
+const editForm = document.getElementById('edit-course-form');
+const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+const editCouponOverlay = document.getElementById('edit-coupon-overlay');
+const editCouponForm = document.getElementById('edit-coupon-form');
+const cancelCouponBtn = document.getElementById('cancel-coupon-edit');
+
 links.forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
@@ -187,20 +195,41 @@ async function fetchCourses() {
 }
 
 function renderCourses(courses) {
+  const courseList = document.getElementById("course-list");
+  if (!courseList) return;
+
   courseList.innerHTML = "";
+
+  if (courses.length === 0) {
+    courseList.innerHTML = '<p style="color:#64748b; grid-column:1/-1; text-align:center;">No courses available.</p>';
+    return;
+  }
+
   courses.forEach((course) => {
     const item = document.createElement("div");
-    item.className = "course-item";
+    item.className = "course-admin-card"; // New Class
+
+    // Format price securely
+    const price = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(course.price || 0);
+
     item.innerHTML = `
-      <img src="${course.thumbnail}" alt="${course.title}" width="80" />
-      <div>
-        <h4>${course.title}</h4>
-        <p>${course.description}</p>
-        <p><strong>₹${course.price}</strong></p>
+      <div class="course-admin-media">
+        <img src="${course.thumbnail || '/images/placeholder-course.png'}" alt="${course.title || 'Course'}" loading="lazy" />
       </div>
-      <div class="actions">
-        <button onclick="editCourse('${course._id}')">Edit</button>
-        <button onclick="deleteCourse('${course._id}')">Delete</button>
+      
+      <div class="course-admin-body">
+        <h4 class="course-admin-title" title="${course.title}">${course.title}</h4>
+        <p class="course-admin-desc">${course.description || 'No description provided.'}</p>
+        <div class="course-admin-price">${price}</div>
+        
+        <div class="course-admin-actions">
+          <button class="btn-action-edit" onclick="editCourse('${course._id}')">
+            ✏️ Edit
+          </button>
+          <button class="btn-action-delete" onclick="deleteCourse('${course._id}')">
+            🗑 Delete
+          </button>
+        </div>
       </div>
     `;
     courseList.appendChild(item);
@@ -227,30 +256,187 @@ addCourseForm.addEventListener("submit", async (e) => {
 });
 
 async function editCourse(id) {
-  const title = prompt("Enter new title:");
-  const description = prompt("Enter new description:");
-  const price = prompt("Enter new price:");
-  const googleDriveLink = prompt("Enter new Google Drive link:");
-  if (!title || !description || !price || !googleDriveLink) return;
+  const submitBtn = editForm.querySelector('button[type="submit"]');
+  submitBtn.textContent = "Loading...";
+  submitBtn.disabled = true;
+
+  // Show modal immediately
+  editOverlay.classList.remove('hidden');
+  editOverlay.setAttribute('aria-hidden', 'false');
 
   try {
-    const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, price, googleDriveLink }),
-    });
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    // Fetch current details
+    const res = await fetch(`${window.API_BASE}/api/courses/${id}`);
     const data = await res.json();
-    if (data.success) {
-      showNotification("success", "Course updated");
-      fetchCourses();
-    } else {
-      showNotification("error", data.message);
-    }
-  } catch {
-    showNotification("error", "Server error while updating course");
+    const course = data.course || data;
+
+    // Fill fields
+    document.getElementById('edit-course-id').value = course._id;
+    document.getElementById('edit-title').value = course.title || '';
+    document.getElementById('edit-desc').value = course.description || '';
+    document.getElementById('edit-price').value = course.price || '';
+    // Note: For security, backend might not return the link. User enters new one if they want to change it.
+    document.getElementById('edit-link').value = course.googleDriveLink || '';
+
+  } catch (err) {
+    console.error("Failed to fetch course details", err);
+    showNotification("error", "Failed to load course details");
+    editOverlay.classList.add('hidden');
+  } finally {
+    submitBtn.textContent = "Save Changes";
+    submitBtn.disabled = false;
   }
+}
+
+async function editCoupon(id) {
+  const submitBtn = editCouponForm.querySelector('button[type="submit"]');
+  submitBtn.textContent = "Loading...";
+  submitBtn.disabled = true;
+
+  editCouponOverlay.classList.remove('hidden');
+  editCouponOverlay.setAttribute('aria-hidden', 'false');
+
+  try {
+    const res = await authFetch(`${window.API_BASE}/api/admin/coupons/${id}`);
+    const data = await res.json();
+
+    if (data.success) {
+      const c = data.coupon;
+      document.getElementById('edit-coupon-id').value = c._id;
+      document.getElementById('edit-coupon-code').value = c.code;
+      document.getElementById('edit-coupon-discount').value = c.discount;
+
+      document.getElementById('edit-inf-upi').value = c.influencerUPI || '';
+      document.getElementById('edit-inf-comm').value = c.influencerCommission || 0;
+
+      document.getElementById('edit-cre-upi').value = c.ebookCreatorUPI || '';
+      document.getElementById('edit-cre-comm').value = c.ebookCreatorCommission || 0;
+    }
+  } catch (err) {
+    showNotification("error", "Failed to load coupon");
+    editCouponOverlay.classList.add('hidden');
+  } finally {
+    submitBtn.textContent = "Save Changes";
+    submitBtn.disabled = false;
+  }
+}
+
+// 2. Save Changes
+if (editCouponForm) {
+  editCouponForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-coupon-id').value;
+    const submitBtn = editCouponForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    submitBtn.textContent = "Saving...";
+    submitBtn.disabled = true;
+
+    const payload = {
+      code: document.getElementById('edit-coupon-code').value,
+      discount: Number(document.getElementById('edit-coupon-discount').value),
+      influencerUPI: document.getElementById('edit-inf-upi').value,
+      influencerCommission: Number(document.getElementById('edit-inf-comm').value),
+      ebookCreatorUPI: document.getElementById('edit-cre-upi').value,
+      ebookCreatorCommission: Number(document.getElementById('edit-cre-comm').value)
+    };
+
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/admin/coupons/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showNotification("success", "Coupon updated");
+        editCouponOverlay.classList.add('hidden');
+        loadCoupons(); // Refresh grid
+      } else {
+        showNotification("error", data.message || "Update failed");
+      }
+    } catch (err) {
+      showNotification("error", "Server error");
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// 3. Cancel Button
+if (cancelCouponBtn) {
+  cancelCouponBtn.addEventListener('click', () => {
+    editCouponOverlay.classList.add('hidden');
+  });
+}
+
+// Close on click outside
+if (editCouponOverlay) {
+  editCouponOverlay.addEventListener('click', (e) => {
+    if (e.target === editCouponOverlay) editCouponOverlay.classList.add('hidden');
+  });
+}
+
+// 2. Handle Save (Submit)
+if (editForm) {
+  editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('edit-course-id').value;
+    const title = document.getElementById('edit-title').value;
+    const description = document.getElementById('edit-desc').value;
+    const price = document.getElementById('edit-price').value;
+    const googleDriveLink = document.getElementById('edit-link').value;
+
+    const submitBtn = editForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Saving...";
+    submitBtn.disabled = true;
+
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, price, googleDriveLink }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showNotification("success", "Course updated successfully");
+        editOverlay.classList.add('hidden'); // Close modal
+        fetchCourses(); // Refresh grid
+      } else {
+        showNotification("error", data.message || "Update failed");
+      }
+    } catch (err) {
+      showNotification("error", "Server error while updating");
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// 3. Handle Cancel
+if (cancelEditBtn) {
+  cancelEditBtn.addEventListener('click', () => {
+    editOverlay.classList.add('hidden');
+    editOverlay.setAttribute('aria-hidden', 'true');
+  });
+}
+
+// Close if clicking outside the box
+if (editOverlay) {
+  editOverlay.addEventListener('click', (e) => {
+    if (e.target === editOverlay) {
+      editOverlay.classList.add('hidden');
+    }
+  });
 }
 
 async function deleteCourse(id) {
@@ -299,23 +485,66 @@ async function loadCoupons() {
     const res = await authFetch(`${window.API_BASE}/api/admin/coupons`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const data = await res.json();
+
     if (data.success) {
-      couponList.innerHTML = data.coupons
-        .map(
-          (c) => `
-        <div class="coupon-card">
-          <h4>${c.code} - ${c.courseId?.title || "Unknown Course"}</h4>
-          <p>Discount: ₹${c.discount}</p>
-          <p>Influencer UPI: ${c.influencerUPI || "-"} (₹${c.influencerCommission || 0})</p>
-          <p>Ebook Creator UPI: ${c.ebookCreatorUPI || "-"} (₹${c.ebookCreatorCommission || 0})</p>
-          <button onclick="deleteCoupon('${c._id}')">❌ Delete</button>
-        </div>
-      `
-        )
+      if (data.coupons.length === 0) {
+        couponList.innerHTML = '<p style="color:#64748b; grid-column:1/-1;">No coupons found.</p>';
+        return;
+      }
+
+      couponList.innerHTML = data.coupons.map((c) => {
+        const courseName = c.courseId?.title || "Unknown";
+        let upiText = "No UPI details set";
+        if (c.influencerUPI && c.ebookCreatorUPI) upiText = `INF: ${c.influencerUPI}<br>CRE: ${c.ebookCreatorUPI}`;
+        else if (c.influencerUPI) upiText = `INF: ${c.influencerUPI}`;
+        else if (c.ebookCreatorUPI) upiText = `CRE: ${c.ebookCreatorUPI}`;
+
+        return `
+            <div class="coupon-card">
+              <div class="coupon-header">
+                <div class="coupon-code-badge">${c.code}</div>
+                <div class="coupon-course" title="${courseName}">${courseName}</div>
+              </div>
+              
+              <div class="coupon-body">
+                <div class="info-group">
+                  <span class="info-label">Discount</span>
+                  <span class="info-val" style="color:#10b981;">-₹${c.discount}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">Inf. Comm.</span>
+                  <span class="info-val">₹${c.influencerCommission}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">Uses</span>
+                  <span class="info-val">${c.uses || 0}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">Creator</span>
+                  <span class="info-val">₹${c.ebookCreatorCommission}</span>
+                </div>
+              </div>
+
+              <div class="upi-info">
+                ${upiText}
+              </div>
+
+              <div style="display:flex; gap:10px; margin-top:auto;">
+                <button class="btn-action-edit" onclick="editCoupon('${c._id}')" style="flex:1; justify-content:center;">
+                  ✏️ Edit
+                </button>
+                <button class="btn-action-delete" onclick="deleteCoupon('${c._id}')" style="flex:1; justify-content:center;">
+                  🗑 Delete
+                </button>
+              </div>
+            </div>
+          `;
+      })
         .join("");
     }
   } catch (err) {
     console.error("Error loading coupons:", err);
+    couponList.innerHTML = '<p style="color:red;">Failed to load coupons</p>';
   }
 }
 

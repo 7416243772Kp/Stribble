@@ -7,6 +7,7 @@
   const totpSetup = document.getElementById("totp-setup");
   const totpChallenge = document.getElementById("totp-challenge");
   const loginError = document.getElementById("login-error");
+  const loginContainer = document.getElementById("login-form-container");
 
   const emailInput = document.getElementById("adminEmail");
   const passwordInput = document.getElementById("adminPassword");
@@ -58,13 +59,14 @@
   }
 
   function hideAllSections() {
-    if (loginForm) loginForm.style.display = "none";
+    if (loginContainer) loginContainer.style.display = "none";
     if (totpSetup) totpSetup.classList.add("hidden");
     if (totpChallenge) totpChallenge.classList.add("hidden");
   }
 
   function showLoginForm() {
     hideAllSections();
+    if (loginContainer) loginContainer.style.display = "block";
     if (loginForm) loginForm.style.display = "block";
   }
 
@@ -178,7 +180,7 @@
       // if nothing to focus, blur active element
       try {
         document.activeElement && document.activeElement.blur && document.activeElement.blur();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // hide overlay visually and to assistive tech

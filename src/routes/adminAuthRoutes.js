@@ -29,12 +29,12 @@ const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_A
 const ses = new SESClient(
   hasAwsCreds
     ? {
-        region: REGION,
-        credentials: {
-          accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-          secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-        },
-      }
+      region: REGION,
+      credentials: {
+        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+      },
+    }
     : { region: REGION } // fall back to default provider chain if running on AWS with role
 );
 
@@ -78,7 +78,7 @@ function setAdminCookie(req, res, token) {
     secure: secureCookie,
     sameSite: "Strict", // prevents most cross-site sends
     maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
-    path: "/api/admin", // cookie only sent for admin routes
+    path: "/", // cookie only sent for admin routes
   });
 }
 
@@ -406,7 +406,7 @@ router.post("/logout", (req, res) => {
     httpOnly: true,
     secure: secureCookie,
     sameSite: "Strict",
-    path: "/api/admin",
+    path: "/",
   });
   res.json({ success: true, message: "Logged out successfully" });
 });

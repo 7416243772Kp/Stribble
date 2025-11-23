@@ -1,4 +1,3 @@
-// src/utils/email.js
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import Course from "../models/course.js";
 
@@ -6,20 +5,28 @@ import Course from "../models/course.js";
 const REGION = process.env.AWS_REGION || "ap-south-1";
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 
-// create SES client (will use env creds or default chain)
 const sesClient = new SESClient(
   process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
     ? {
-        region: REGION,
-        credentials: {
-          accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-          secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-        },
-      }
+      region: REGION,
+      credentials: {
+        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+      },
+    }
     : { region: REGION }
-) ;
+);
 
-// Send payment confirmation email with course access link
+function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export async function sendPaymentEmail(opts = {}) {
   const {
     to,
@@ -34,112 +41,149 @@ export async function sendPaymentEmail(opts = {}) {
     supportEmail = "support@stribble.site",
   } = opts || {};
 
-  if (!to) {
-    throw new Error("Missing 'to' email address");
-  }
+  if (!to) throw new Error("Missing 'to' email address");
 
-  // Resolve downloadLink: prefer provided link, else fetch course by id
   let downloadLink = dlFromOpts || null;
   if (!downloadLink && courseId) {
     try {
       const course = await Course.findById(courseId).select("+googleDriveLink").lean();
       downloadLink = course?.googleDriveLink || null;
     } catch (e) {
-      console.warn("sendPaymentEmail: failed to load course by id:", e?.message || e);
+      console.warn("sendPaymentEmail: failed to load course by id:", e);
     }
   }
 
-  // Build professional HTML (download button if link present)
-  const html = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Your course access</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-  </head>
-  <body style="margin:0;padding:0;background:#f4f6fa;font-family:Inter, Arial, Helvetica, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="padding:28px;">
-      <tr>
-        <td align="center">
-          <table width="680" cellpadding="0" cellspacing="0" role="presentation" style="max-width:680px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(11,22,39,0.08);">
-            <tr>
-              <td style="background:linear-gradient(90deg,#2563eb,#06b6d4);padding:24px 28px;color:#ffffff;">
-                <h1 style="margin:0;font-size:20px;">Stribble</h1>
-                <div style="margin-top:6px;font-size:13px;opacity:0.95;">Thanks for your purchase</div>
-              </td>
-            </tr>
+  // --- STRIBBLE BRANDED EMAIL TEMPLATE ---
+  // Matches public/css/theme.css variables:
+  // --primary: #0f172a
+  // --bg-body: #f8fafc
+  // --border-color: #e2e8f0
+  // Font: Inter/System
 
-            <tr>
-              <td style="padding:22px 28px;color:#111;">
-                <p style="margin:0 0 12px;">Hi <strong>${escapeHtml(customerName || to.split("@")[0])}</strong>,</p>
+  // --- STRIBBLE BRANDED EMAIL TEMPLATE (REDESIGNED) ---
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Access</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; }
+    table { border-collapse: collapse; width: 100%; }
+    a { color: #3b82f6; text-decoration: none; }
+    .btn:hover { opacity: 0.9; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo div { width: 24px; height: 24px; background-color: #0f172a; border-radius: 6px; }
+    .logo div::before { content: ''; width: 8px; height: 8px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 6px; left: 6px; }
+    .header { background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 20px; padding: 30px 40px; }
+    .content { padding: 40px; }
+    .footer { padding: 30px; background-color: #ffffff; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 13px; }
+    .footer a { color: #0f172a; font-weight: 600; text-decoration: underline; }
+    .receipt { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-top: 20px; }
+    .receipt h3 { margin: 0 0 16px; color: #0f172a; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; }
+    .receipt-val { font-weight: 600; text-align: right; }
+    .action-btn { display: inline-block; background-color: #0f172a; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 16px 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.2); }
+    .unavailable { background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 16px; border-radius: 8px; text-align: center; font-weight: 600; }
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; padding: 20px !important; }
+      .receipt-row { flex-direction: column; width: 100%; text-align: left !important; padding-bottom: 5px !important; }
+      .receipt-val { padding-bottom: 15px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc;">
 
-                <h2 style="font-size:18px;margin:0 0 12px;">Your purchase: ${escapeHtml(courseName || "Course")}</h2>
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 40px 0;">
+    <tr>
+      <td align="center">
 
-                <p style="margin:0 0 16px;color:#374151;">
-                  Thank you for completing the payment. Below is your receipt and access information.
-                </p>
+        <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 20px;">
 
-                <table cellpadding="8" cellspacing="0" role="presentation" style="width:100%;border:1px solid #eef2ff;border-radius:8px;background:#fbfdff;">
-                  <tr>
-                    <td style="font-size:13px">Order ID:</td>
-                    <td style="font-weight:700">${escapeHtml(String(orderId || ""))}</td>
-                    <td style="font-size:13px">Payment ID:</td>
-                    <td style="font-weight:700">${escapeHtml(String(paymentId || ""))}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size:13px">Date:</td>
-                    <td style="font-weight:700">${escapeHtml(String(dateTime || new Date().toLocaleString()))}</td>
-                    <td style="font-size:13px">Amount:</td>
-                    <td style="font-weight:700">₹${escapeHtml(String(amount ?? ""))}</td>
-                  </tr>
-                </table>
+          <tr>
+            <td class="header">
+              <div class="logo">
+                <div></div>
+                <span style="font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em;">Stribble</span>
+              </div>
+            </td>
+          </tr>
 
-                <div style="text-align:center;margin-top:20px;">
-                  ${
-                    downloadLink
-                      ? `<a href="${escapeHtml(downloadLink)}" target="_blank" style="display:inline-block;padding:12px 18px;border-radius:10px;background:linear-gradient(90deg,#2563eb,#06b6d4);color:#fff;font-weight:700;text-decoration:none;">Access Your Course</a>`
-                      : `<p style="color:#b91c1c;font-weight:700;">Download link is not available. Please contact <a href="mailto:${escapeHtml(
-                          supportEmail
-                        )}">${escapeHtml(supportEmail)}</a> for assistance.</p>`
-                  }
+          <tr>
+            <td class="content">
+
+              <h1 style="color: #0f172a; font-size: 28px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.02em;">You're all set!</h1>
+              <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">
+                Hi <strong>${escapeHtml(customerName || "Customer")}</strong>, thank you for purchasing <strong>${escapeHtml(courseName)}</strong>. Your access link is ready below.
+              </p>
+
+              ${downloadLink
+      ? `<a href="${escapeHtml(downloadLink)}" target="_blank" class="action-btn">Access Course Content</a>`
+      : `<div class="unavailable">Download link unavailable. Please reply to this email.</div>`}
+
+              <div style="height: 40px;"></div>
+
+              <div class="receipt">
+                <h3>Receipt Details</h3>
+
+                <div class="receipt-row">
+                  <span style="color: #64748b; font-size: 14px;">Course</span>
+                  <span class="receipt-val" style="color: #0f172a; font-size: 14px;">${escapeHtml(courseName)}</span>
                 </div>
+                <div class="receipt-row">
+                  <span style="color: #64748b; font-size: 14px;">Amount Paid</span>
+                  <span class="receipt-val" style="color: #10b981; font-size: 16px;">₹${escapeHtml(String(amount))}</span>
+                </div>
+                <div class="receipt-row">
+                  <span style="color: #64748b; font-size: 14px;">Order ID</span>
+                  <span class="receipt-val" style="color: #334155; font-size: 14px; font-family: monospace;">${escapeHtml(orderId)}</span>
+                </div>
+                <div class="receipt-row">
+                  <span style="color: #64748b; font-size: 14px;">Date</span>
+                  <span class="receipt-val" style="color: #334155; font-size: 14px;">${escapeHtml(dateTime)}</span>
+                </div>
+              </div>
 
-                <p style="margin-top:18px;font-size:13px;color:#6b7280;">
-                  If you face any issues, contact <a href="mailto:${escapeHtml(
-                    supportEmail
-                  )}">${escapeHtml(supportEmail)}</a>.
-                </p>
-              </td>
-            </tr>
+            </td>
+          </tr>
 
-            <tr>
-              <td style="background:#f8fafc;padding:14px 18px;text-align:center;font-size:12px;color:#9aa3b2;">
-                Stribble • stribble.site<br />
-                &copy; ${new Date().getFullYear()} Stribble. All rights reserved.
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+          <tr>
+            <td class="footer">
+              <p>Need help? Contact <a href="mailto:${escapeHtml(supportEmail)}">${escapeHtml(supportEmail)}</a></p>
+              <p>&copy; ${new Date().getFullYear()} Stribble. All rights reserved.</p>
+            </td>
+          </tr>
 
-  // Text fallback
-  const text = [
-    `Thanks for your purchase${customerName ? ", " + customerName : ""}!`,
-    `Course: ${courseName}`,
-    `Order ID: ${orderId || ""}`,
-    `Payment ID: ${paymentId || ""}`,
-    `Date: ${dateTime || ""}`,
-    downloadLink ? `Download link: ${downloadLink}` : `Download link not available — please contact ${supportEmail}`,
-  ].join("\n");
+        </table>
+      </td>
+    </tr>
+  </table>
 
-  // Prepare SES params
+</body>
+</html>
+`;
+
+  const text = `
+STRIBBLE ORDER CONFIRMATION
+---------------------------
+Hi ${customerName || "Customer"},
+
+Thanks for purchasing: ${courseName}
+
+ACCESS LINK:
+${downloadLink || "Link unavailable, please contact support."}
+
+RECEIPT:
+Amount: ₹${amount}
+Order ID: ${orderId}
+Date: ${dateTime}
+`;
+
   const params = {
     Destination: { ToAddresses: [to] },
     Message: {
-      Subject: { Charset: "UTF-8", Data: `Your course access — ${courseName || "MadeMyCourse"}` },
+      Subject: { Charset: "UTF-8", Data: `Your Course: ${courseName}` },
       Body: {
         Html: { Charset: "UTF-8", Data: html },
         Text: { Charset: "UTF-8", Data: text },
@@ -154,18 +198,6 @@ export async function sendPaymentEmail(opts = {}) {
     return { success: true, messageId: res.MessageId || null };
   } catch (err) {
     console.error("sendPaymentEmail SES error:", err);
-    // Re-throw so caller can record failure and show in admin UI
     throw err;
   }
-}
-
-// small helper to avoid injected HTML
-function escapeHtml(str) {
-  if (str == null) return "";
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }

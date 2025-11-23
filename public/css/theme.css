@@ -1,8 +1,4 @@
-﻿/* =========================================
-   1. PREMIUM RESET & VARIABLES
-   ========================================= */
-:root {
-  /* --- Color Palette (Premium Slate & Royal Blue) --- */
+﻿:root {
   --primary: #0f172a;
   /* Deep, professional Navy (Almost Black) */
   --primary-hover: #334155;
@@ -1124,4 +1120,434 @@ tr:hover td {
   border-color: #3b82f6;
   outline: none;
   background: #fff;
+}
+
+/* =========================================
+   REVIEW SUMMARY (Refined Navy Style)
+   ========================================= */
+
+.review-summary-card {
+  background: #ffffff;
+  padding: 24px 32px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  margin-bottom: 40px;
+  display: flex;
+  gap: 48px;
+  align-items: center;
+  justify-content: space-between;
+  /* Spreads them out */
+}
+
+/* 1. The Bars Container (Now on the Left) */
+.summary-bars {
+  flex: 1;
+  /* Takes up remaining space */
+  max-width: 450px;
+  /* Limits width so bars aren't too long */
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  /* Tighter spacing */
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.rating-row:hover {
+  background-color: #f1f5f9;
+}
+
+.rating-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  width: 28px;
+}
+
+/* Thinner, Sleeker Bar Background */
+.progress-bg {
+  flex: 1;
+  height: 6px;
+  /* Made smaller (height) */
+  background-color: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+/* Navy Blue Fill */
+.progress-fill {
+  height: 100%;
+  background-color: #0f172a;
+  /* Navy Blue */
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.6s ease-out;
+}
+
+.rating-percent {
+  width: 36px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* 2. The Stats Block (Now on the Right) */
+.summary-stats {
+  text-align: center;
+  min-width: 120px;
+  padding-left: 32px;
+  border-left: 1px solid #e2e8f0;
+  /* Separator line on left */
+}
+
+.summary-average {
+  font-size: 2.5rem;
+  /* Made smaller (was 4rem) */
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.summary-stars {
+  color: #fbbf24;
+  font-size: 1.1rem;
+  /* Made smaller */
+  margin: 6px 0;
+  letter-spacing: 1px;
+}
+
+.summary-total {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Mobile: Stack vertical again */
+@media (max-width: 600px) {
+  .review-summary-card {
+    flex-direction: column-reverse;
+    /* Bars on bottom, Stats on top for mobile */
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .summary-stats {
+    border-left: none;
+    padding-left: 0;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    width: 100%;
+  }
+
+  .summary-bars {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* =========================================
+   15. TOTP INPUT STYLING (Fixes Vertical Stack)
+   ========================================= */
+
+.otp-input-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.otp-input-single {
+  width: 48px !important;
+  /* Force override of default 100% width */
+  height: 56px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.otp-input-single:focus {
+  border-color: #3b82f6;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.otp-input-single.filled {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+/* =========================================
+   16. ADMIN COUPON CARDS (Modern UI)
+   ========================================= */
+
+/* Grid Container for the coupons */
+#coupon-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* Individual Coupon Card */
+.coupon-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.coupon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+/* Header: Code Badge & Course Name */
+.coupon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.coupon-code-badge {
+  background: #f0fdf4;
+  color: #15803d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  border: 1px dashed #86efac;
+}
+
+.coupon-course {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Body: Stats Grid */
+.coupon-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.info-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* UPI Section */
+.upi-info {
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Delete Button */
+.btn-delete-coupon {
+  margin-top: auto;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-delete-coupon:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+/* =========================================
+   17. ADMIN COURSE LIST (Modern UI)
+   ========================================= */
+
+/* Grid Layout for the Course List */
+#course-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* The Card Container */
+.course-admin-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.course-admin-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+/* Thumbnail Image */
+.course-admin-media {
+  height: 160px;
+  background-color: #f1f5f9;
+  overflow: hidden;
+  position: relative;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.course-admin-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.course-admin-card:hover .course-admin-media img {
+  transform: scale(1.05);
+}
+
+/* Card Content */
+.course-admin-body {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-admin-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-admin-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  /* Pushes actions to bottom */
+}
+
+.course-admin-price {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 16px;
+}
+
+/* Action Buttons Container */
+.course-admin-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Edit Button */
+.btn-action-edit {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action-edit:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* Delete Button */
+.btn-action-delete {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action-delete:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
 }

@@ -1,4 +1,3 @@
-<!-- C:\Ebook\public\course.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,41 +5,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Course Details | Stribble</title>
-  <script src="js/settings.js" defer></script>
   <link rel="stylesheet" href="css/theme.css">
+  
+  <script src="js/settings.js" defer></script>
+  
+  <script src="js/course.js" defer></script>
 </head>
 
 <body>
+
+  <header class="nav">
+    <div class="container nav__inner">
+      <a href="index.html" class="brand">
+        <span class="brand__dot" aria-hidden="true"></span>
+        <span class="brand__name">Stribble</span>
+      </a>
+      <button id="navToggle" class="nav__toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav__links"></nav>
+    </div>
+  </header>
 
   <main class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
     <div id="course-details" class="course-grid"></div>
     <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0;">
 
     <section id="reviews-section" style="max-width: 800px; margin: 0 auto;">
-      <h2 style="margin-bottom: 20px;">Student Reviews</h2>
+      <h2 style="margin-bottom: 20px;">Course Reviews</h2>
 
       <div class="review-form-card"
         style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:30px;">
         <h3 style="font-size:1.2rem; margin-bottom:15px;">Write a Review</h3>
         <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
-          <span
-            style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED
-            BUYERS ONLY</span>
-          Please enter the Payment ID sent to your email to verify your purchase.
+          <span style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED BUYERS ONLY</span>
+          Please enter the Payment ID sent to your email.
         </p>
 
         <form id="reviewForm" style="display:grid; gap:12px;">
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <input type="text" id="rev-name" placeholder="Your Name" required class="input-field">
-            <input type="email" id="rev-email" placeholder="Your Email (used for purchase)" required
-              class="input-field">
+            <input type="email" id="rev-email" placeholder="Your Email (used for purchase)" required class="input-field">
           </div>
-          <input type="text" id="rev-paymentId" placeholder="Payment ID (e.g., pay_Os8...)" required
-            class="input-field">
+          <input type="text" id="rev-paymentId" placeholder="Payment ID (e.g., pay_Os8...)" required class="input-field">
 
           <div class="rating-select" style="display:flex; gap:10px; align-items:center;">
             <label>Rating:</label>
-            <select id="rev-rating" style="width:auto;">
+            <select id="rev-rating" style="width:auto; padding:8px;">
               <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
               <option value="4">⭐⭐⭐⭐ (Good)</option>
               <option value="3">⭐⭐⭐ (Average)</option>
@@ -49,20 +60,25 @@
             </select>
           </div>
 
-          <textarea id="rev-comment" rows="3" placeholder="Share your experience..." required
-            class="input-field"></textarea>
+          <textarea id="rev-comment" rows="3" placeholder="Share your experience..." required class="input-field"></textarea>
 
-          <button type="button" id="btn-submit-review" class="btn btn--primary" style="justify-self:start;">Submit
-            Review</button>
+          <button type="submit" id="btn-submit-review" class="btn btn--primary" style="justify-self:start;">Submit Review</button>
+          
           <div id="rev-msg" style="font-size:0.9rem; margin-top:5px;"></div>
         </form>
       </div>
 
+      <div id="rating-summary" class="review-summary-card hidden"></div>
+
+      <div id="reviews-list-header" style="margin-bottom:15px; display:none; justify-content:space-between; align-items:center;">
+        <h3 id="reviews-filter-msg" style="font-size:1.1rem; margin:0;">All Reviews</h3>
+        <button id="clear-filter-btn" style="font-size:0.85rem; color:#3b82f6; background:none; border:none; cursor:pointer; text-decoration:underline;">Clear Filter</button>
+      </div>
+        
       <div id="reviews-list" style="display:flex; flex-direction:column; gap:20px;">
         <p style="color:#64748b; text-align:center;">Loading reviews...</p>
       </div>
     </section>
-
 
     <div id="share-bar" style="margin-top: 20px;">
       <h4>Share this course:</h4>
@@ -80,121 +96,5 @@
     </div>
   </footer>
 
-  <script>
-    // Function to update share links dynamically
-    function updateShareLinks(course, currentUrl) {
-      const copyBtn = document.getElementById('copy-link');
-      const whatsapp = document.getElementById('whatsapp-link');
-      const facebook = document.getElementById('facebook-link');
-      const xlink = document.getElementById('x-link');
-      const linkedin = document.getElementById('linkedin-link');
-
-      copyBtn.onclick = async () => {
-        try {
-          await navigator.clipboard.writeText(currentUrl);
-          const originalText = copyBtn.textContent;
-          copyBtn.textContent = 'Copied!';
-          setTimeout(() => copyBtn.textContent = originalText, 1500);
-        } catch (e) {
-          prompt('Copy this link', currentUrl);
-        }
-      };
-
-      const text = encodeURIComponent(course.title + ' — Learn on Stribble');
-      const urlEncoded = encodeURIComponent(currentUrl);
-
-      if (whatsapp) whatsapp.href = `https://wa.me/?text=${text}%20${urlEncoded}`;
-      if (facebook) facebook.href = `https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}`;
-      if (xlink) xlink.href = `https://twitter.com/intent/tweet?text=${text}&url=${urlEncoded}`;
-      if (linkedin) linkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${urlEncoded}`;
-    }
-
-    async function loadCourseDetails() {
-      const params = new URLSearchParams(window.location.search);
-      const courseId = params.get("id");
-      const courseDetailsContainer = document.getElementById("course-details");
-
-      if (!courseId) {
-        courseDetailsContainer.innerHTML = "<p style='text-align:center; color:#666;'>No course selected. URL needs ?id=...</p>";
-        return;
-      }
-
-      try {
-        // Ensure API_BASE is defined, fallback to empty string for relative path if not
-        const apiBase = window.API_BASE || '';
-        const res = await fetch(`${apiBase}/api/courses/${courseId}`);
-
-        if (!res.ok) {
-          throw new Error(`Course fetch failed: ${res.status}`);
-        }
-
-        const data = await res.json();
-        const course = data.course || data;
-
-        // 1. Render HTML
-        courseDetailsContainer.innerHTML = `
-            <div class="course-card">
-              <div style="flex:0 0 360px; max-width:360px; width:100%;">
-                <div style="border-radius:12px; overflow:hidden; background:#f0f0f0;">
-                  <img src="${course.thumbnail || '/images/placeholder-course.png'}" 
-                       alt="${(course.title || '').replace(/\"/g, '')}" 
-                       style="width:100%; height:220px; object-fit:cover; display:block;" />
-                </div>
-              </div>
-              <div class="course-info" style="flex:1">
-                <h3 style="margin-top:0">${course.title}</h3>
-                <p style="color:var(--muted); line-height: 1.6;">${course.description}</p>
-                
-                <div style="margin-top:20px; display: flex; align-items: center; gap: 20px;">
-                  <span class="price" style="font-weight:800; font-size: 2em; color: #0f172a;">₹${course.price}</span>
-                  
-                  <button id="buy-btn" style="
-                    background-color: #000; 
-                    color: #fff; 
-                    padding: 8px 16px; 
-                    border: none; 
-                    border-radius: 4px; 
-                    cursor: pointer; 
-                    font-weight: 600; 
-                    font-size: 14px;
-                    transition: background 0.2s;">
-                    Buy Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-
-        // 2. Initialize Share Links with fetched data
-        updateShareLinks(course, window.location.href);
-
-        // 3. Add Event Listener for the Buy Button
-        const buyBtn = document.getElementById('buy-btn');
-        if (buyBtn) {
-          buyBtn.addEventListener('click', () => {
-            // Redirect to checkout
-            window.location.href = `checkout.html?courseId=${course._id}`;
-          });
-        }
-
-      } catch (err) {
-        console.error("Error loading course:", err);
-        courseDetailsContainer.innerHTML = "<p style='text-align:center; color:red;'>Failed to load course details. Please try again later.</p>";
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById('year').textContent = new Date().getFullYear();
-      loadCourseDetails();
-
-      const navToggle = document.getElementById('navToggle');
-      if (navToggle) {
-        navToggle.addEventListener('click', () => {
-          alert('Open menu (mobile)');
-        });
-      }
-    });
-  </script>
-</body>
-
+  </body>
 </html>

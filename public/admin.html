@@ -1,4 +1,3 @@
-<!-- C:\Ebook\public\admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,307 +10,348 @@
 </head>
 
 <body>
+
+  <div id="notification" class="notification-container" aria-live="polite" role="status"></div>
+
+  <div id="login-overlay" class="login-overlay" aria-hidden="false">
+    <div class="login-box" role="dialog" aria-modal="true" aria-labelledby="login-heading">
+      <div id="login-form-container">
+        <h3 id="login-heading" style="text-align: center; margin-bottom: 20px;">🔐 Admin Login</h3>
+
+        <form id="adminLoginForm" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="adminEmail">Email Address</label>
+            <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required />
+          </div>
+
+          <div class="field">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" name="adminPassword" placeholder="Enter your password" required />
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--block" style="margin-top: 20px;">Sign In</button>
+        </form>
+
+        <div style="text-align:center;margin-top:16px">
+          <a href="#" id="forgotPasswordLink" style="color:inherit;text-decoration:underline;font-size:14px">
+            Forgot your password?
+          </a>
+        </div>
+      </div>
+
+      <div id="totp-setup" class="totp-setup hidden" aria-hidden="true">
+        <h3>📱 Setup Two-Factor Authentication</h3>
+        <p style="color:var(--muted);font-size:14px">Scan this QR code with your authenticator app</p>
+        <img id="totp-qr" alt="TOTP QR" class="qr-img" style="margin:16px auto;display:block;max-width:220px" />
+        <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin:8px 0">
+          <small>Manual entry code:</small><br />
+          <code id="totp-secret" style="font-size:15px;user-select:all"></code>
+        </div>
+        <div class="field">
+          <label for="totp-token">Enter 6-digit code</label>
+          <input type="text" id="totp-token" name="totp-token" placeholder="000000" maxlength="6" pattern="[0-9]{6}" />
+        </div>
+        <button id="verify-totp-btn" class="btn btn--primary btn--block" style="margin-top:8px">Verify & Enable
+          2FA</button>
+      </div>
+
+      <div id="totp-challenge" class="totp-challenge hidden" aria-hidden="true">
+        <h3>🔐 Two-Factor Authentication</h3>
+        <p>Enter the 6-digit code from your authenticator app</p>
+        <div class="otp-input-group" role="group" aria-label="TOTP inputs">
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-1" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-2" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-3" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-4" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-5" />
+          <input type="text" class="otp-input-single" maxlength="1" id="totp-6" />
+        </div>
+        <input type="hidden" id="totp-login-token" />
+        <button id="verify-login-totp" class="btn btn--primary btn--block">Verify Code</button>
+        <div style="text-align:center;margin-top:10px">
+          <a href="#" onclick="location.reload()" style="color:var(--muted);font-size:13px">← Back to login</a>
+        </div>
+      </div>
+
+      <div id="login-error" class="login-error hidden" role="alert" aria-live="assertive"></div>
+    </div>
+  </div>
+
+  <div id="edit-course-overlay" class="login-overlay hidden" aria-hidden="true">
+    <div class="login-box" role="dialog" aria-modal="true">
+      <h3 style="margin-bottom: 20px; text-align: center;">✏️ Edit Course</h3>
+
+      <form id="edit-course-form" style="display:flex; flex-direction:column; gap:16px;">
+        <input type="hidden" id="edit-course-id">
+
+        <div class="field">
+          <label for="edit-title">Course Title</label>
+          <input type="text" id="edit-title" required />
+        </div>
+
+        <div class="field">
+          <label for="edit-desc">Description</label>
+          <textarea id="edit-desc" rows="3" required></textarea>
+        </div>
+
+        <div style="display:flex; gap:16px;">
+          <div class="field" style="flex:1;">
+            <label for="edit-price">Price (₹)</label>
+            <input type="number" id="edit-price" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="edit-link">Google Drive Link</label>
+          <input type="text" id="edit-link" placeholder="Enter new link to update (or leave as is)" />
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:10px;">
+          <button type="button" class="btn btn--ghost" id="cancel-edit-btn" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="edit-coupon-overlay" class="login-overlay hidden" aria-hidden="true">
+    <div class="login-box" role="dialog" aria-modal="true" style="max-width: 600px;">
+      <h3 style="margin-bottom: 20px; text-align: center;">🎟️ Edit Coupon</h3>
+
+      <form id="edit-coupon-form" style="display:flex; flex-direction:column; gap:16px;">
+        <input type="hidden" id="edit-coupon-id">
+
+        <div style="display:flex; gap:16px;">
+          <div class="field" style="flex:1;">
+            <label for="edit-coupon-code">Coupon Code</label>
+            <input type="text" id="edit-coupon-code" required />
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="edit-coupon-discount">Discount (₹)</label>
+            <input type="number" id="edit-coupon-discount" required />
+          </div>
+        </div>
+
+        <h4 style="margin: 8px 0 4px; font-size: 0.9rem; color: var(--text-muted);">Commission Settings</h4>
+
+        <div style="display:flex; gap:16px;">
+          <div class="field" style="flex:2;">
+            <label for="edit-inf-upi">Influencer UPI</label>
+            <input type="text" id="edit-inf-upi" placeholder="user@bank" />
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="edit-inf-comm">Comm. (₹)</label>
+            <input type="number" id="edit-inf-comm" />
+          </div>
+        </div>
+
+        <div style="display:flex; gap:16px;">
+          <div class="field" style="flex:2;">
+            <label for="edit-cre-upi">Creator UPI</label>
+            <input type="text" id="edit-cre-upi" placeholder="creator@bank" />
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="edit-cre-comm">Comm. (₹)</label>
+            <input type="number" id="edit-cre-comm" />
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button type="button" class="btn btn--ghost" id="cancel-coupon-edit" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="reset-overlay" class="reset-overlay hidden" aria-hidden="true">
+    <div class="reset-box" role="dialog" aria-modal="true" aria-labelledby="reset-heading">
+      <h3 id="reset-heading">🔑 Reset Admin Password</h3>
+      <p style="color:var(--muted)">Enter the OTP sent to your email.</p>
+
+      <div class="field">
+        <label for="reset-otp">OTP Code</label>
+        <input type="text" id="reset-otp" name="reset-otp" placeholder="6-digit OTP" maxlength="6" />
+      </div>
+      <div class="timer-display" aria-live="polite">Expires in: <span id="timer-countdown">10:00</span></div>
+      <div class="field">
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" name="new-password" placeholder="Min 8 characters" />
+      </div>
+      <div class="field">
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" name="confirm-password" placeholder="Re-enter password" />
+      </div>
+
+      <button id="reset-password-btn" class="btn btn--primary btn--block" style="margin-top:6px">Reset Password</button>
+      <button id="resend-otp-btn" class="btn btn--ghost btn--block" style="margin-top:8px">Resend OTP</button>
+      <div style="text-align:center;margin-top:12px">
+        <a href="#" id="close-reset" style="color:inherit;text-decoration:underline">Cancel</a>
+      </div>
+    </div>
+  </div>
+
   <div class="admin-root" id="adminRoot">
 
-    <header class="nav" aria-hidden="false" style="position:sticky;top:0;z-index:90">
-      <div id="notification" class="notification-container" aria-live="polite" role="status"></div>
+    <aside class="sidebar" aria-label="Admin Navigation">
+      <button class="sidebar-collapse" id="toggleSidebar" title="Toggle sidebar">⟵</button>
+      <h2>Admin</h2>
+      <nav class="sidebar-nav" role="navigation">
+        <a href="#" data-section="dashboard" class="active" id="nav-dashboard">📊 Dashboard</a>
+        <a href="#" data-section="courses" id="nav-courses">📚 Courses</a>
+        <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
+        <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
+        <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
+        <a href="#" id="nav-logout" onclick="logout()">🚪 Logout</a>
+      </nav>
+    </aside>
 
-      <div id="login-overlay" class="login-overlay" aria-hidden="false">
-        <div class="login-box" role="dialog" aria-modal="true" aria-labelledby="login-heading">
-          <div id="login-form-container">
-            <h3 id="login-heading">🔐 Admin Login</h3>
+    <main class="content" role="main" id="mainContent" tabindex="-1">
+      <div class="topbar">
+        <span id="section-title">Dashboard</span>
+      </div>
 
-            <form id="adminLoginForm" autocomplete="on" novalidate>
-              <div class="field">
-                <label for="adminEmail">Email Address</label>
-                <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required />
+      <section id="dashboard" class="content-section">
+        <h2>Overview</h2>
+        <div class="stats-grid" style="display:flex; gap:20px; margin-top:20px; flex-wrap: wrap;">
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3 id="dashboard-courses">0</h3>
+            <p>Total Courses</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3 id="dashboard-coupons">0</h3>
+            <p>Total Coupons</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3 id="dashboard-sales">0</h3>
+            <p>Total Sales</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="courses" class="content-section hidden">
+        <h2>Manage Courses</h2>
+        <form id="add-course-form" enctype="multipart/form-data"
+          style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+          <input type="text" name="title" placeholder="Course Title" required />
+          <textarea name="description" placeholder="Course Description" required rows="3"></textarea>
+          <div style="display:flex; gap:10px;">
+            <input type="number" name="price" placeholder="Price (₹)" required style="flex:1" />
+            <input type="file" name="thumbnail" accept="image/*" required style="flex:1" />
+          </div>
+          <input type="text" name="googleDriveLink" placeholder="Google Drive Link" required />
+          <button type="submit" class="btn btn--primary">Add Course</button>
+        </form>
+        <div id="course-list" style="margin-top:24px" aria-live="polite"></div>
+      </section>
+
+      <section id="coupons" class="content-section hidden">
+        <h2>Manage Coupons</h2>
+        <form id="add-coupon-form"
+          style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+          <select name="courseId" id="coupon-course-select" required>
+            <option value="">-- Select Course --</option>
+          </select>
+          <div style="display:flex; gap:10px;">
+            <input type="text" name="code" placeholder="Coupon Code (e.g. SAVE10)" required style="flex:1" />
+            <input type="number" name="discount" placeholder="Discount Amount (₹)" required style="flex:1" />
+          </div>
+          <h4>Commission Settings (Optional)</h4>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="text" name="influencerUPI" placeholder="Influencer UPI" />
+            <input type="number" name="influencerCommission" placeholder="Influencer Comm. (₹)" />
+            <input type="text" name="ebookCreatorUPI" placeholder="Creator UPI" />
+            <input type="number" name="ebookCreatorCommission" placeholder="Creator Comm. (₹)" />
+          </div>
+          <button type="submit" class="btn btn--primary">Create Coupon</button>
+        </form>
+        <div id="coupon-list" style="margin-top:24px"></div>
+      </section>
+
+      <section id="sales" class="content-section hidden">
+        <h2>Sales Reports</h2>
+        <div class="chart-container"
+          style="margin-top:20px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+          <h3>Daily Sales (Last 7 Days)</h3>
+          <canvas id="salesChart" width="600" height="300"></canvas>
+        </div>
+        <div style="margin-top:24px;">
+          <h3>Sales per Course</h3>
+          <div id="course-sales" style="margin-top:10px;"></div>
+        </div>
+        <div class="failed-emails-section" style="margin-top:40px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="color:#dc2626;">📧 Failed Email Deliveries</h3>
+            <button id="resendAllBtn" class="btn btn--ghost">Resend All Failed</button>
+          </div>
+          <div class="table-wrap" style="margin-top:12px;">
+            <table class="failed-emails-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Course</th>
+                  <th>Order ID</th>
+                  <th>Paid At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="failedEmailsList"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="promoters" class="content-section hidden">
+        <h2>Promoters</h2>
+        <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+          <div
+            style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+            <h3>Add Promoter</h3>
+            <form id="createPromoterForm" style="display:flex; flex-direction:column; gap:10px;">
+              <input name="name" placeholder="Name" required />
+              <input name="email" placeholder="Email" />
+              <input name="upi" placeholder="UPI ID" />
+              <div style="display:flex; gap:10px;">
+                <input name="defaultCoupon" placeholder="Coupon Code" style="flex:1" />
+                <input name="refId" placeholder="Ref ID (Auto)" style="flex:1" />
               </div>
-
-              <div class="field">
-                <label for="adminPassword">Password</label>
-                <input type="password" id="adminPassword" name="adminPassword" placeholder="Enter your password"
-                  required />
-              </div>
-
-              <button type="submit" class="btn btn--primary btn--block">Sign In</button>
+              <button type="submit" class="btn btn--primary">Create</button>
+              <div id="createPromoterMsg" class="mini"></div>
             </form>
-
-            <div style="text-align:center;margin-top:12px">
-              <a href="#" id="forgotPasswordLink" style="color:inherit;text-decoration:underline;font-size:14px">
-                Forgot your password?
-              </a>
-            </div>
           </div>
 
-          <div id="totp-setup" class="totp-setup hidden" aria-hidden="true">
-            <h3>📱 Setup Two-Factor Authentication</h3>
-            <p style="color:var(--muted);font-size:14px">Scan this QR code with your authenticator app
-              (Google/Microsoft)
-            </p>
-            <img id="totp-qr" alt="TOTP QR" class="qr-img" style="margin:16px auto;display:block;max-width:220px" />
-            <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin:8px 0">
-              <small>Manual entry code:</small><br />
-              <code id="totp-secret" style="font-size:15px;user-select:all"></code>
-            </div>
-
-            <div class="field">
-              <label for="totp-token">Enter 6-digit code from app</label>
-              <input type="text" id="totp-token" name="totp-token" placeholder="000000" maxlength="6"
-                pattern="[0-9]{6}" />
-            </div>
-
-            <button id="verify-totp-btn" class="btn btn--primary btn--block" style="margin-top:8px">Verify & Enable
-              2FA</button>
-          </div>
-
-          <div id="totp-challenge" class="totp-challenge hidden" aria-hidden="true">
-            <h3>🔐 Two-Factor Authentication</h3>
-            <p>Enter the 6-digit code from your authenticator app</p>
-            <div class="otp-input-group" role="group" aria-label="TOTP inputs">
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-1" />
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-2" />
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-3" />
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-4" />
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-5" />
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input-single" maxlength="1"
-                id="totp-6" />
-            </div>
-
-            <input type="hidden" id="totp-login-token" />
-            <button id="verify-login-totp" class="btn btn--primary btn--block">Verify Code</button>
-
-            <div style="text-align:center;margin-top:10px">
-              <a href="#" onclick="location.reload()" style="color:var(--muted);font-size:13px">← Back to login</a>
-            </div>
-          </div>
-
-          <div id="login-error" class="login-error hidden" role="alert" aria-live="assertive"></div>
-        </div>
-      </div>
-
-      <!-- Password Reset Overlay -->
-      <div id="reset-overlay" class="reset-overlay hidden" aria-hidden="true">
-        <div class="reset-box" role="dialog" aria-modal="true" aria-labelledby="reset-heading">
-          <h3 id="reset-heading">🔑 Reset Admin Password</h3>
-          <p style="color:var(--muted)">We sent a 6-digit OTP to the registered admin email. Enter it below and set a
-            new password.</p>
-
-          <div class="field">
-            <label for="reset-otp">OTP Code</label>
-            <input type="text" id="reset-otp" name="reset-otp" placeholder="6-digit OTP" maxlength="6" />
-          </div>
-
-          <div class="timer-display" aria-live="polite">OTP expires in: <span id="timer-countdown">10:00</span></div>
-
-          <div class="field">
-            <label for="new-password">New Password</label>
-            <input type="password" id="new-password" name="new-password" placeholder="At least 8 characters" />
-          </div>
-
-          <div class="field">
-            <label for="confirm-password">Confirm Password</label>
-            <input type="password" id="confirm-password" name="confirm-password" placeholder="Re-enter new password" />
-          </div>
-
-          <button id="reset-password-btn" class="btn btn--primary btn--block" style="margin-top:6px">Reset
-            Password</button>
-          <button id="resend-otp-btn" class="btn btn--ghost btn--block" style="margin-top:8px">Resend OTP</button>
-
-          <div style="text-align:center;margin-top:12px">
-            <a href="#" id="close-reset" style="color:inherit;text-decoration:underline">Cancel & Back to Login</a>
+          <div
+            style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+            <h3>Record Payout</h3>
+            <form id="promoterPayoutForm" style="display:flex; flex-direction:column; gap:10px;">
+              <input name="refId" placeholder="Promoter Ref ID" required />
+              <input name="amount" type="number" placeholder="Amount (₹)" required />
+              <select name="method">
+                <option value="manual">Manual Transfer</option>
+                <option value="razorpayx">RazorpayX</option>
+                <option value="bank">Bank Transfer</option>
+              </select>
+              <input name="notes" placeholder="Notes" />
+              <button type="submit" class="btn btn--primary">Record Payment</button>
+              <div id="payoutMsg" class="mini"></div>
+            </form>
           </div>
         </div>
-      </div>
 
-      <!-- Sidebar -->
-      <aside class="sidebar" aria-label="Admin Navigation">
-        <button class="sidebar-collapse" id="toggleSidebar" title="Toggle sidebar"
-          aria-label="Toggle sidebar">⟵</button>
-
-        <h2>Admin</h2>
-        <nav class="sidebar-nav" role="navigation" aria-label="Admin sections">
-          <a href="#" data-section="dashboard" class="active" id="nav-dashboard">📊 Dashboard</a>
-          <a href="#" data-section="courses" id="nav-courses">📚 Courses</a>
-          <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
-          <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
-          <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
-          <a href="#" id="nav-logout" onclick="logout()">🚪 Logout</a>
-        </nav>
-      </aside>
-
-      <!-- Main -->
-      <main class="content" role="main" id="mainContent" tabindex="-1">
-        <div class="topbar">
-          <span id="section-title">Dashboard</span>
-        </div>
-
-        <!-- DASHBOARD -->
-        <section id="dashboard" class="content-section">
-          <h2>Dashboard</h2>
-
-          <div class="stats-grid" style="display:flex; gap:12px; margin-top:12px;">
-            <div class="stat-card">
-              <h3 id="dashboard-courses">0</h3>
-              <p>Total Courses</p>
-            </div>
-            <div class="stat-card">
-              <h3 id="dashboard-coupons">0</h3>
-              <p>Total Coupons</p>
-            </div>
-            <div class="stat-card">
-              <h3 id="dashboard-sales">0</h3>
-              <p>Total Sales</p>
-            </div>
+        <div style="margin-top:30px;">
+          <div style="display:flex; gap:12px; margin-bottom:15px;">
+            <input id="promoterSearch" placeholder="Search promoters..."
+              style="padding:8px; border:1px solid #cbd5e1; border-radius:4px; width:250px;" />
+            <button id="promoterRefresh" class="btn btn--ghost">Refresh List</button>
           </div>
-        </section>
-
-        <!-- COURSES -->
-        <section id="courses" class="content-section hidden" aria-hidden="true">
-          <h2>Manage Courses</h2>
-          <form id="add-course-form" enctype="multipart/form-data"
-            style="display:flex; flex-direction:column; gap:10px; max-width:700px;">
-            <input type="text" name="title" placeholder="Course Title" required />
-            <textarea name="description" placeholder="Course Description" required rows="4"></textarea>
-            <input type="number" name="price" placeholder="Course Price" required />
-            <input type="text" name="googleDriveLink" placeholder="Google Drive Link" required />
-            <label>Thumbnail Image</label>
-            <input type="file" name="thumbnail" accept="image/*" required />
-            <button type="submit" class="btn btn--primary" style="width:160px">Add Course</button>
-          </form>
-          <div id="course-list" style="margin-top:18px" aria-live="polite"></div>
-        </section>
-
-        <!-- COUPONS -->
-        <section id="coupons" class="content-section hidden" aria-hidden="true">
-          <h2>Manage Coupons</h2>
-          <form id="add-coupon-form" style="display:flex;flex-direction:column;gap:10px;max-width:700px">
-            <label for="coupon-course-select">Select Course</label>
-            <select name="courseId" id="coupon-course-select" required>
-              <option value="">-- Select Course --</option>
-            </select>
-            <input type="text" name="code" placeholder="Coupon Code" required />
-            <input type="number" name="discount" placeholder="Discount (₹)" required />
-            <input type="text" name="influencerUPI" placeholder="Influencer UPI ID (optional)" />
-            <input type="text" name="ebookCreatorUPI" placeholder="Ebook Creator UPI ID (optional)" />
-            <input type="number" name="influencerCommission" placeholder="Influencer Commission (₹)" />
-            <input type="number" name="ebookCreatorCommission" placeholder="Ebook Creator Commission (₹)" />
-            <button type="submit" class="btn btn--primary" style="width:160px">Add Coupon</button>
-          </form>
-
-          <h3 style="margin-top:18px">All Coupons</h3>
-          <div id="coupon-list" style="margin-top:12px;" aria-live="polite"></div>
-        </section>
-
-        <!-- SALES -->
-        <section id="sales" class="content-section hidden" aria-hidden="true">
-          <h2>Sales Reports</h2>
-
-          <div class="chart-container" style="margin-top:12px;">
-            <h3>Daily Sales (Last 7 Days)</h3>
-            <canvas id="salesChart" width="600" height="300" aria-label="Sales chart" role="img"></canvas>
-          </div>
-
-          <div class="sales-cards" style="margin-top:18px;">
-            <h3>Total Sales per Course</h3>
-            <div id="course-sales" class="cards-grid" style="margin-top:10px" aria-live="polite"></div>
-          </div>
-
-          <div class="coupon-usage-cards" style="margin-top:18px;">
-            <h3>Coupon Usage</h3>
-            <div id="coupon-usage" class="cards-grid" style="margin-top:10px" aria-live="polite"></div>
-          </div>
-
-          <div class="failed-emails-section mt-30" style="margin-top:22px;">
-            <h3>📧 Failed Email Deliveries</h3>
-            <button id="resendAllBtn" class="btn btn--ghost mb-12" style="margin-top:10px">Resend All Failed
-              Emails</button>
-
-            <div class="table-wrap" style="margin-top:12px;">
-              <table class="failed-emails-table" role="table" aria-label="Failed emails">
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Course</th>
-                    <th>Order ID</th>
-                    <th>Paid At</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="failedEmailsList"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- PROMOTERS (NEW) -->
-        <section id="promoters" class="content-section hidden" aria-hidden="true">
-          <h2>Promoters</h2>
-
-          <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
-            <!-- Create promoter -->
-            <div style="flex:1; min-width:320px; max-width:520px;">
-              <h3>Create Promoter</h3>
-              <form id="createPromoterForm" style="display:flex;flex-direction:column;gap:8px">
-                <input name="name" placeholder="Name (required)" required />
-                <input name="email" placeholder="Email (optional)" />
-                <input name="upi" placeholder="UPI (for payouts)" />
-                <input name="defaultCoupon" placeholder="Default coupon code (optional)" />
-                <input name="refId" placeholder="Optional refId (auto if blank)" />
-                <div class="flex-row">
-                  <button type="submit" class="btn btn--primary">Create Promoter</button>
-                  <div id="createPromoterMsg" class="mini"></div>
-                </div>
-              </form>
-
-              <div class="prom-notice">Promoters can share:
-                <code>https://stribble.site/course/&lt;courseId&gt;?ref=&lt;refId&gt;&amp;coupon=&lt;coupon&gt;</code>
-              </div>
-            </div>
-
-            <!-- Payout -->
-            <div style="flex:1; min-width:320px; max-width:520px;">
-              <h3>Pay Promoter</h3>
-              <form id="promoterPayoutForm" style="display:flex;flex-direction:column;gap:8px">
-                <input name="refId" placeholder="prom_xxx (required)" required />
-                <input name="amount" type="number" placeholder="Amount (₹) (required)" required />
-                <select name="method">
-                  <option value="manual">Manual</option>
-                  <option value="razorpayx">RazorpayX</option>
-                  <option value="bank">Bank Transfer</option>
-                </select>
-                <input name="notes" placeholder="Notes (optional)" />
-                <div class="flex-row">
-                  <button type="submit" class="btn btn--primary">Record Payout</button>
-                  <div id="payoutMsg" class="mini"></div>
-                </div>
-              </form>
-              <div class="prom-notice">Records create an auditable payout and debit the promoter's balance. Use this
-                after
-                you transfer funds externally (or integrate RazorpayX).</div>
-            </div>
-          </div>
-
-          <hr style="margin:18px 0">
-
-          <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
-            <input id="promoterSearch" placeholder="Search promoters by name / email / ref" style="flex:1" />
-            <button id="promoterRefresh" class="btn btn--ghost">Refresh</button>
-          </div>
-
-          <div style="overflow:auto">
-            <table id="promoterTable" style="width:100%;border-collapse:collapse">
+          <div style="overflow-x:auto;">
+            <table id="promoterTable">
               <thead>
                 <tr>
                   <th>Ref</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>UPI</th>
-                  <th>Balance (₹)</th>
+                  <th>Balance</th>
                   <th>Sales</th>
                   <th>Active</th>
                   <th>Actions</th>
@@ -320,239 +360,48 @@
               <tbody></tbody>
             </table>
           </div>
+        </div>
+      </section>
 
-        </section>
-      </main>
-  </div> <!-- .admin-root -->
+    </main>
+  </div>
 
-  <!-- Scripts -->
   <script src="js/admin-auth.js" defer></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="js/admin.js" defer></script>
 
-
-  <script>
-    (function () {
-
-      function apiPath(p) { return (window.API_BASE || "") + p; }
-
-      async function safeJsonFetch(url, opts = {}) {
-        const res = await fetch(url, opts);
-        const text = await res.text();
-        let parsed = null;
-        try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
-        if (!res.ok) {
-          const msg = parsed?.message || parsed?.error || `HTTP ${res.status}`;
-          const err = new Error(msg);
-          err.status = res.status;
-          err.body = parsed;
-          throw err;
-        }
-        return parsed;
-      }
-
-      const createForm = document.getElementById('createPromoterForm');
-      const createMsg = document.getElementById('createPromoterMsg');
-      createForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        createMsg.textContent = 'Creating...';
-        const fd = new FormData(createForm);
-        const body = Object.fromEntries(fd.entries());
-        try {
-          const j = await safeJsonFetch(apiPath('/api/admin/promoters'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-          if (j.success) {
-            createMsg.textContent = 'Created: ' + (j.promoter.refId || '');
-            loadPromoters();
-            createForm.reset();
-          } else {
-            createMsg.textContent = 'Error: ' + (j.message || 'failed');
-          }
-        } catch (err) {
-          createMsg.textContent = 'Error: ' + (err.message || 'failed');
-          console.error(err);
-        } finally {
-          setTimeout(() => createMsg.textContent = '', 3000);
-        }
-      });
-
-      // payout form
-      const payoutForm = document.getElementById('promoterPayoutForm');
-      const payoutMsg = document.getElementById('payoutMsg');
-      payoutForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        payoutMsg.textContent = 'Processing...';
-        const fd = new FormData(payoutForm);
-        const body = Object.fromEntries(fd.entries());
-        body.amount = Number(body.amount || 0);
-        body.markOrdersPaid = true;
-        const ref = body.refId;
-        if (!ref) { payoutMsg.textContent = 'Enter refId'; return; }
-        try {
-          const j = await safeJsonFetch(apiPath('/api/admin/promoters/' + encodeURIComponent(ref) + '/payout'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-          if (j.success) {
-            payoutMsg.textContent = 'Payout recorded';
-            payoutForm.reset();
-            loadPromoters();
-          } else {
-            payoutMsg.textContent = 'Error: ' + (j.message || 'failed');
-          }
-        } catch (err) {
-          payoutMsg.textContent = 'Error: ' + (err.message || 'failed');
-          console.error(err);
-        } finally {
-          setTimeout(() => payoutMsg.textContent = '', 4000);
-        }
-      });
-
-      // load promoters list
-      const promoterTableBody = document.querySelector('#promoterTable tbody');
-      async function loadPromoters(q = '') {
-        try {
-          const url = apiPath('/api/admin/promoters') + (q ? '?q=' + encodeURIComponent(q) : '');
-          const j = await safeJsonFetch(url, { credentials: 'include' });
-          if (!j.success) { promoterTableBody.innerHTML = '<tr><td colspan="8">Failed to load</td></tr>'; return; }
-          const rows = j.promoters || [];
-          promoterTableBody.innerHTML = rows.map(p => {
-            const name = p.name || '';
-            const email = p.email || '';
-            const upi = p.upi || '';
-            const balance = Number(p.payoutBalance || 0).toFixed(2);
-            const sales = p.totalSales || 0;
-            const active = p.active ? 'Yes' : 'No';
-            const actions = `
-              <button class="toggleBtn" data-ref="${p.refId}">${p.active ? 'Disable' : 'Enable'}</button>
-              <button class="copyBtn" data-ref="${p.refId}">Copy Link</button>
-              <button class="impCopy" data-ref="${p.refId}">Copy Promo Link</button>
-            `;
-            return `<tr>
-              <td>${p.refId}</td>
-              <td>${name}</td>
-              <td>${email}</td>
-              <td>${upi}</td>
-              <td>₹${balance}</td>
-              <td>${sales}</td>
-              <td>${active}</td>
-              <td>${actions}</td>
-            </tr>`;
-          }).join('') || '<tr><td colspan="8">No promoters</td></tr>';
-        } catch (err) {
-          console.error('loadPromoters', err);
-          promoterTableBody.innerHTML = '<tr><td colspan="8">Error loading promoters</td></tr>';
-        }
-      }
-
-      // actions: toggle, copy
-      document.querySelector('#promoterTable')?.addEventListener('click', async (ev) => {
-        const btn = ev.target;
-        if (btn.matches('.toggleBtn')) {
-          const ref = btn.dataset.ref;
-          btn.disabled = true;
-          try {
-            const j = await safeJsonFetch(apiPath('/api/admin/promoters/' + encodeURIComponent(ref) + '/toggle'), { method: 'POST', credentials: 'include' });
-            if (j.success) { loadPromoters(); } else { alert('Toggle failed'); }
-          } catch (err) { console.error(err); alert('Error toggling'); }
-          btn.disabled = false;
-        } else if (btn.matches('.copyBtn')) {
-          const ref = btn.dataset.ref;
-          const link = location.origin + '/course/<courseId>?ref=' + encodeURIComponent(ref) + '&coupon=YOUR_COUPON';
-          try { await navigator.clipboard.writeText(link); alert('Copied share template'); } catch (e) { prompt('Copy this link', link); }
-        } else if (btn.matches('.impCopy')) {
-          // useful quick copy where you copy a sample link for promoters (they edit courseId/coupon)
-          const ref = btn.dataset.ref;
-          const link = location.origin + '/course/<courseId>?ref=' + encodeURIComponent(ref);
-          try { await navigator.clipboard.writeText(link); alert('Copied promo link'); } catch (e) { prompt('Copy this link', link); }
-        }
-      });
-
-      // search / refresh
-      document.getElementById('promoterRefresh')?.addEventListener('click', () => loadPromoters(document.getElementById('promoterSearch').value.trim()));
-      document.getElementById('promoterSearch')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') loadPromoters(e.target.value.trim()); });
-
-      // Expose for admin code to call when showing promoter tab
-      window.loadPromoters = loadPromoters;
-
-      // When promoters tab is shown, auto-load
-      const navPromoters = document.getElementById('nav-promoters');
-      navPromoters?.addEventListener('click', () => { setTimeout(() => loadPromoters(), 100); });
-
-      // initial
-      document.addEventListener('DOMContentLoaded', () => {
-        // nothing here — admin.js handles auth and then user switches sections
-      });
-    })();
-  </script>
-
-  <!-- Inline admin UI glue (collapse toggle + simple nav) -->
   <script>
     (function () {
       const root = document.getElementById('adminRoot');
       const btn = document.getElementById('toggleSidebar');
-      const navToggle = document.getElementById('navToggle');
 
-      // Toggle collapsed class and update button visual
-      btn?.addEventListener('click', (e) => {
-        e.preventDefault();
+      btn?.addEventListener('click', () => {
         root.classList.toggle('collapsed');
         btn.textContent = root.classList.contains('collapsed') ? '⟶' : '⟵';
-        if (root.classList.contains('collapsed')) {
-          document.getElementById('mainContent')?.focus?.();
-        } else {
-          btn.focus();
-        }
       });
 
-      // basic nav switching
       const sections = ['dashboard', 'courses', 'coupons', 'sales', 'promoters'];
       function showSection(name) {
         sections.forEach(s => {
           const el = document.getElementById(s);
-          if (!el) return;
-          const active = s === name;
-          el.classList.toggle('hidden', !active);
-          el.setAttribute('aria-hidden', String(!active));
+          if (el) {
+            el.classList.toggle('hidden', s !== name);
+            if (s === name) document.getElementById('section-title').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+          }
         });
-        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.section === name));
-        document.getElementById('section-title').textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        document.getElementById('mainContent').scrollTop = 0;
-
-        // if promoters tab, call loader
-        if (name === 'promoters' && typeof window.loadPromoters === 'function') {
-          window.loadPromoters();
-        }
+        document.querySelectorAll('.sidebar-nav a').forEach(a => {
+          a.classList.toggle('active', a.getAttribute('data-section') === name);
+        });
+        if (name === 'promoters' && window.loadPromoters) window.loadPromoters();
       }
 
       document.querySelectorAll('.sidebar-nav a[data-section]').forEach(a => {
-        a.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          const target = a.getAttribute('data-section');
-          if (target) showSection(target);
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          showSection(a.getAttribute('data-section'));
         });
       });
 
-      // Nav toggle (for small screens) — opens sidebar (as simple show/hide)
-      navToggle?.addEventListener('click', () => {
-        const sidebar = document.querySelector('.sidebar');
-        if (!sidebar) return;
-        const visible = getComputedStyle(sidebar).transform === 'none' && !root.classList.contains('collapsed');
-        if (visible) {
-          root.classList.add('collapsed');
-        } else {
-          root.classList.remove('collapsed');
-        }
-      });
-
-      // expose to window
       window.adminShowSection = showSection;
     })();
   </script>

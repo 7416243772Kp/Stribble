@@ -119,5 +119,15 @@ router.post("/validate", async (req, res) => {
   }
 });
 
-
+// GET Single Coupon (For Editing)
+router.get("/:id", async (req, res) => {
+  try {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ success: false, message: "Coupon not found" });
+    res.json({ success: true, coupon });
+  } catch (err) {
+    console.error("Fetch single coupon error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 export default router;

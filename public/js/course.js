@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Initialize Page
   if (courseId) {
     loadCourseDetails(courseId);
-    initReviews(courseId); // Initialize reviews immediately
+    initReviews(courseId); // Initialize reviews
   } else {
     const container = document.getElementById("course-details");
     if (container) {
@@ -90,29 +90,27 @@ async function loadCourseDetails(courseId) {
 // ==========================================
 function initReviews(courseId) {
   const listContainer = document.getElementById("reviews-list");
+  const summaryContainer = document.getElementById("rating-summary");
   const form = document.getElementById("reviewForm");
   const msgDiv = document.getElementById("rev-msg");
-  const submitBtn = document.getElementById("btn-submit-review"); // New ID target
+  const listHeader = document.getElementById("reviews-list-header");
+  const filterMsg = document.getElementById("reviews-filter-msg");
+  const clearFilterBtn = document.getElementById("clear-filter-btn");
 
-  if (!listContainer || !form || !submitBtn) {
-    console.warn("Review elements not found");
-    return;
-  }
+  let allReviews = []; 
 
-  // 1. Handle Manual Submission (Click instead of Submit)
-  submitBtn.addEventListener("click", async () => {
+  if (!listContainer || !form) return;
 
-    // A. Manual Validation (Since we aren't using type="submit")
-    if (!form.checkValidity()) {
-      form.reportValidity(); // Shows the browser's "Please fill out this field" popup
-      return;
-    }
-
+  // 1. Handle Form Submission
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById("btn-submit-review");
     const originalBtnText = submitBtn.textContent;
+    
     submitBtn.disabled = true;
     submitBtn.textContent = "Verifying...";
-
-    msgDiv.textContent = "Verifying payment and posting...";
+    msgDiv.textContent = "Verifying payment details...";
     msgDiv.style.color = "#64748b";
 
     const payload = {
@@ -125,27 +123,26 @@ function initReviews(courseId) {
     };
 
     try {
-      const apiBase = window.API_BASE || '';
-      const res = await fetch(`${apiBase}/api/reviews`, {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-
+      
       const data = await res.json();
 
       if (data.success) {
         msgDiv.textContent = "Review posted successfully!";
-        msgDiv.style.color = "#10b981"; // Green
+        msgDiv.style.color = "#10b981";
         form.reset();
-        fetchReviews(); // Reload list dynamically
+        fetchReviews(); // Reload list
       } else {
-        msgDiv.textContent = data.message || "Submission failed. Check Payment ID.";
-        msgDiv.style.color = "#ef4444"; // Red
+        msgDiv.textContent = data.message || "Verification failed. Check Payment ID.";
+        msgDiv.style.color = "#ef4444";
       }
     } catch (err) {
       console.error("Review submit error:", err);
-      msgDiv.textContent = "Server connection error. Try again.";
+      msgDiv.textContent = "Server error. Please try again.";
       msgDiv.style.color = "#ef4444";
     } finally {
       submitBtn.disabled = false;
@@ -153,18 +150,23 @@ function initReviews(courseId) {
     }
   });
 
-  // 2. Fetch and Render Reviews
+  // 2. Fetch Reviews
   async function fetchReviews() {
     try {
-      const apiBase = window.API_BASE || '';
-      const res = await fetch(`${apiBase}/api/reviews/${courseId}`);
+      const res = await fetch(`${API_BASE}/api/reviews/${courseId}`);
       const data = await res.json();
-
-      if (data.success && data.reviews.length > 0) {
-        listContainer.innerHTML = data.reviews.map(renderReviewHTML).join("");
-        attachReplyListeners();
-      } else {
-        listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
+      
+      if (data.success) {
+        allReviews = data.reviews || [];
+        
+        if (allReviews.length > 0) {
+          renderStats(allReviews);
+          renderList(allReviews);
+          summaryContainer.classList.remove("hidden");
+        } else {
+          listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
+          summaryContainer.classList.add("hidden");
+        }
       }
     } catch (err) {
       console.error("Failed to load reviews", err);
@@ -172,11 +174,81 @@ function initReviews(courseId) {
     }
   }
 
-  // Helper: HTML Generator
+  // 3. Render Stats (Bars Left, Stats Right) - THE MISSING FUNCTION
+  function renderStats(reviews) {
+    const total = reviews.length;
+    const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };
+    let sum = 0;
+
+    reviews.forEach(r => {
+      counts[r.rating] = (counts[r.rating] || 0) + 1;
+      sum += r.rating;
+    });
+
+    const average = total ? (sum / total).toFixed(1) : "0.0";
+    const avgStars = generateStars(Math.round(total ? sum / total : 0));
+
+    // Generate Bars HTML
+    let barsHTML = '';
+    for (let i = 5; i >= 1; i--) {
+      const count = counts[i];
+      const percent = total ? Math.round((count / total) * 100) : 0;
+      
+      barsHTML += `
+        <div class="rating-row" onclick="filterReviews(${i})">
+          <div class="rating-label">${i} ★</div>
+          <div class="progress-bg">
+            <div class="progress-fill" style="width: ${percent}%"></div>
+          </div>
+          <div class="rating-percent">${percent}%</div>
+        </div>
+      `;
+    }
+
+    summaryContainer.innerHTML = `
+      <div class="summary-bars">
+        ${barsHTML}
+      </div>
+      
+      <div class="summary-stats">
+        <div class="summary-average">${average}</div>
+        <div class="summary-stars">${avgStars}</div>
+        <div class="summary-total">${total} global ratings</div>
+      </div>
+    `;
+    
+    // Make filter accessible
+    window.filterReviews = (star) => {
+      const filtered = allReviews.filter(r => r.rating === star);
+      renderList(filtered);
+      
+      if(listHeader) listHeader.style.display = "flex";
+      if(filterMsg) filterMsg.textContent = `Showing ${star} star reviews (${filtered.length})`;
+      if(clearFilterBtn) {
+          clearFilterBtn.style.display = "block";
+          clearFilterBtn.onclick = () => {
+            renderList(allReviews);
+            listHeader.style.display = "none";
+          };
+      }
+    };
+  }
+
+  // 4. Render List
+  function renderList(reviews) {
+    if (reviews.length === 0) {
+      listContainer.innerHTML = `<p style="text-align:center; padding:20px; color:#64748b;">No reviews found for this filter.</p>`;
+      return;
+    }
+    listContainer.innerHTML = reviews.map(renderReviewHTML).join("");
+    attachReplyListeners();
+  }
+
+  // Helper: Generate HTML for one review
   function renderReviewHTML(review) {
     const date = new Date(review.createdAt).toLocaleDateString();
-    const stars = Array.from({ length: 5 }, (_, i) => i < review.rating ? '★' : '☆').join('');
-
+    const stars = generateStars(review.rating);
+    
     const repliesHTML = (review.replies || []).map(r => `
       <div style="margin-top:10px; padding:10px; background:#f1f5f9; border-left:3px solid #cbd5e1; border-radius:0 4px 4px 0; margin-left:20px;">
         <div style="font-size:0.85rem; font-weight:600; color:#334155;">${escapeHtml(r.name)} <span style="font-weight:400; color:#94a3b8;">• Reply</span></div>
@@ -209,10 +281,11 @@ function initReviews(courseId) {
     `;
   }
 
-  // 3. Reply Logic
-  function attachReplyListeners() {
-    const apiBase = window.API_BASE || '';
+  function generateStars(count) {
+    return Array.from({length: 5}, (_, i) => i < count ? '★' : '☆').join('');
+  }
 
+  function attachReplyListeners() {
     document.querySelectorAll(".btn-reply").forEach(btn => {
       btn.onclick = (e) => {
         e.preventDefault();
@@ -228,21 +301,17 @@ function initReviews(courseId) {
         const id = btn.dataset.id;
         const nameInput = document.getElementById(`reply-name-${id}`);
         const contentInput = document.getElementById(`reply-content-${id}`);
-
         const name = nameInput.value.trim();
         const content = contentInput.value.trim();
 
-        if (!name || !content) {
-          alert("Please fill name and content");
-          return;
-        }
+        if (!name || !content) return alert("Please fill name and content");
 
         const originalText = btn.textContent;
         btn.textContent = "Posting...";
         btn.disabled = true;
 
         try {
-          const res = await fetch(`${apiBase}/api/reviews/${id}/reply`, {
+          const res = await fetch(`${API_BASE}/api/reviews/${id}/reply`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name, content })
@@ -274,4 +343,36 @@ function initReviews(courseId) {
   }
 
   fetchReviews();
+}
+
+// ==========================================
+// SHARE LINKS UTILITY
+// ==========================================
+function updateShareLinks(course, currentUrl) {
+  const copyBtn = document.getElementById('copy-link');
+  const whatsapp = document.getElementById('whatsapp-link');
+  const facebook = document.getElementById('facebook-link');
+  const xlink = document.getElementById('x-link');
+  const linkedin = document.getElementById('linkedin-link');
+
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = originalText, 1500);
+      } catch (e) {
+        prompt('Copy this link', currentUrl);
+      }
+    };
+  }
+
+  const text = encodeURIComponent(course.title + ' — Learn on Stribble');
+  const urlEncoded = encodeURIComponent(currentUrl);
+
+  if (whatsapp) whatsapp.href = `https://wa.me/?text=${text}%20${urlEncoded}`;
+  if (facebook) facebook.href = `https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}`;
+  if (xlink) xlink.href = `https://twitter.com/intent/tweet?text=${text}&url=${urlEncoded}`;
+  if (linkedin) linkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${urlEncoded}`;
 }

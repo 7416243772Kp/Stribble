@@ -575,9 +575,105 @@ document.addEventListener("DOMContentLoaded", () => {
               });
 
               if (verifyData.success) {
-                showSuccess("Payment successful! 🎉 Course has been sent to your email.");
                 sessionStorage.removeItem("buyerCoupon");
                 sessionStorage.removeItem("buyerEmail");
+
+                // Get the link from server response
+                const downloadUrl = verifyData.downloadLink || "#";
+
+                // Inject Styles + HTML
+                const successStyles = `
+                  <style>
+                    body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
+                    .payment-success-wrapper {
+                      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                      background: #ffffff; z-index: 9999; display: flex;
+                      align-items: center; justify-content: center;
+                      animation: fadeInPage 0.5s ease-out forwards;
+                    }
+                    .success-card {
+                      text-align: center; max-width: 480px; width: 90%; padding: 40px;
+                      transform: translateY(20px); opacity: 0;
+                      animation: slideUpCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+                    }
+                    .success-title {
+                      font-size: 2rem; font-weight: 800; color: #0f172a;
+                      margin: 24px 0 12px; letter-spacing: -0.03em;
+                    }
+                    .success-desc {
+                      color: #64748b; font-size: 1.05rem; line-height: 1.6; margin-bottom: 32px;
+                    }
+                    .email-highlight { color: #0f172a; font-weight: 700; }
+                    
+                    /* Primary Action: Download */
+                    .btn-download {
+                      display: inline-flex; align-items: center; justify-content: center;
+                      background-color: #2563eb; /* Bright Blue */
+                      color: white; width: 100%; max-width: 280px;
+                      padding: 16px 24px; border-radius: 12px; text-decoration: none;
+                      font-weight: 700; font-size: 1.1rem;
+                      transition: all 0.2s; box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+                      margin-bottom: 16px;
+                    }
+                    .btn-download:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); }
+                    
+                    /* Secondary: Home */
+                    .btn-home {
+                      display: inline-block; color: #64748b; font-weight: 600;
+                      text-decoration: none; font-size: 0.95rem; margin-top: 12px;
+                    }
+                    .btn-home:hover { color: #0f172a; text-decoration: underline; }
+
+                    /* Checkmark Animation */
+                    .checkmark-circle {
+                      width: 80px; height: 80px; border-radius: 50%; display: block;
+                      stroke-width: 2; stroke: #10b981; stroke-miterlimit: 10;
+                      margin: 0 auto; box-shadow: inset 0 0 0 #10b981;
+                      animation: fill 0.4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+                    }
+                    .checkmark-check {
+                      transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48;
+                      animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+                    }
+                    @keyframes fadeInPage { to { opacity: 1; } }
+                    @keyframes slideUpCard { to { opacity: 1; transform: translateY(0); } }
+                    @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+                    @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+                    @keyframes fill { 100% { box-shadow: inset 0 0 0 50px #ecfdf5; } }
+                  </style>
+                `;
+
+                document.body.innerHTML = successStyles + `
+                  <div class="payment-success-wrapper">
+                    <div class="success-card">
+                      
+                      <svg class="checkmark-circle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle-bg" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                      </svg>
+
+                      <h1 class="success-title">Payment Successful!</h1>
+                      
+                      <p class="success-desc">
+                        Thank you for your purchase. You can download your course below.
+                        <br><span style="font-size:0.9rem; opacity:0.8;">(A copy has also been sent to <span class="email-highlight">${email}</span>)</span>
+                      </p>
+
+                      <a href="${downloadUrl}" target="_blank" class="btn-download">
+                        Download Course ⬇
+                      </a>
+                      
+                      <br>
+
+                      <a href="/" class="btn-home">Return to Home</a>
+                      
+                      <div style="margin-top:30px; border-top:1px solid #f1f5f9; padding-top:20px;">
+                        <a href="#" onclick="window.print()" style="color:#94a3b8; font-size:0.8rem;">Download Receipt</a>
+                      </div>
+
+                    </div>
+                  </div>
+                `;
               } else {
                 showError(null, verifyData.message || "Payment verification failed");
               }
