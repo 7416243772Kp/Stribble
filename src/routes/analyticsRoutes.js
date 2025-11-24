@@ -2,12 +2,9 @@
 import express from "express";
 import Order from "../models/order.js";
 import { authAdmin } from "../middleware/authAdmin.js";
-import { ipWhitelist } from "../middleware/ipWhitelist.js";
+
 
 const router = express.Router();
-
-// Middleware: only admin can access
-router.use(authAdmin, ipWhitelist);
 
 // Sales summary (today, week, month)
 router.get("/sales-summary", async (req, res) => {

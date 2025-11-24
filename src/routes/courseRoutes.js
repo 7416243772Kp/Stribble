@@ -9,15 +9,24 @@ const router = express.Router();
 
 // Multer storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
+  destination: (req, file, cb) => { cb(null, "uploads/"); },
+  filename: (req, file, cb) => { cb(null, Date.now() + "-" + file.originalname); }
 });
 
-const upload = multer({ storage });
+// ADD THIS FILTER
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/)) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter, // Apply filter
+  limits: { fileSize: 2 * 1024 * 1024 } // Limit size to 2MB to prevent DoS
+});
 
 // POST /api/courses
 router.post("/", adminAuth, upload.single("thumbnail"), async (req, res) => {
@@ -110,5 +119,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+
 
 export default router;

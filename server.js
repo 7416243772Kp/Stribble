@@ -33,6 +33,7 @@ import authAdmin from "./src/middleware/authAdmin.js";
 import promoterAdminRoutes from "./src/routes/adminPromoterRoutes.js";
 import reviewRoutes from "./src/routes/reviewRoutes.js";
 
+import helmet from "helmet";
 // ==== Utilities ====
 import { sendPaymentEmail } from "./src/utils/email.js";
 
@@ -42,6 +43,19 @@ const __dirname = path.dirname(__filename);
 
 // ==== App Initialization ====
 const app = express();
+app.use(helmet());
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://checkout.razorpay.com", "https://cdn.jsdelivr.net"],
+      frameSrc: ["'self'", "https://api.razorpay.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://lumberjack.razorpay.com"]
+    },
+  })
+);
 
 // ============================
 //  Security & Middlewares

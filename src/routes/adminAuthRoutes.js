@@ -1,5 +1,6 @@
 // C:\Ebook\src\routes\adminAuthRoutes.js
 import express from "express";
+import rateLimit from "express-rate-limit";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import speakeasy from "speakeasy";
@@ -17,8 +18,17 @@ const router = express.Router();
 // =============================
 // Config
 // =============================
-const JWT_SECRET = process.env.JWT_SECRET || "super-long-random-string-change-me";
+if (!process.env.JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET is not defined.");
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = "24h";
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per window
+  message: { success: false, message: "Too many login attempts. Please try again later." }
+});
 
 const REGION = process.env.AWS_REGION || "ap-south-1";
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
@@ -52,18 +62,6 @@ function generateTempToken() {
 }
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-function isLocalhostIp(ip) {
-  return ip === "127.0.0.1" || ip === "::1" || (ip || "").includes("::ffff:127.0.0.1");
-}
-function checkIPWhitelist(req) {
-  const allowedIps = (process.env.ALLOWED_IPS || "192.168.1.11,192.168.1.8,127.0.0.1,::1")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const clientIp = (req.ip || req.connection?.remoteAddress || "").replace("::ffff:", "");
-  if (isLocalhostIp(clientIp)) return true;
-  return allowedIps.some((ip) => clientIp.includes(ip));
 }
 
 // Centralized cookie setter
@@ -161,13 +159,10 @@ router.get("/totp-status", authAdmin, async (req, res) => {
 // =============================
 // Login: email+password → setupTotp or requireTotp
 // =============================
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!checkIPWhitelist(req)) {
-      return res.status(403).json({ success: false, message: "Access denied from this IP address" });
-    }
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
@@ -254,10 +249,16 @@ router.post("/setup-totp", async (req, res) => {
   }
 });
 
+const totpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: "Too many login attempts. Please try again later." }
+});
+
 // =============================
 // Verify TOTP (login step 2)
 // =============================
-router.post("/verify-totp", async (req, res) => {
+router.post("/verify-totp", totpLimiter, async (req, res) => {
   try {
     const { tempToken, token } = req.body;
     if (!tempToken || !token) return res.status(400).json({ success: false, message: "Missing required fields" });
