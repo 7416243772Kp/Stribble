@@ -1,9 +1,10 @@
 //C:\Ebook\src\routes\courseRoutes.js
 import express from "express";
 import multer from "multer";
-import path from "path";
 import Course from "../models/course.js";
 import adminAuth from "../middleware/authAdmin.js";
+import { fileTypeFromFile } from 'file-type';
+import fs from 'fs/promises';
 
 const router = express.Router();
 
@@ -31,19 +32,24 @@ const upload = multer({
 // POST /api/courses
 router.post("/", adminAuth, upload.single("thumbnail"), async (req, res) => {
   try {
-    const { title, description, price, googleDriveLink } = req.body;
+    // 1. Check if file exists
+    if (!req.file) return res.status(400).json({ success: false, message: "Thumbnail required" });
 
-    const newCourse = new Course({
-      title,
-      description,
-      price: Number(price),
-      googleDriveLink,
-      thumbnail: req.file ? `/uploads/${req.file.filename}` : ""
-    });
+    // 2. SECURITY: Check Magic Numbers (Real content type)
+    const meta = await fileTypeFromFile(req.file.path);
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
 
-    await newCourse.save();
-    res.json({ success: true, course: newCourse });
+    if (!meta || !allowedMimes.includes(meta.mime)) {
+      // Delete the malicious file immediately
+      await fs.unlink(req.file.path);
+      return res.status(400).json({ success: false, message: "Invalid file type detected (Magic Numbers mismatch)" });
+    }
+
+    // ... (Proceed with your existing logic: create Course, save to DB) ...
+
   } catch (err) {
+    // Cleanup file if error occurs
+    if (req.file) await fs.unlink(req.file.path).catch(() => { });
     console.error("Course create error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }

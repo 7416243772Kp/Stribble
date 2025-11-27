@@ -45,11 +45,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(helmet());
 
+// server.js
+
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
+      // SECURE: Removed 'unsafe-inline'
       scriptSrc: ["'self'", "https://checkout.razorpay.com", "https://cdn.jsdelivr.net"],
+
+      // Keep 'unsafe-inline' for styles because you use style="..." in HTML
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameSrc: ["'self'", "https://api.razorpay.com"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://lumberjack.razorpay.com"]
@@ -516,70 +524,8 @@ app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/course/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    // try both slug or ObjectId – adapt to your Course model
-    let course = null;
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      course = await Course.findById(id).lean();
-    }
-    if (!course) {
-      course = await Course.findOne({ slug: id }).lean(); // if you use slug field
-    }
-
-    if (!course) {
-      // fallback to static course.html (client-side will handle 404)
-      return res.sendFile(path.join(__dirname, 'public', 'course.html'));
-    }
-
-    // sanitize simple fields for meta tags
-    const title = escapeHtml(course.title || 'Course');
-    const description = escapeHtml((course.description || '').slice(0, 200));
-    const image = course.imageUrl || 'https://stribble.site/default-course-image.png';
-    const url = `https://stribble.site${req.originalUrl}`;
-
-    const html = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>${title} — Stribble</title>
-  <meta name="description" content="${description}" />
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="${title}" />
-  <meta property="og:description" content="${description}" />
-  <meta property="og:image" content="${image}" />
-  <meta property="og:url" content="${url}" />
-  <meta property="og:type" content="website" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${title}" />
-  <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />
-
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- Client CSS/JS -->
-  <link rel="stylesheet" href="/css/main.css" />
-</head>
-<body>
-  <div id="app"></div>
-
-  <script>
-    // Make the server-provided course data available to client code (safely)
-    window.__COURSE_DATA__ = ${safeJson(course)};
-  </script>
-
-  <script src="/js/course-page.js"></script>
-</body>
-</html>`;
-
-    res.send(html);
-  } catch (err) {
-    console.error('Course page render error', err);
-    res.sendFile(path.join(__dirname, 'public', 'course.html'));
-  }
+app.get('/course/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'course.html'));
 });
 
 // checkout page (e.g. /checkout/123)

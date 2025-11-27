@@ -706,3 +706,126 @@ document.addEventListener("DOMContentLoaded", () => {
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 });
+
+function _get(nodeOrId) {
+  return (typeof nodeOrId === 'string') ? document.getElementById(nodeOrId) : nodeOrId;
+}
+
+function bindClose(btn, container) {
+  if (!btn || !container) return;
+  btn.addEventListener('click', function () {
+    container.style.opacity = '0';
+    setTimeout(function () {
+      container.style.display = 'none';
+    }, 220);
+  });
+}
+
+function autoDismiss(container, timeout) {
+  if (!container) return;
+  if (!timeout || timeout <= 0) return;
+  setTimeout(function () {
+    if (!container) return;
+    container.style.opacity = '0';
+    setTimeout(function () {
+      if (container.parentNode) container.parentNode.removeChild(container);
+    }, 260);
+  }, timeout);
+}
+
+// Initialize Notifications
+document.addEventListener('DOMContentLoaded', function () {
+  var notifs = document.querySelectorAll('.notify-success');
+  notifs.forEach(function (n) {
+    var btn = n.querySelector('.notify-success__close');
+    bindClose(btn, n);
+  });
+});
+
+window.showSuccessNotif = function (id, opts) {
+  var el = _get(id);
+  if (!el) return;
+  opts = opts || {};
+  if (opts.title) {
+    var t = el.querySelector('.notify-success__title');
+    if (t) t.innerHTML = opts.title;
+  }
+  if (opts.desc) {
+    var d = el.querySelector('.notify-success__desc');
+    if (d) d.innerHTML = opts.desc;
+  }
+  if (opts.pillText) {
+    var pill = el.querySelector('.notify-success__pill') || document.getElementById('notif-coupon-pill');
+    if (pill) pill.textContent = opts.pillText;
+  }
+  el.style.display = 'flex';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0) scale(1)';
+  var timeout = (typeof opts.timeout === 'number') ? opts.timeout : 6000;
+  if (timeout > 0) autoDismiss(el, timeout);
+};
+
+window.showPaymentSuccess = function () {
+  window.showSuccessNotif('notif-payment', { timeout: 5000 });
+};
+
+window.showCouponApplied = function (code, savedText) {
+  var pillText = code ? (code + ' • ' + (savedText || 'Coupon')) : (savedText || 'Coupon');
+  window.showSuccessNotif('notif-coupon', {
+    pillText: pillText,
+    desc: savedText ? ('Coupon ' + (code || '') + ' applied — you saved ' + savedText + '.') : ('Coupon applied.'),
+    timeout: 7000
+  });
+};
+
+// Checkout Initialization
+document.addEventListener('DOMContentLoaded', () => {
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const params = new URLSearchParams(window.location.search);
+  const courseId = params.get('courseId');
+
+  // Initialize based on URL or localStorage
+  if (courseId) {
+    const apiBase = window.API_BASE || '';
+    fetch(`${apiBase}/api/courses/${courseId}`)
+      .then(r => r.json())
+      .then(data => {
+        const cr = data.course || data;
+        if (!cr) return;
+        const price = Number(cr.price || 0);
+
+        const miniTitle = document.getElementById('miniTitle');
+        if (miniTitle) miniTitle.textContent = cr.title || 'Untitled';
+
+        const priceNow = document.getElementById('priceNow');
+        if (priceNow) priceNow.textContent = new Intl.NumberFormat("en-IN", {
+          style: "currency", currency: "INR", maximumFractionDigits: 0
+        }).format(price);
+
+        const totalAmt = document.getElementById('totalAmount');
+        if (totalAmt) {
+          totalAmt.dataset.amount = price;
+          totalAmt.dataset.finalAmount = price;
+        }
+
+        const thumbImg = document.getElementById('miniThumb');
+        if (thumbImg) {
+          let thumbSrc = cr.thumbnail || '/images/placeholder-course.png';
+          // Fix relative path if needed
+          if (thumbSrc.startsWith('/') && !thumbSrc.startsWith('//')) {
+            thumbSrc = apiBase + thumbSrc;
+          }
+          thumbImg.src = thumbSrc;
+        }
+      }).catch(console.error);
+  }
+
+  const navToggle = document.getElementById('navToggle');
+  if (navToggle) {
+    navToggle.addEventListener('click', () => {
+      // Mobile menu logic
+    });
+  }
+});

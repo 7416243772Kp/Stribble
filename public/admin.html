@@ -369,42 +369,6 @@
   <script src="js/admin-auth.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="js/admin.js" defer></script>
-
-  <script>
-    (function () {
-      const root = document.getElementById('adminRoot');
-      const btn = document.getElementById('toggleSidebar');
-
-      btn?.addEventListener('click', () => {
-        root.classList.toggle('collapsed');
-        btn.textContent = root.classList.contains('collapsed') ? '⟶' : '⟵';
-      });
-
-      const sections = ['dashboard', 'courses', 'coupons', 'sales', 'promoters'];
-      function showSection(name) {
-        sections.forEach(s => {
-          const el = document.getElementById(s);
-          if (el) {
-            el.classList.toggle('hidden', s !== name);
-            if (s === name) document.getElementById('section-title').textContent = s.charAt(0).toUpperCase() + s.slice(1);
-          }
-        });
-        document.querySelectorAll('.sidebar-nav a').forEach(a => {
-          a.classList.toggle('active', a.getAttribute('data-section') === name);
-        });
-        if (name === 'promoters' && window.loadPromoters) window.loadPromoters();
-      }
-
-      document.querySelectorAll('.sidebar-nav a[data-section]').forEach(a => {
-        a.addEventListener('click', (e) => {
-          e.preventDefault();
-          showSection(a.getAttribute('data-section'));
-        });
-      });
-
-      window.adminShowSection = showSection;
-    })();
-  </script>
 </body>
 
 </html>

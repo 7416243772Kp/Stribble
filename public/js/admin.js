@@ -694,3 +694,51 @@ if (resendAllBtn) {
     }
   });
 }
+
+// --- Append this to public/js/admin.js ---
+
+document.addEventListener("DOMContentLoaded", function () {
+  const root = document.getElementById('adminRoot');
+  const btn = document.getElementById('toggleSidebar');
+
+  if (btn && root) {
+    btn.addEventListener('click', () => {
+      root.classList.toggle('collapsed');
+      btn.textContent = root.classList.contains('collapsed') ? '⟶' : '⟵';
+    });
+  }
+
+  const sections = ['dashboard', 'courses', 'coupons', 'sales', 'promoters'];
+
+  function showSection(name) {
+    sections.forEach(s => {
+      const el = document.getElementById(s);
+      if (el) {
+        el.classList.toggle('hidden', s !== name);
+        if (s === name) {
+          const titleEl = document.getElementById('section-title');
+          if (titleEl) titleEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+        }
+      }
+    });
+
+    document.querySelectorAll('.sidebar-nav a').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('data-section') === name);
+    });
+
+    if (name === 'promoters' && typeof window.loadPromoters === 'function') {
+      window.loadPromoters();
+    }
+  }
+
+  document.querySelectorAll('.sidebar-nav a[data-section]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSection(a.getAttribute('data-section'));
+    });
+  });
+
+  // Expose to window if needed by other scripts, 
+  // though sticking to event listeners is better
+  window.adminShowSection = showSection;
+});
