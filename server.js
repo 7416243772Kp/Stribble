@@ -141,8 +141,8 @@ mongoose
 //  Razorpay Setup
 // ============================
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "ZIDKRiWRL8RQ51HFNvIubVMR",
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 // ============================
@@ -429,7 +429,6 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
   }
 });
 
-// ---- Payment Verification ----
 // ---- Payment Verification & Course Delivery ----
 app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
   try {
@@ -511,6 +510,8 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
     console.error("Payment verification failed:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
+
+
 });
 
 // --- Frontend routes and dynamic course rendering ---

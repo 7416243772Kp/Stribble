@@ -1,3 +1,4 @@
+// C:\Ebook\public\js\main.js
 document.addEventListener("DOMContentLoaded", () => {
     const wrap = document.getElementById("courses");
     const empty = document.getElementById("emptyState");
