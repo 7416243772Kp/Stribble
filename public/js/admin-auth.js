@@ -315,6 +315,7 @@
 
     // open overlay right away (so user can see input and focus is moved)
     openResetOverlay();
+    document.getElementById("login-form-container").style.display = "none";
     startOtpTimer(600);
 
     try {

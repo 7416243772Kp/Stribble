@@ -60,7 +60,7 @@ app.use(
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameSrc: ["'self'", "https://api.razorpay.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://lumberjack.razorpay.com"]
+      connectSrc: ["'self'", "https://lumberjack.razorpay.com", "https://cdn.jsdelivr.net"]
     },
   })
 );
