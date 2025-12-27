@@ -740,8 +740,6 @@ if (resendAllBtn) {
   });
 }
 
-// --- Append this to public/js/admin.js ---
-
 document.addEventListener("DOMContentLoaded", function () {
   const root = document.getElementById('adminRoot');
   const btn = document.getElementById('toggleSidebar');
