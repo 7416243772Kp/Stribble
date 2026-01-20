@@ -740,6 +740,59 @@ if (resendAllBtn) {
   });
 }
 
+// Add this function to your admin.js
+async function loadMessages() {
+    try {
+        const response = await fetch('/api/admin/messages', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const messages = await response.json();
+        const list = document.getElementById('messagesList');
+
+        if (messages.length === 0) {
+            list.innerHTML = '<p>No messages received yet.</p>';
+            return;
+        }
+
+        list.innerHTML = messages.map(msg => `
+            <div class="card message-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>From: ${msg.email}</strong>
+                    <span style="color: #666; font-size: 0.8em;">${new Date(msg.createdAt).toLocaleString()}</span>
+                </div>
+                <p style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 4px;">${msg.message}</p>
+                <a href="mailto:${msg.email}" class="btn-secondary" style="font-size: 0.8em;">Reply via Email</a>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+// Update your existing showSection function to trigger the load
+function showSection(sectionId) {
+    document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+    document.getElementById(sectionId).style.display = 'block';
+    
+    if (sectionId === 'messagesSection') {
+        loadMessages();
+    }
+}
+
+// Wrap in DOMContentLoaded to ensure the button exists before searching for it
+document.addEventListener('DOMContentLoaded', () => {
+    const inquiriesBtn = document.getElementById('inquiriesBtn');
+
+    if (inquiriesBtn) {
+        inquiriesBtn.addEventListener('click', () => {
+            // Call the existing function manually
+            showSection('messagesSection');
+        });
+    }
+});
+
+
+
 document.addEventListener("DOMContentLoaded", function () {
   const root = document.getElementById('adminRoot');
   const btn = document.getElementById('toggleSidebar');

@@ -4,7 +4,8 @@ import Order from "../models/order.js";
 import Course from "../models/course.js";
 import Coupon from "../models/coupon.js";
 import { sendPaymentEmail } from "../utils/email.js";
-
+import Contact from '../models/Contact.js';
+import { authAdmin } from '../middleware/authAdmin.js';
 const router = express.Router();
 
 // If you have an admin auth middleware, apply it here:
@@ -218,6 +219,16 @@ router.get("/sales", async (req, res) => {
     console.error("Sales analytics error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
+});
+
+router.get('/api/admin/messages', authAdmin, async (req, res) => {
+    try {
+        // Fetch messages, newest first
+        const messages = await Contact.find().sort({ createdAt: -1 });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
 });
 
 export default router;

@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    GLOBAL VARIABLES & RESET
    ========================================= */
 :root {
@@ -1350,4 +1350,21 @@ label {
     font-size: 0.7rem;
     padding: 4px 10px;
   }
+}
+
+.messages-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.message-card {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.message-card:hover {
+    transform: translateY(-2px);
 }

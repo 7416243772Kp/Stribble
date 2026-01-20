@@ -81,65 +81,6 @@ router.post("/:refId/toggle", async (req, res) => {
   }
 });
 
-// Create a payout record (mark paid) and debit promoter balance
-// Body: { amount, method, notes, paidBy, markOrdersPaid: true/false, orderIds: [orderId,...] }
-router.post("/:refId/payout", async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const { refId } = req.params;
-    const { amount, method, notes, paidBy, markOrdersPaid, orderIds } = req.body;
-    if (!amount || Number(amount) <= 0) {
-      await session.abortTransaction();
-      return res.status(400).json({ success: false, message: "Invalid amount" });
-    }
-
-    const promoter = await Promoter.findOne({ refId }).session(session).exec();
-    if (!promoter) {
-      await session.abortTransaction();
-      return res.status(404).json({ success: false, message: "Promoter not found" });
-    }
-
-    // debit promoter payoutBalance (do not allow negative balance by default)
-    promoter.payoutBalance = Number(promoter.payoutBalance || 0) - Number(amount);
-    if (promoter.payoutBalance < 0) {
-      // optional: allow negative (advance). Here we reject
-      await session.abortTransaction();
-      return res.status(400).json({ success: false, message: "Insufficient payout balance" });
-    }
-    await promoter.save({ session });
-
-    // create payout record
-    const payout = new PromoterPayout({
-      promoterRefId: refId,
-      promoterId: promoter._id,
-      amount: Number(amount),
-      method: method || "manual",
-      notes: notes || "",
-      paidBy: paidBy || (req.adminEmail || "admin"),
-      paidAt: new Date(),
-    });
-    await payout.save({ session });
-
-    // Mark orders as promoterPaid if requested (and optional orderIds filter)
-    if (markOrdersPaid) {
-      const filter = { referrer: refId, promoterPaid: { $ne: true }, status: "completed" };
-      if (Array.isArray(orderIds) && orderIds.length > 0) {
-        filter._id = { $in: orderIds.map(id => mongoose.Types.ObjectId(id)) };
-      }
-      await Order.updateMany(filter, { $set: { promoterPaid: true } }, { session });
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-    res.json({ success: true, payout });
-  } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("Payout creation failed", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
 
 // Reporting endpoint: conversions by promoter over range
 // GET /report?days=7 or ?from=2025-01-01&to=2025-01-07
