@@ -17,25 +17,19 @@
     <div class="login-box" role="dialog" aria-modal="true" aria-labelledby="login-heading">
       <div id="login-form-container">
         <h3 id="login-heading" style="text-align: center; margin-bottom: 20px;">🔐 Admin Login</h3>
-
         <form id="adminLoginForm" autocomplete="on" novalidate>
           <div class="field">
             <label for="adminEmail">Email Address</label>
             <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required />
           </div>
-
           <div class="field">
             <label for="adminPassword">Password</label>
             <input type="password" id="adminPassword" name="adminPassword" placeholder="Enter your password" required />
           </div>
-
           <button type="submit" class="btn btn--primary btn--block" style="margin-top: 20px;">Sign In</button>
         </form>
-
         <div style="text-align:center;margin-top:16px">
-          <a href="#" id="forgotPasswordLink" style="color:inherit;text-decoration:underline;font-size:14px">
-            Forgot your password?
-          </a>
+          <a href="#" id="forgotPasswordLink" style="color:inherit;text-decoration:underline;font-size:14px">Forgot your password?</a>
         </div>
       </div>
 
@@ -51,8 +45,7 @@
           <label for="totp-token">Enter 6-digit code</label>
           <input type="text" id="totp-token" name="totp-token" placeholder="000000" maxlength="6" pattern="[0-9]{6}" />
         </div>
-        <button id="verify-totp-btn" class="btn btn--primary btn--block" style="margin-top:8px">Verify & Enable
-          2FA</button>
+        <button id="verify-totp-btn" class="btn btn--primary btn--block" style="margin-top:8px">Verify & Enable 2FA</button>
       </div>
 
       <div id="totp-challenge" class="totp-challenge hidden" aria-hidden="true">
@@ -72,7 +65,6 @@
           <a href="#" onclick="location.reload()" style="color:var(--muted);font-size:13px">← Back to login</a>
         </div>
       </div>
-
       <div id="login-error" class="login-error hidden" role="alert" aria-live="assertive"></div>
     </div>
   </div>
@@ -80,32 +72,26 @@
   <div id="edit-course-overlay" class="login-overlay hidden" aria-hidden="true">
     <div class="login-box" role="dialog" aria-modal="true">
       <h3 style="margin-bottom: 20px; text-align: center;">✏️ Edit Course</h3>
-
       <form id="edit-course-form" style="display:flex; flex-direction:column; gap:16px;">
         <input type="hidden" id="edit-course-id">
-
         <div class="field">
           <label for="edit-title">Course Title</label>
           <input type="text" id="edit-title" required />
         </div>
-
         <div class="field">
           <label for="edit-desc">Description</label>
           <textarea id="edit-desc" rows="3" required></textarea>
         </div>
-
         <div style="display:flex; gap:16px;">
           <div class="field" style="flex:1;">
             <label for="edit-price">Price (₹)</label>
             <input type="number" id="edit-price" required />
           </div>
         </div>
-
         <div class="field">
           <label for="edit-link">Google Drive Link</label>
-          <input type="text" id="edit-link" placeholder="Enter new link to update (or leave as is)" />
+          <input type="text" id="edit-link" placeholder="Enter new link to update" />
         </div>
-
         <div style="display:flex; gap:12px; margin-top:10px;">
           <button type="button" class="btn btn--ghost" id="cancel-edit-btn" style="flex:1;">Cancel</button>
           <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
@@ -113,13 +99,12 @@
       </form>
     </div>
   </div>
+
   <div id="edit-coupon-overlay" class="login-overlay hidden" aria-hidden="true">
     <div class="login-box" role="dialog" aria-modal="true" style="max-width: 600px;">
       <h3 style="margin-bottom: 20px; text-align: center;">🎟️ Edit Coupon</h3>
-
       <form id="edit-coupon-form" style="display:flex; flex-direction:column; gap:16px;">
         <input type="hidden" id="edit-coupon-id">
-
         <div style="display:flex; gap:16px;">
           <div class="field" style="flex:1;">
             <label for="edit-coupon-code">Coupon Code</label>
@@ -130,9 +115,7 @@
             <input type="number" id="edit-coupon-discount" required />
           </div>
         </div>
-
         <h4 style="margin: 8px 0 4px; font-size: 0.9rem; color: var(--text-muted);">Commission Settings</h4>
-
         <div style="display:flex; gap:16px;">
           <div class="field" style="flex:2;">
             <label for="edit-inf-upi">Influencer UPI</label>
@@ -143,7 +126,6 @@
             <input type="number" id="edit-inf-comm" />
           </div>
         </div>
-
         <div style="display:flex; gap:16px;">
           <div class="field" style="flex:2;">
             <label for="edit-cre-upi">Creator UPI</label>
@@ -154,7 +136,6 @@
             <input type="number" id="edit-cre-comm" />
           </div>
         </div>
-
         <div style="display:flex; gap:12px; margin-top:16px;">
           <button type="button" class="btn btn--ghost" id="cancel-coupon-edit" style="flex:1;">Cancel</button>
           <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
@@ -163,44 +144,10 @@
     </div>
   </div>
 
-  <div id="reset-overlay" class="login-overlay hidden" aria-hidden="true">
-    <div class="login-box" role="dialog" aria-modal="true" aria-labelledby="reset-heading">
-      <h3 id="reset-heading">🔑 Reset Admin Password</h3>
-      <p style="color:var(--muted)">Enter the OTP sent to your email.</p>
-
-      <div class="field">
-        <label for="reset-otp">OTP Code</label>
-        <input type="text" id="reset-otp" name="reset-otp" placeholder="6-digit OTP" maxlength="6" />
-      </div>
-      <div class="timer-display" aria-live="polite">Expires in: <span id="timer-countdown">10:00</span></div>
-      <div class="field">
-        <label for="new-password">New Password</label>
-        <input type="password" id="new-password" name="new-password" placeholder="Min 8 characters" />
-      </div>
-      <div class="field">
-        <label for="confirm-password">Confirm Password</label>
-        <input type="password" id="confirm-password" name="confirm-password" placeholder="Re-enter password" />
-      </div>
-
-      <button id="reset-password-btn" class="btn btn--primary btn--block" style="margin-top:6px">Reset Password</button>
-      <button id="resend-otp-btn" class="btn btn--ghost btn--block" style="margin-top:8px">Resend OTP</button>
-      <div style="text-align:center;margin-top:12px">
-        <a href="#" id="close-reset" style="color:inherit;text-decoration:underline">Cancel</a>
-      </div>
-    </div>
-  </div>
-
   <div class="admin-root" id="adminRoot">
 
     <aside class="sidebar" aria-label="Admin Navigation">
       <button class="sidebar-collapse" id="toggleSidebar" title="Toggle sidebar">⟵</button>
-      <button id="inquiriesBtn" class="nav-btn">📧 Inquiries</button>
-      <div id="messagesSection" class="admin-section" style="display:none;">
-        <h2>Customer Inquiries</h2>
-        <div id="messagesList" class="messages-grid">
-          <p>Loading inquiries...</p>
-        </div>
-      </div>
       <h2>Admin</h2>
       <nav class="sidebar-nav" role="navigation">
         <a href="#" data-section="dashboard" class="active" id="nav-dashboard">📊 Dashboard</a>
@@ -208,6 +155,7 @@
         <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
         <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
         <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
+        <a href="#" data-section="messagesSection" id="nav-inquiries">📧 Inquiries</a>
         <a href="#" id="nav-logout">🚪 Logout</a>
       </nav>
     </aside>
@@ -237,8 +185,7 @@
 
       <section id="courses" class="content-section hidden">
         <h2>Manage Courses</h2>
-        <form id="add-course-form" enctype="multipart/form-data"
-          style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+        <form id="add-course-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
           <input type="text" name="title" placeholder="Course Title" required />
           <textarea name="description" placeholder="Course Description" required rows="3"></textarea>
           <div style="display:flex; gap:10px;">
@@ -253,14 +200,13 @@
 
       <section id="coupons" class="content-section hidden">
         <h2>Manage Coupons</h2>
-        <form id="add-coupon-form"
-          style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+        <form id="add-coupon-form" style="display:flex; flex-direction:column; gap:15px; max-width:600px; background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
           <select name="courseId" id="coupon-course-select" required>
             <option value="">-- Select Course --</option>
           </select>
           <div style="display:flex; gap:10px;">
-            <input type="text" name="code" placeholder="Coupon Code (e.g. SAVE10)" required style="flex:1" />
-            <input type="number" name="discount" placeholder="Discount Amount (₹)" required style="flex:1" />
+            <input type="text" name="code" placeholder="Coupon Code" required style="flex:1" />
+            <input type="number" name="discount" placeholder="Discount (₹)" required style="flex:1" />
           </div>
           <h4>Commission Settings (Optional)</h4>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -276,8 +222,7 @@
 
       <section id="sales" class="content-section hidden">
         <h2>Sales Reports</h2>
-        <div class="chart-container"
-          style="margin-top:20px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+        <div class="chart-container" style="margin-top:20px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
           <h3>Daily Sales (Last 7 Days)</h3>
           <canvas id="salesChart" width="600" height="300"></canvas>
         </div>
@@ -309,9 +254,8 @@
 
       <section id="promoters" class="content-section hidden">
         <h2>Promoters</h2>
-        <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
-          <div
-            style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+        <div style="display:flex; gap:24px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
             <h3>Add Promoter</h3>
             <form id="createPromoterForm" style="display:flex; flex-direction:column; gap:10px;">
               <input name="name" placeholder="Name" required />
@@ -319,15 +263,12 @@
               <input name="upi" placeholder="UPI ID" />
               <div style="display:flex; gap:10px;">
                 <input name="defaultCoupon" placeholder="Coupon Code" style="flex:1" />
-                <input name="refId" placeholder="Ref ID (Auto)" style="flex:1" />
+                <input name="refId" placeholder="Ref ID" style="flex:1" />
               </div>
               <button type="submit" class="btn btn--primary">Create</button>
-              <div id="createPromoterMsg" class="mini"></div>
             </form>
           </div>
-
-          <div
-            style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
+          <div style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
             <h3>Record Payout</h3>
             <form id="promoterPayoutForm" style="display:flex; flex-direction:column; gap:10px;">
               <input name="refId" placeholder="Promoter Ref ID" required />
@@ -337,36 +278,33 @@
                 <option value="razorpayx">RazorpayX</option>
                 <option value="bank">Bank Transfer</option>
               </select>
-              <input name="notes" placeholder="Notes" />
               <button type="submit" class="btn btn--primary">Record Payment</button>
-              <div id="payoutMsg" class="mini"></div>
             </form>
           </div>
         </div>
+        <div style="margin-top:30px; overflow-x:auto;">
+          <table id="promoterTable">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>UPI</th>
+                <th>Balance</th>
+                <th>Sales</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
 
-        <div style="margin-top:30px;">
-          <div style="display:flex; gap:12px; margin-bottom:15px;">
-            <input id="promoterSearch" placeholder="Search promoters..."
-              style="padding:8px; border:1px solid #cbd5e1; border-radius:4px; width:250px;" />
-            <button id="promoterRefresh" class="btn btn--ghost">Refresh List</button>
-          </div>
-          <div style="overflow-x:auto;">
-            <table id="promoterTable">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>UPI</th>
-                  <th>Balance</th>
-                  <th>Sales</th>
-                  <th>Active</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+      <section id="messagesSection" class="content-section hidden">
+        <h2>Customer Inquiries</h2>
+        <div id="messagesList" class="messages-grid" aria-live="polite">
+          <p>Loading inquiries...</p>
         </div>
       </section>
 

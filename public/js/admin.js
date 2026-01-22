@@ -740,34 +740,63 @@ if (resendAllBtn) {
   });
 }
 
-// Add this function to your admin.js
-async function loadMessages() {
-    try {
-        const response = await fetch('/api/admin/messages', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
-        });
-        const messages = await response.json();
-        const list = document.getElementById('messagesList');
+// public/js/admin.js
 
-        if (messages.length === 0) {
-            list.innerHTML = '<p>No messages received yet.</p>';
+// 1. Single, Correct Load Function
+async function loadMessages() {
+    const list = document.getElementById('messagesList');
+    if (!list) return;
+
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/messages`);
+        
+        // Safety check to prevent the "Unexpected token <" error
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new TypeError("Server returned HTML instead of JSON. Check route order in server.js");
+        }
+
+        const messages = await res.json();
+
+        if (!messages || messages.length === 0) {
+            list.innerHTML = '<p style="text-align:center; padding:20px;">No messages received yet.</p>';
             return;
         }
 
         list.innerHTML = messages.map(msg => `
-            <div class="card message-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <strong>From: ${msg.email}</strong>
-                    <span style="color: #666; font-size: 0.8em;">${new Date(msg.createdAt).toLocaleString()}</span>
+            <div class="message-card" style="border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; background:#fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <strong style="color: #2c3e50;">From: ${msg.email}</strong>
+                    <span style="font-size:0.85em; color:#7f8c8d;">${new Date(msg.createdAt).toLocaleString()}</span>
                 </div>
-                <p style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 4px;">${msg.message}</p>
-                <a href="mailto:${msg.email}" class="btn-secondary" style="font-size: 0.8em;">Reply via Email</a>
+                <p style="background:#f8f9fa; padding:12px; border-radius:6px; color: #34495e; border-left: 4px solid #3498db;">${msg.message}</p>
+                <div style="margin-top: 10px;">
+                    <a href="mailto:${msg.email}" class="btn-action-edit" style="text-decoration:none; font-size: 0.9em; display: inline-block;">✉️ Reply via Email</a>
+                </div>
             </div>
         `).join('');
     } catch (error) {
         console.error('Error loading messages:', error);
+        list.innerHTML = `<p style="color:red; text-align:center;">Failed to load messages. ${error.message}</p>`;
     }
 }
+
+// 2. Correct Navigation Listener
+document.addEventListener("DOMContentLoaded", () => {
+    // Look for the "Inquiries" link in your sidebar
+    const inquiriesLink = document.getElementById("nav-inquiries") || document.getElementById("inquiriesBtn");
+    
+    if (inquiriesLink) {
+        inquiriesLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            // Use your existing section switcher
+            if (typeof window.adminShowSection === 'function') {
+                window.adminShowSection('messagesSection');
+                loadMessages(); 
+            }
+        });
+    }
+});
 
 // Update your existing showSection function to trigger the load
 function showSection(sectionId) {

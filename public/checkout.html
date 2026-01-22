@@ -111,6 +111,16 @@
   <div class="checkout-actions">
     <button type="button" id="validate-btn" class="btn">Validate & Send OTP</button>
     <button type="button" id="verify-otp-btn" class="btn" disabled>Verify OTP</button>
+    <div class="terms-container" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa;">
+      <label style="display: flex; align-items: flex-start; cursor: pointer;">
+        <input type="checkbox" id="termsCheckbox" style="margin-top: 5px; margin-right: 10px;">
+        <span style="font-size: 14px; color: #333;">
+          I accept the <a href="/terms.html" target="_blank">Terms & Conditions</a> specified in this website 
+          and agree that <strong style="color: red;">"No Refund"</strong> will be processed 
+          once the payment is made and the course is downloaded.
+        </span>
+      </label>
+    </div>
     <button type="submit" id="payment-btn" class="btn" disabled>Proceed to Pay</button>
   </div>
 </form>

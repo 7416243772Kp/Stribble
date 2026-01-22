@@ -36,6 +36,7 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 import helmet from "helmet";
 // ==== Utilities ====
 import { sendPaymentEmail } from "./src/utils/email.js";
+import Contact from './src/models/Contact.js';
 
 // ==== Path Setup ====
 const __filename = fileURLToPath(import.meta.url);
@@ -570,6 +571,15 @@ app.get('/checkout/:id', (req, res) => {
 // About page
 app.get('/about', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'about.html'));
+});
+
+app.get('/api/admin/messages', authAdmin, async (req, res) => {
+    try {
+        const messages = await Contact.find().sort({ createdAt: -1 });
+        res.json(messages); // This sends the JSON that admin.js expects
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch messages' });
+    }
 });
 
 // --- 3. CATCH-ALL ROUTE (Must be last) ---

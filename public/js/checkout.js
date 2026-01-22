@@ -551,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!data?.success) throw new Error(data?.message || "Payment order creation failed");
 
         // open Razorpay
+      
         const options = {
           key: data.keyId || (window.RAZORPAY_KEY_ID || ""),
           amount: data.amountPaise,
