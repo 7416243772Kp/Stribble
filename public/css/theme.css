@@ -1365,6 +1365,71 @@ label {
     transition: transform 0.2s;
 }
 
-.message-card:hover {
-    transform: translateY(-2px);
+
+/* =========================================
+   MOBILE RESPONSIVENESS REFINEMENTS
+   ========================================= */
+
+/* Footer Columns Class (Replaces inline styles) */
+.footer-columns {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .footer-columns {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+/* Enhanced Mobile Queries */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  .nav__inner {
+    padding: 0;
+  }
+
+  .hero {
+    padding: 3rem 0;
+  }
+
+  /* Checkout Form mobile padding */
+  .checkout-form {
+    padding: 1.5rem;
+  }
+  
+  /* Stack buttons on very small screens */
+  .checkout-actions .btn {
+    width: 100%;
+  }
+
+  .price-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .price-right {
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+  }
 }

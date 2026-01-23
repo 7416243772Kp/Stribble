@@ -191,12 +191,15 @@ async function fetchDashboardStats() {
   }
 }
 
+// C:\Ebook\public\js\admin.js (Courses Section Update)
+
 // =============================
 // Courses Section
 // =============================
 const addCourseForm = document.getElementById("add-course-form");
 const courseList = document.getElementById("course-list");
 
+// 1. Fetch & Render Courses
 async function fetchCourses() {
   try {
     const res = await authFetch(`${window.API_BASE}/api/courses`);
@@ -214,16 +217,15 @@ function renderCourses(courses) {
 
   courseList.innerHTML = "";
 
-  if (courses.length === 0) {
+  if (!courses || courses.length === 0) {
     courseList.innerHTML = '<p style="color:#64748b; grid-column:1/-1; text-align:center;">No courses available.</p>';
     return;
   }
 
   courses.forEach((course) => {
     const item = document.createElement("div");
-    item.className = "course-admin-card"; // New Class
+    item.className = "course-admin-card";
 
-    // Format price securely
     const price = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(course.price || 0);
 
     item.innerHTML = `
@@ -237,10 +239,10 @@ function renderCourses(courses) {
         <div class="course-admin-price">${price}</div>
         
         <div class="course-admin-actions">
-          <button class="btn-action-edit" onclick="editCourse('${course._id}')">
+          <button class="btn-action-edit js-edit-course" type="button" data-id="${course._id}">
             ✏️ Edit
           </button>
-          <button class="btn-action-delete" onclick="deleteCourse('${course._id}')">
+          <button class="btn-action-delete js-delete-course" type="button" data-id="${course._id}">
             🗑 Delete
           </button>
         </div>
@@ -248,48 +250,70 @@ function renderCourses(courses) {
     `;
     courseList.appendChild(item);
   });
+
+  // Event Delegation for Courses
+  courseList.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.js-edit-course');
+    const deleteBtn = e.target.closest('.js-delete-course');
+
+    if (editBtn) {
+      const id = editBtn.getAttribute('data-id');
+      editCourse(id);
+    } else if (deleteBtn) {
+      const id = deleteBtn.getAttribute('data-id');
+      deleteCourse(id);
+    }
+  });
 }
 
-addCourseForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = new FormData(addCourseForm);
-  try {
-    const res = await authFetch(`${window.API_BASE}/api/courses`, { method: "POST", body: formData });
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const data = await res.json();
-    if (data.success) {
-      showNotification("success", "Course added successfully");
-      addCourseForm.reset();
-      fetchCourses();
-    } else {
-      showNotification("error", data.message);
+// 2. Add Course Listener
+if (addCourseForm) {
+  addCourseForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addCourseForm);
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/courses`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        showNotification("success", "Course added successfully");
+        addCourseForm.reset();
+        fetchCourses();
+      } else {
+        showNotification("error", data.message);
+      }
+    } catch {
+      showNotification("error", "Server error while adding course");
     }
-  } catch {
-    showNotification("error", "Server error while adding course");
-  }
-});
+  });
+}
 
+// 3. Edit Course Function (Exposed to Window)
+// 3. Edit Course Function (Exposed to Window)
 async function editCourse(id) {
+  console.log("editCourse called with id:", id);
+  const editOverlay = document.getElementById('edit-course-overlay');
+  const editForm = document.getElementById('edit-course-form');
   const submitBtn = editForm.querySelector('button[type="submit"]');
+
   submitBtn.textContent = "Loading...";
   submitBtn.disabled = true;
 
-  // Show modal immediately
+  // Show modal
   editOverlay.classList.remove('hidden');
   editOverlay.setAttribute('aria-hidden', 'false');
 
   try {
-    // Fetch current details
     const res = await fetch(`${window.API_BASE}/api/courses/${id}`);
     const data = await res.json();
     const course = data.course || data;
+    console.log("Course details loaded:", course);
 
     // Fill fields
     document.getElementById('edit-course-id').value = course._id;
     document.getElementById('edit-title').value = course.title || '';
     document.getElementById('edit-desc').value = course.description || '';
     document.getElementById('edit-price').value = course.price || '';
-    // Note: For security, backend might not return the link. User enters new one if they want to change it.
     document.getElementById('edit-link').value = course.googleDriveLink || '';
 
   } catch (err) {
@@ -302,113 +326,14 @@ async function editCourse(id) {
   }
 }
 
-async function editCoupon(id) {
-  console.log("--- EDIT COUPON START ---"); // Added Log 1
-  console.log("Attempting to fetch coupon details for ID:", id); // Added Log 2
-
-  const submitBtn = editCouponForm.querySelector('button[type="submit"]');
-  submitBtn.textContent = "Loading...";
-  submitBtn.disabled = true;
-
-  editCouponOverlay.classList.remove('hidden');
-  editCouponOverlay.setAttribute('aria-hidden', 'false');
-
-  try {
-    // CRITICAL: Check the API path being used
-    const url = `${window.API_BASE}/api/admin/coupons/${id}`;
-    console.log("Fetching from URL:", url); // Added Log 3
-
-    const res = await authFetch(url); // Auth fetch ensures session is checked
-
-    if (!res.ok) {
-      console.error("Fetch failed with status:", res.status); // Added Log 4
-      throw new Error(`Server returned ${res.status}`);
-    }
-
-    const data = await res.json();
-    console.log("API Response Success:", data.success); // Added Log 5
-
-    if (data.success) {
-      const c = data.coupon;
-      // ... (rest of field filling logic is here, omitted for brevity) ...
-      console.log("Coupon data loaded successfully."); // Added Log 6
-    } else {
-      throw new Error(data.message || "API reported failure.");
-    }
-  } catch (err) {
-    console.error("❌ EDIT COUPON FAILED:", err); // Added Log 7
-    showNotification("error", "Failed to load coupon details. See console.");
-    editCouponOverlay.classList.add('hidden');
-  } finally {
-    submitBtn.textContent = "Save Changes";
-    submitBtn.disabled = false;
-    console.log("--- EDIT COUPON END ---"); // Added Log 8
-  }
-}
-
-// 2. Save Changes
-if (editCouponForm) {
-  editCouponForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-coupon-id').value;
-    const submitBtn = editCouponForm.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-
-    submitBtn.textContent = "Saving...";
-    submitBtn.disabled = true;
-
-    const payload = {
-      code: document.getElementById('edit-coupon-code').value,
-      discount: Number(document.getElementById('edit-coupon-discount').value),
-      influencerUPI: document.getElementById('edit-inf-upi').value,
-      influencerCommission: Number(document.getElementById('edit-inf-comm').value),
-      ebookCreatorUPI: document.getElementById('edit-cre-upi').value,
-      ebookCreatorCommission: Number(document.getElementById('edit-cre-comm').value)
-    };
-
-    try {
-      const res = await authFetch(`${window.API_BASE}/api/admin/coupons/${id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        showNotification("success", "Coupon updated");
-        editCouponOverlay.classList.add('hidden');
-        loadCoupons(); // Refresh grid
-      } else {
-        showNotification("error", data.message || "Update failed");
-      }
-    } catch (err) {
-      showNotification("error", "Server error");
-    } finally {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    }
-  });
-}
-
-// 3. Cancel Button
-if (cancelCouponBtn) {
-  cancelCouponBtn.addEventListener('click', () => {
-    editCouponOverlay.classList.add('hidden');
-  });
-}
-
-// Close on click outside
-if (editCouponOverlay) {
-  editCouponOverlay.addEventListener('click', (e) => {
-    if (e.target === editCouponOverlay) editCouponOverlay.classList.add('hidden');
-  });
-}
+// 4. Handle Edit Save
+// [Duplicate course logic removed to fix redeclaration error]
 
 // 2. Handle Save (Submit)
 if (editForm) {
   editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log("Edit form submitted");
 
     const id = document.getElementById('edit-course-id').value;
     const title = document.getElementById('edit-title').value;
@@ -430,6 +355,7 @@ if (editForm) {
       });
 
       const data = await res.json();
+      console.log("Update response:", data);
 
       if (data.success) {
         showNotification("success", "Course updated successfully");
@@ -439,6 +365,7 @@ if (editForm) {
         showNotification("error", data.message || "Update failed");
       }
     } catch (err) {
+      console.error("Update error:", err);
       showNotification("error", "Server error while updating");
     } finally {
       submitBtn.textContent = originalText;
@@ -465,20 +392,89 @@ if (editOverlay) {
 }
 
 async function deleteCourse(id) {
+  console.log("deleteCourse called with id:", id);
   if (!confirm("Delete this course?")) return;
   try {
     const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const data = await res.json();
+    console.log("Delete response:", data);
     if (data.success) {
       showNotification("success", "Course deleted");
       fetchCourses();
     } else {
       showNotification("error", data.message);
     }
-  } catch {
+  } catch (err) {
+    console.error("Delete error:", err);
     showNotification("error", "Server error while deleting course");
   }
+}
+
+// CRITICAL: Attach to window so HTML onclick="..." can find them
+window.editCourse = editCourse;
+window.deleteCourse = deleteCourse;
+
+// ===============================
+// 2. Save Coupon Changes
+// ===============================
+if (editCouponForm) {
+  editCouponForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-coupon-id').value;
+    const submitBtn = editCouponForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    submitBtn.textContent = "Saving...";
+    submitBtn.disabled = true;
+
+    // Payload uses keys that the Backend Route expects
+    const payload = {
+      code: document.getElementById('edit-coupon-code').value,
+      discount: Number(document.getElementById('edit-coupon-discount').value), // Send as 'discount'
+      influencerUPI: document.getElementById('edit-inf-upi').value,           // Send as 'influencerUPI'
+      influencerCommission: Number(document.getElementById('edit-inf-comm').value),
+      ebookCreatorUPI: document.getElementById('edit-cre-upi').value,         // Send as 'ebookCreatorUPI'
+      ebookCreatorCommission: Number(document.getElementById('edit-cre-comm').value)
+    };
+
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/admin/coupons/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showNotification("success", "Coupon updated successfully");
+        editCouponOverlay.classList.add('hidden');
+        loadCoupons(); // Refresh the grid
+      } else {
+        showNotification("error", data.message || "Update failed");
+      }
+    } catch (err) {
+      console.error("Save coupon error:", err);
+      showNotification("error", "Server error");
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+}
+// 3. Cancel Button
+if (cancelCouponBtn) {
+  cancelCouponBtn.addEventListener('click', () => {
+    editCouponOverlay.classList.add('hidden');
+  });
+}
+
+// Close on click outside
+if (editCouponOverlay) {
+  editCouponOverlay.addEventListener('click', (e) => {
+    if (e.target === editCouponOverlay) editCouponOverlay.classList.add('hidden');
+  });
 }
 
 // =============================
@@ -506,23 +502,40 @@ async function loadCoursesForCoupons() {
 }
 
 async function loadCoupons() {
+  const couponList = document.getElementById("coupon-list");
+  if (!couponList) return;
+
   try {
     const res = await authFetch(`${window.API_BASE}/api/admin/coupons`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const data = await res.json();
 
     if (data.success) {
-      if (data.coupons.length === 0) {
+      if (!data.coupons || data.coupons.length === 0) {
         couponList.innerHTML = '<p style="color:#64748b; grid-column:1/-1;">No coupons found.</p>';
         return;
       }
 
       couponList.innerHTML = data.coupons.map((c) => {
         const courseName = c.courseId?.title || "Unknown";
+        
+        // --- DATA NORMALIZATION FIX ---
+        // We check for NEW name (e.g. discountValue) first. 
+        // If missing, we fallback to OLD name (e.g. discount).
+        // This fixes the "undefined" issue for old coupons.
+        const discountVal = c.discountValue ?? c.discount ?? 0;
+        const infComm     = c.influencerCommission ?? 0;
+        const creComm     = c.creatorCommission ?? c.ebookCreatorCommission ?? 0;
+        
+        // Handle UPI camelCase vs uppercase variations
+        const infUpi = c.influencerUpi || c.influencerUPI || "";
+        const creUpi = c.creatorUpi || c.ebookCreatorUPI || "";
+        // -----------------------------
+
         let upiText = "No UPI details set";
-        if (c.influencerUPI && c.ebookCreatorUPI) upiText = `INF: ${c.influencerUPI}<br>CRE: ${c.ebookCreatorUPI}`;
-        else if (c.influencerUPI) upiText = `INF: ${c.influencerUPI}`;
-        else if (c.ebookCreatorUPI) upiText = `CRE: ${c.ebookCreatorUPI}`;
+        if (infUpi && creUpi) upiText = `INF: ${infUpi}<br>CRE: ${creUpi}`;
+        else if (infUpi) upiText = `INF: ${infUpi}`;
+        else if (creUpi) upiText = `CRE: ${creUpi}`;
 
         return `
             <div class="coupon-card">
@@ -534,19 +547,19 @@ async function loadCoupons() {
               <div class="coupon-body">
                 <div class="info-group">
                   <span class="info-label">Discount</span>
-                  <span class="info-val" style="color:#10b981;">-₹${c.discount}</span>
+                  <span class="info-val" style="color:#10b981;">-₹${discountVal}</span>
                 </div>
                 <div class="info-group">
                   <span class="info-label">Inf. Comm.</span>
-                  <span class="info-val">₹${c.influencerCommission}</span>
+                  <span class="info-val">₹${infComm}</span>
                 </div>
                 <div class="info-group">
                   <span class="info-label">Uses</span>
-                  <span class="info-val">${c.uses || 0}</span>
+                  <span class="info-val">${c.usageCount || 0}</span>
                 </div>
                 <div class="info-group">
                   <span class="info-label">Creator</span>
-                  <span class="info-val">₹${c.ebookCreatorCommission}</span>
+                  <span class="info-val">₹${creComm}</span>
                 </div>
               </div>
 
@@ -555,17 +568,30 @@ async function loadCoupons() {
               </div>
 
               <div style="display:flex; gap:10px; margin-top:auto;">
-                <button class="btn-action-edit" onclick="editCoupon('${c._id}')" style="flex:1; justify-content:center;">
+                <button class="btn-action-edit js-edit-coupon" type="button" data-id="${c._id}" style="flex:1; justify-content:center;">
                   ✏️ Edit
                 </button>
-                <button class="btn-action-delete" onclick="deleteCoupon('${c._id}')" style="flex:1; justify-content:center;">
+                <button class="btn-action-delete js-delete-coupon" type="button" data-id="${c._id}" style="flex:1; justify-content:center;">
                   🗑 Delete
                 </button>
               </div>
             </div>
           `;
-      })
-        .join("");
+      }).join("");
+
+      // Event Delegation for Coupons
+      couponList.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.js-edit-coupon');
+        const deleteBtn = e.target.closest('.js-delete-coupon');
+
+        if (editBtn) {
+          const id = editBtn.getAttribute('data-id');
+          editCoupon(id);
+        } else if (deleteBtn) {
+          const id = deleteBtn.getAttribute('data-id');
+          deleteCoupon(id);
+        }
+      });
     }
   } catch (err) {
     console.error("Error loading coupons:", err);
@@ -573,86 +599,124 @@ async function loadCoupons() {
   }
 }
 
-addCouponForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  // collect form values
-  const formEntries = Object.fromEntries(new FormData(addCouponForm).entries());
+// 2. Add Coupon Listener (RESTORED)
+if (addCouponForm) {
+  addCouponForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addCouponForm);
+    
+    // Convert FormData to JSON object because API expects JSON
+    const payload = Object.fromEntries(formData.entries());
 
-  // build payload — ensure numeric fields are numbers (not strings)
-  const data = {
-    ...formEntries,
-    discount: Number(formEntries.discount || 0),
-    influencerCommission: Number(formEntries.influencerCommission || 0),
-    ebookCreatorCommission: Number(formEntries.ebookCreatorCommission || 0),
-    // NOTE: isDefault removed from frontend payload (server no longer relies on default coupon)
-  };
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/admin/coupons`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        showNotification("success", "Coupon created successfully");
+        addCouponForm.reset();
+        loadCoupons();
+      } else {
+        showNotification("error", data.message);
+      }
+    } catch (err) {
+      console.error("Add coupon error:", err);
+      showNotification("error", "Server error while creating coupon");
+    }
+  });
+}
 
-  // Normalize empty strings to undefined for optional fields so server sees intended defaults
-  if (data.influencerUPI === "") delete data.influencerUPI;
-  if (data.ebookCreatorUPI === "") delete data.ebookCreatorUPI;
+// ===============================
+// EDITOR: Open Edit Popup
+// ===============================
+async function editCoupon(id) {
+  const submitBtn = document.getElementById('edit-coupon-form').querySelector('button[type="submit"]');
+  submitBtn.textContent = "Loading...";
+  submitBtn.disabled = true;
+
+  const editCouponOverlay = document.getElementById('edit-coupon-overlay');
+  editCouponOverlay.classList.remove('hidden');
+  editCouponOverlay.setAttribute('aria-hidden', 'false');
 
   try {
-    const res = await authFetch(`${window.API_BASE}/api/admin/coupons`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
+    const res = await authFetch(`${window.API_BASE}/api/admin/coupons/${id}`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
 
-    const result = await res.json();
-    if (result.success) {
-      showNotification("success", "Coupon added");
-      addCouponForm.reset();
-      loadCoupons();
+    const data = await res.json();
+    if (data.success) {
+      const c = data.coupon;
+
+      // --- DATA NORMALIZATION FOR EDITOR ---
+      const discountVal = c.discountValue ?? c.discount ?? 0;
+      const infUpi      = c.influencerUpi || c.influencerUPI || "";
+      const creUpi      = c.creatorUpi || c.ebookCreatorUPI || "";
+      const creComm     = c.creatorCommission ?? c.ebookCreatorCommission ?? 0;
+      // ------------------------------------
+
+      document.getElementById('edit-coupon-id').value = c._id;
+      document.getElementById('edit-coupon-code').value = c.code || "";
+      document.getElementById('edit-coupon-discount').value = discountVal;
+      document.getElementById('edit-inf-upi').value = infUpi;
+      document.getElementById('edit-inf-comm').value = c.influencerCommission || 0;
+      document.getElementById('edit-cre-upi').value = creUpi;
+      document.getElementById('edit-cre-comm').value = creComm;
+
     } else {
-      showNotification("error", result.message || "Failed to add coupon");
+      showNotification("error", data.message || "Failed to load coupon");
+      editCouponOverlay.classList.add('hidden');
     }
   } catch (err) {
-    console.error("Add coupon error:", err);
-    showNotification("error", "Server error while adding coupon");
+    console.error("Edit coupon error:", err);
+    showNotification("error", "Server error while loading coupon");
+    editCouponOverlay.classList.add('hidden');
+  } finally {
+    submitBtn.textContent = "Save Changes";
+    submitBtn.disabled = false;
   }
-});
+}
 
-
+// ===============================
+// ACTION: Delete Coupon
+// ===============================
 async function deleteCoupon(id) {
-  console.log("--- DELETE COUPON START ---"); // Added Log 9
-  if (!confirm("Delete this coupon?")) {
-    console.log("Delete canceled by user."); // Added Log 10
-    return;
-  }
+  if (!confirm("Are you sure you want to PERMANENTLY delete this coupon?")) return;
 
   try {
+    // Log URL to check if API_BASE is correct
     const url = `${window.API_BASE}/api/admin/coupons/${id}`;
-    console.log("Attempting DELETE on URL:", url); // Added Log 11
+    console.log("Deleting coupon at:", url);
 
     const res = await authFetch(url, { method: "DELETE" });
 
     if (!res.ok) {
-      console.error("DELETE failed with status:", res.status); // Added Log 12
-      throw new Error(`Server returned ${res.status}`);
+      // Try to parse error message from server
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `Server Error (${res.status})`);
     }
 
     const result = await res.json();
-
     if (result.success) {
-      console.log("DELETE API Success. Refreshing list."); // Added Log 13
-      showNotification("success", "Coupon deleted");
-      loadCoupons();
+      showNotification("success", "Coupon deleted successfully");
+      loadCoupons(); // Refresh the list
     } else {
-      console.error("DELETE API reported failure:", result.message); // Added Log 14
-      showNotification("error", result.message);
+      showNotification("error", result.message || "Failed to delete");
     }
   } catch (err) {
-    console.error("❌ DELETE COUPON FAILED:", err); // Added Log 15
-    showNotification("error", "Server error while deleting coupon. See console.");
+    console.error("Delete Coupon Failed:", err);
+    showNotification("error", "Error: " + err.message);
   }
-  console.log("--- DELETE COUPON END ---"); // Added Log 16
 }
 
-window.deleteCoupon = deleteCoupon; // Around line 554
+// ===============================
+// EXPOSE TO WINDOW (Critical for onclick to work)
+// ===============================
+window.loadCoupons = loadCoupons;
 window.editCoupon = editCoupon;
+window.deleteCoupon = deleteCoupon;
 
 // =============================
 // Failed Emails Section
@@ -749,17 +813,21 @@ async function loadMessages() {
 
     try {
         const res = await authFetch(`${window.API_BASE}/api/admin/messages`);
+        console.log("Admin messages fetch status:", res.status);
         
         // Safety check to prevent the "Unexpected token <" error
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-            throw new TypeError("Server returned HTML instead of JSON. Check route order in server.js");
+            const text = await res.text();
+            console.error("Server returned non-JSON:", text.slice(0, 100));
+            throw new TypeError("Server returned HTML instead of JSON. Check backend logs.");
         }
 
         const messages = await res.json();
+        console.log("Admin messages data:", messages);
 
         if (!messages || messages.length === 0) {
-            list.innerHTML = '<p style="text-align:center; padding:20px;">No messages received yet.</p>';
+            list.innerHTML = '<p style="text-align:center; padding:20px;">No messages received yet. (DB is empty)</p>';
             return;
         }
 

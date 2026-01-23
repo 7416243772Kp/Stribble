@@ -221,12 +221,15 @@ router.get("/sales", async (req, res) => {
   }
 });
 
-router.get('/api/admin/messages', authAdmin, async (req, res) => {
+router.get('/messages', async (req, res) => {
     try {
+        console.log("👉 Admin fetching messages...");
         // Fetch messages, newest first
         const messages = await Contact.find().sort({ createdAt: -1 });
+        console.log(`✅ Found ${messages.length} messages.`);
         res.json(messages);
     } catch (error) {
+        console.error("❌ Error fetching messages:", error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

@@ -35,8 +35,8 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 
 import helmet from "helmet";
 // ==== Utilities ====
+import contactRoutes from "./src/routes/contactroutes.js";
 import { sendPaymentEmail } from "./src/utils/email.js";
-import Contact from './src/models/Contact.js';
 
 // ==== Path Setup ====
 const __filename = fileURLToPath(import.meta.url);
@@ -53,15 +53,15 @@ app.use(
     directives: {
       defaultSrc: ["'self'"],
       // SECURE: Removed 'unsafe-inline'
-      scriptSrc: ["'self'", "https://checkout.razorpay.com", "https://cdn.jsdelivr.net"],
+      scriptSrc: ["'self'", "https://checkout.razorpay.com", "https://*.razorpay.com", "https://cdn.jsdelivr.net"],
 
       // Keep 'unsafe-inline' for styles because you use style="..." in HTML
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
 
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      frameSrc: ["'self'", "https://api.razorpay.com"],
+      frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://lumberjack.razorpay.com", "https://cdn.jsdelivr.net"]
+      connectSrc: ["'self'", "https://lumberjack.razorpay.com", "https://*.razorpay.com", "https://cdn.jsdelivr.net"]
     },
   })
 );
@@ -180,6 +180,14 @@ const paymentLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const contactLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: { success: false, message: "Too many messages. Please try again in 30 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ============================
 //  OTP Store (In-memory)
 // ============================
@@ -214,6 +222,7 @@ app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/contact", contactLimiter, contactRoutes);
 
 // ---- OTP & Email Validation ----
 // Validate and send OTP to email
@@ -274,13 +283,13 @@ app.post("/api/validate/coupon", async (req, res) => {
     }
 
     const code = String(couponCode).trim().toUpperCase();
-    const coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+    const coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), isActive: true });
 
     if (!coupon) {
       return res.status(400).json({ success: false, message: "Invalid coupon" });
     }
 
-    res.json({ success: true, coupon: { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0, influencerUPI: coupon.influencerUPI || "", ebookCreatorUPI: coupon.ebookCreatorUPI || "", isDefault: coupon.isDefault, }, });
+    res.json({ success: true, coupon: { id: coupon._id, code: coupon.code, discount: coupon.discountValue || coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.creatorCommission || coupon.ebookCreatorCommission || 0, influencerUPI: coupon.influencerUpi || coupon.influencerUPI || "", ebookCreatorUPI: coupon.creatorUpi || coupon.ebookCreatorUPI || "", isDefault: coupon.isDefault, }, });
   } catch (err) {
     console.error("❌ Coupon validate error:", err);
     res.status(500).json({ success: false, message: "Error validating coupon" });
@@ -311,7 +320,7 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
     const code = String(couponCode || "").trim().toUpperCase();
 
     if (code) {
-      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), isActive: true });
       if (!coupon) {
         return res.status(400).json({ success: false, message: "Invalid coupon" });
       }
@@ -334,7 +343,7 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
     res.json({
       success: true,
       message: "OTP sent",
-      coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.ebookCreatorCommission || 0 } : null,
+      coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discountValue || coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.creatorCommission || coupon.ebookCreatorCommission || 0 } : null,
     });
   } catch (err) {
     console.error("❌ Checkout validate error:", err);
@@ -369,16 +378,16 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
     let coupon = null;
     const code = String(couponCode || "").trim().toUpperCase();
     if (code) {
-      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), active: true });
+      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), isActive: true });
       if (!coupon) {
         return res.status(400).json({ success: false, message: "Invalid coupon for this course" });
       }
     }
 
-    const discount = Number((coupon && coupon.discount) || 0);
+    const discount = Number((coupon && (coupon.discountValue || coupon.discount)) || 0);
     const finalAmount = Math.max(1, Number(course.price) - discount);
     const influencerCommission = Number((coupon && coupon.influencerCommission) || 0);
-    const ebookCreatorCommission = Number((coupon && coupon.ebookCreatorCommission) || 0);
+    const ebookCreatorCommission = Number((coupon && (coupon.creatorCommission || coupon.ebookCreatorCommission)) || 0);
     const ownerAmount = finalAmount - influencerCommission - ebookCreatorCommission;
     if (ownerAmount < 0) return res.status(400).json({ success: false, message: "Commission exceeds price after discount" });
 

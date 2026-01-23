@@ -477,6 +477,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Terms Checkbox Listener (Clear error on check)
+  const termsCheckbox = document.getElementById("termsCheckbox");
+  const termsErrorVal = document.getElementById("err-terms");
+  if (termsCheckbox) {
+    termsCheckbox.addEventListener("change", () => {
+      if (termsCheckbox.checked && termsErrorVal) {
+        termsErrorVal.style.display = "none";
+      }
+    });
+  }
+
   // Verify OTP
   // VERIFY OTP
   if (verifyOtpBtn) {
@@ -530,6 +541,17 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault(); // always prevent native submit
       if (!course) { showError(null, "No course selected!"); return; }
 
+      // Validate Terms & Conditions
+      const termsCheckbox = document.getElementById("termsCheckbox");
+      const termsErrorVal = document.getElementById("err-terms");
+      if (termsCheckbox && !termsCheckbox.checked) {
+        if (termsErrorVal) {
+          termsErrorVal.textContent = "Please accept Terms & Conditions";
+          termsErrorVal.style.display = "block";
+        }
+        return;
+      }
+
       const email = (emailInput.value || "").trim();
       const coupon = (couponInput.value || "").trim();
       const finalAmount = Number(priceDataset.finalAmount || course.price || 0);
@@ -551,7 +573,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!data?.success) throw new Error(data?.message || "Payment order creation failed");
 
         // open Razorpay
-      
         const options = {
           key: data.keyId || (window.RAZORPAY_KEY_ID || ""),
           amount: data.amountPaise,
