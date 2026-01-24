@@ -327,7 +327,8 @@ router.post("/forgot-password", async (_req, res) => {
     const admin = await AdminUser.findOne({ email: ADMIN_EMAIL });
     if (!admin) {
       console.error("Admin record not found for email:", ADMIN_EMAIL);
-      return res.status(500).json({ success: false, message: "System error. Contact support." });
+      // IMPORTANT: Return here
+      return res.status(404).json({ success: false, message: "Admin account not found." });
     }
 
     const otp = generateOTP();
@@ -340,18 +341,19 @@ router.post("/forgot-password", async (_req, res) => {
 
     try {
       await sendOTPEmail(ADMIN_EMAIL, otp);
-      res.json({ success: true, message: "OTP sent to admin email", expiresIn: 600 });
+      return res.json({ success: true, message: "OTP sent to admin email", expiresIn: 600 });
     } catch (err) {
       console.error("SES send error:", err);
+      // In dev, show OTP to make life easier
       if (process.env.NODE_ENV !== "production") {
         console.log("DEV OTP:", otp);
         return res.json({ success: true, message: "OTP generated (development mode)" });
       }
-      return res.status(500).json({ success: false, message: "Failed to send OTP" });
+      return res.status(500).json({ success: false, message: "Failed to send OTP email." });
     }
   } catch (err) {
     console.error("Forgot password error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 });
 

@@ -328,6 +328,45 @@
     </main>
   </div>
 
+  <div id="reset-overlay" class="login-overlay hidden" aria-hidden="true">
+    <div class="login-box" role="dialog" aria-modal="true">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="margin:0;">🔐 Reset Password</h3>
+        <button id="close-reset" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+      </div>
+      
+      <p style="text-align:center; color:var(--text-muted); font-size:0.95rem;">
+        Enter the 6-digit code sent to your email.
+      </p>
+
+      <div class="otp-input-group" style="margin: 20px 0;">
+        <input type="text" id="otp-1" class="otp-input-single" maxlength="1" />
+        <input type="text" id="otp-2" class="otp-input-single" maxlength="1" />
+        <input type="text" id="otp-3" class="otp-input-single" maxlength="1" />
+        <input type="text" id="otp-4" class="otp-input-single" maxlength="1" />
+        <input type="text" id="otp-5" class="otp-input-single" maxlength="1" />
+        <input type="text" id="otp-6" class="otp-input-single" maxlength="1" />
+      </div>
+
+      <div style="text-align:center; margin-bottom:20px; font-size:0.9rem;">
+        <span id="timer-countdown" style="font-weight:600; color:var(--primary);">10:00</span>
+        <span style="margin:0 8px; color:var(--border-color);">|</span>
+        <button id="resend-otp-btn" class="btn btn--ghost" style="padding:4px 10px; font-size:0.8rem;">Resend OTP</button>
+      </div>
+
+      <div class="field">
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" placeholder="Min. 8 characters" required />
+      </div>
+      <div class="field">
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" placeholder="Re-enter password" required />
+      </div>
+
+      <button id="reset-password-btn" class="btn btn--primary btn--block" style="margin-top:20px;">Set New Password</button>
+    </div>
+  </div>
+
   <script src="/js/admin-auth.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="/js/admin.js" defer></script>
