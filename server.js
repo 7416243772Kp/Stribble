@@ -23,6 +23,7 @@ import Coupon from "./src/models/coupon.js";
 import Payment from "./src/models/payment.js";
 import Course from "./src/models/course.js";
 import Order from "./src/models/order.js";
+import Contact from "./src/models/Contact.js";
 
 // ==== Routes & Middleware ====
 import adminRoutes from "./src/routes/adminRoutes.js";
@@ -44,24 +45,54 @@ const __dirname = path.dirname(__filename);
 
 // ==== App Initialization ====
 const app = express();
-app.use(helmet());
 
-// server.js
-
+// ============================
+//  CRITICAL SECURITY CONFIGURATION
+// ============================
 app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      // SECURE: Removed 'unsafe-inline'
-      scriptSrc: ["'self'", "https://checkout.razorpay.com", "https://*.razorpay.com", "https://cdn.jsdelivr.net"],
+  helmet({
+    // 1. Allow Razorpay popup to communicate (Fixes "Please use another method" error)
+    crossOriginOpenerPolicy: false,
 
-      // Keep 'unsafe-inline' for styles because you use style="..." in HTML
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    // 2. Allow resources from other origins (Prevents blocking images/scripts)
+    crossOriginResourcePolicy: { policy: "cross-origin" },
 
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://lumberjack.razorpay.com", "https://*.razorpay.com", "https://cdn.jsdelivr.net"]
+    // 3. Permissions Policy (Fixes "Parse failed" & "Violation" errors)
+    //    We let Helmet generate the valid header with double-quotes.
+    permissionsPolicy: {
+      features: {
+        // Allow sensors (Used by Razorpay for fraud detection/biometrics)
+        accelerometer: ["*"],
+        gyroscope: ["*"],
+        magnetometer: ["*"],
+        // Allow payment API
+        payment: ["self", "https://checkout.razorpay.com", "https://*.razorpay.com"],
+      },
+    },
+
+    // 4. Content Security Policy (Allows Razorpay & Inline Scripts)
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "https://checkout.razorpay.com",
+          "https://*.razorpay.com",
+          "https://cdn.jsdelivr.net",
+          "'unsafe-inline'",
+          "'unsafe-eval'" // Required by some Razorpay builds
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: [
+          "'self'",
+          "https://lumberjack.razorpay.com",
+          "https://*.razorpay.com",
+          "https://cdn.jsdelivr.net"
+        ]
+      },
     },
   })
 );
@@ -112,10 +143,11 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     if (rawAllowed.indexOf(origin) !== -1) return callback(null, true);
-    console.warn("Blocked CORS origin:", origin);
-    return callback(null, false); // decline without creating an Error object
+    return callback(null, false);
   },
   credentials: true,
+  // This allows the browser to see the Razorpay tracking header without warning
+  exposedHeaders: ["x-rtb-fingerprint-id"], 
 }));
 
 // ==== Static Files ====
@@ -142,8 +174,8 @@ mongoose
 //  Razorpay Setup
 // ============================
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: String(process.env.RAZORPAY_KEY_ID || "").trim(),
+  key_secret: String(process.env.RAZORPAY_KEY_SECRET || "").trim(),
 });
 
 // ============================
@@ -411,6 +443,15 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
     const promoterCommission = Number((coupon && coupon.influencerCommission) || 0);
 
     const amountPaise = Math.round(finalAmount * 100);
+    
+    // DEBUG: Log Razorpay Config and Payload
+    console.log("DEBUG: Creating Razorpay Order...");
+    const kId = process.env.RAZORPAY_KEY_ID || "";
+    const kSec = process.env.RAZORPAY_KEY_SECRET || "";
+    console.log(`DEBUG: Key ID length: ${kId.length} (Trimmed: ${kId.trim().length})`);
+    console.log(`DEBUG: Key Secret length: ${kSec.length} (Trimmed: ${kSec.trim().length})`);
+    console.log("DEBUG: Payload:", { amount: amountPaise, currency: "INR", notes: { email, courseId } });
+
     const rzpOrder = await razorpay.orders.create({
       amount: amountPaise,
       currency: "INR",
@@ -504,8 +545,14 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
           downloadLink,
           supportEmail: "support@stribble.site",
         });
+        
+        // Update Email Status & Timestamp
         order.emailSent = true;
-        await order.save().catch(() => { });
+        order.emailSentAt = new Date(); // <--- NEW: Save the timestamp
+        
+        await order.save().catch((err) => { 
+            console.error("Failed to save email status:", err);
+        });
       }
     }
 
@@ -556,6 +603,31 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
+app.post("/api/order/log-download", async (req, res) => {
+  try {
+    const { razorpayOrderId } = req.body;
+    if (!razorpayOrderId) return res.status(400).json({ success: false });
+
+    await Order.findOneAndUpdate(
+      { razorpayOrderId },
+      { 
+        $push: { 
+          downloadHistory: {
+            timestamp: new Date(),
+            ip: req.ip, // Captures User IP
+            userAgent: req.headers['user-agent'] // Captures Browser/Device info
+          }
+        } 
+      }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Log download error:", err);
+    // Don't block the user if logging fails, just send error status
+    res.status(500).json({ success: false });
+  }
+});
+
 // --- 2. YOUR EXISTING ROUTES (The "Librarians") ---
 
 app.get('/', (req, res) => {
@@ -589,6 +661,24 @@ app.get('/api/admin/messages', authAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to fetch messages' });
     }
+});
+
+// ---- SEARCH ORDERS (For Disputes) ----
+app.get("/api/admin/search-orders", authAdmin, async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    // Find orders and populate course details
+    const orders = await Order.find({ buyerEmail: new RegExp(email, 'i') }) // Case-insensitive search
+      .populate("courseId", "title price")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
 });
 
 // --- 3. CATCH-ALL ROUTE (Must be last) ---

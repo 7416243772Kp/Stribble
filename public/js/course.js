@@ -49,9 +49,10 @@ async function loadCourseDetails(courseId) {
       <div class="course-card">
         <div style="flex:0 0 360px; max-width:360px; width:100%;">
           <div style="border-radius:12px; overflow:hidden; background:#f0f0f0;">
-            <img src="${course.thumbnail || '/images/placeholder-course.png'}" 
+            <img src="${(course.thumbnail && (course.thumbnail.startsWith('http') || course.thumbnail.startsWith('//'))) ? course.thumbnail : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'))}" 
                  alt="${(course.title || '').replace(/\"/g, '')}" 
-                 style="width:100%; height:220px; object-fit:cover; display:block;" />
+                 style="width:100%; height:220px; object-fit:cover; display:block;" 
+                 onerror="this.src='/images/placeholder-course.png'"/>
           </div>
         </div>
         <div class="course-info" style="flex:1">

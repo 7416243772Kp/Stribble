@@ -87,7 +87,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const placeholderThumb = "/images/placeholder-course.png";
     if (miniThumb) {
       if (course.thumbnail && typeof course.thumbnail === "string" && course.thumbnail.trim() !== "") {
-        miniThumb.src = course.thumbnail;
+        if (course.thumbnail.startsWith("http") || course.thumbnail.startsWith("//")) {
+             miniThumb.src = course.thumbnail;
+        } else {
+             // If local path, prepend API_BASE if available to fetch from backend
+             miniThumb.src = API_BASE ? `${API_BASE}${course.thumbnail}` : course.thumbnail;
+        }
         miniThumb.style.display = "";
       } else {
         miniThumb.src = placeholderThumb;
@@ -600,7 +605,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.removeItem("buyerCoupon");
                 sessionStorage.removeItem("buyerEmail");
 
-                // Get the link from server response
                 const downloadUrl = verifyData.downloadLink || "#";
 
                 // Inject Styles + HTML
@@ -636,6 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
                       font-weight: 700; font-size: 1.1rem;
                       transition: all 0.2s; box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
                       margin-bottom: 16px;
+                      cursor: pointer;
                     }
                     .btn-download:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); }
                     
@@ -665,6 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   </style>
                 `;
 
+                // Render the Success Page
                 document.body.innerHTML = successStyles + `
                   <div class="payment-success-wrapper">
                     <div class="success-card">
@@ -681,7 +687,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <br><span style="font-size:0.9rem; opacity:0.8;">(A copy has also been sent to <span class="email-highlight">${email}</span>)</span>
                       </p>
 
-                      <a href="${downloadUrl}" target="_blank" class="btn-download">
+                      <a href="${downloadUrl}" target="_blank" class="btn-download" id="btn-download-final">
                         Download Course ⬇
                       </a>
                       
@@ -696,6 +702,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                   </div>
                 `;
+
+                // --- NEW: Attach Click Listener to Log Download ---
+                const dlBtn = document.getElementById("btn-download-final");
+                if (dlBtn) {
+                  dlBtn.addEventListener("click", () => {
+                    // Send log to server without waiting (fire and forget)
+                    safeJsonFetch(`${API_BASE}/api/order/log-download`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ razorpayOrderId: response.razorpay_order_id })
+                    }).catch(err => console.error("Download log failed", err));
+                  });
+                }
+
               } else {
                 showError(null, verifyData.message || "Payment verification failed");
               }

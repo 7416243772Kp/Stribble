@@ -6,10 +6,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Checkout | Stribble</title>
-  <link rel="stylesheet" href="css/theme.css">
-  <script src="js/settings.js" defer></script>
-  <script src="js/checkout.js" defer></script>
-  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <script src="/js/settings.js" defer></script>
+  <script src="/js/checkout.js" defer></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <h2 class="checkout-title">Checkout</h2>
 
@@ -115,9 +115,7 @@
       <label style="display: flex; align-items: flex-start; cursor: pointer;">
         <input type="checkbox" id="termsCheckbox" style="margin-top: 5px; margin-right: 10px;">
         <span style="font-size: 14px; color: #333;">
-          I accept the <a href="/terms.html" target="_blank">Terms & Conditions</a> specified in this website 
-          and agree that <strong style="color: red;">"No Refund"</strong> will be processed 
-          once the payment is made and the course is downloaded.
+          I agree to the <a href="/terms.html" target="_blank">Terms & Conditions</a> and acknowledge that this is a <span style="color: red; font-weight: bold;">non-refundable</span> digital product(PDF).
         </span>
       </label>
       <div id="err-terms" class="field-error" style="margin-top: 5px; display: none;"></div>

@@ -140,6 +140,10 @@ export async function sendPaymentEmail(opts = {}) {
                   <span class="receipt-val" style="color: #334155; font-size: 14px; font-family: monospace;">${escapeHtml(orderId)}</span>
                 </div>
                 <div class="receipt-row">
+                  <span style="color: #64748b; font-size: 14px;">Payment ID</span>
+                  <span class="receipt-val" style="color: #334155; font-size: 14px; font-family: monospace;">${escapeHtml(paymentId || "N/A")}</span>
+                </div>
+                <div class="receipt-row">
                   <span style="color: #64748b; font-size: 14px;">Date</span>
                   <span class="receipt-val" style="color: #334155; font-size: 14px;">${escapeHtml(dateTime)}</span>
                 </div>
@@ -177,6 +181,7 @@ ${downloadLink || "Link unavailable, please contact support."}
 RECEIPT:
 Amount: ₹${amount}
 Order ID: ${orderId}
+Payment ID: ${paymentId || "N/A"}
 Date: ${dateTime}
 `;
 

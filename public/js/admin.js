@@ -935,3 +935,102 @@ document.addEventListener("DOMContentLoaded", function () {
   // though sticking to event listeners is better
   window.adminShowSection = showSection;
 });
+
+
+// =============================
+// DISPUTE RESOLUTION LOGIC
+// =============================
+// Must appear AFTER the DOM is loaded or inside a DOMContentLoaded
+
+document.addEventListener("DOMContentLoaded", () => {
+    const disputeSearchBtn = document.getElementById("btn-dispute-search");
+    const disputeInput = document.getElementById("dispute-email-input");
+    const disputeResults = document.getElementById("dispute-results");
+
+    if (disputeSearchBtn) {
+    disputeSearchBtn.addEventListener("click", async () => {
+        const email = disputeInput.value.trim();
+        if (!email) return showNotification("error", "Please enter an email address");
+
+        const originalText = disputeSearchBtn.textContent;
+        disputeSearchBtn.textContent = "Searching...";
+        disputeSearchBtn.disabled = true;
+
+        try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/search-orders?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.message);
+
+        if (data.orders.length === 0) {
+            disputeResults.innerHTML = `<p style="text-align:center; padding:20px; color:#64748b;">No orders found for <strong>${email}</strong></p>`;
+            return;
+        }
+
+        // Render Audit Cards
+        disputeResults.innerHTML = data.orders.map(order => {
+            
+            // 1. Format Download Logs
+            let downloadLogsHtml = `<span style="color:#94a3b8; font-style:italic;">No downloads recorded</span>`;
+            if (order.downloadHistory && order.downloadHistory.length > 0) {
+            downloadLogsHtml = `
+                <ul style="margin:0; padding-left:20px; font-size:0.9rem; color:#475569;">
+                ${order.downloadHistory.map(log => `
+                    <li>
+                    <strong>${new Date(log.timestamp).toLocaleString()}</strong> 
+                    <span style="color:#64748b; font-size:0.85em;">(IP: ${log.ip || 'Unknown'})</span>
+                    </li>
+                `).join('')}
+                </ul>`;
+            }
+
+            // 2. Format Email Status
+            const emailStatusHtml = order.emailSent 
+            ? `<span style="color:#10b981; font-weight:bold;">✅ Sent</span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}`
+            : `<span style="color:#ef4444; font-weight:bold;">❌ Not Sent</span>`;
+
+            return `
+            <div style="border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin-bottom:16px; background:#f8fafc;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
+                <div>
+                    <h4 style="margin:0; color:#0f172a;">${order.courseId?.title || "Unknown Course"}</h4>
+                    <div style="font-size:0.85rem; color:#64748b;">Order ID: ${order.razorpayOrderId}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:bold; color:#0f172a;">₹${order.ownerAmount + (order.influencerCommission||0) + (order.ebookCreatorCommission||0)}</div>
+                    <div style="font-size:0.85rem; color:#64748b;">${new Date(order.createdAt).toLocaleDateString()}</div>
+                </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                
+                <div>
+                    <h5 style="margin:0 0 8px 0; color:#334155; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">📧 Email Delivery</h5>
+                    <div style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
+                    ${emailStatusHtml}
+                    </div>
+                </div>
+
+                <div>
+                    <h5 style="margin:0 0 8px 0; color:#334155; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">⬇️ Download Attempts</h5>
+                    <div style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:6px; max-height:150px; overflow-y:auto;">
+                    ${downloadLogsHtml}
+                    </div>
+                </div>
+
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        } catch (err) {
+        console.error(err);
+        showNotification("error", "Search failed");
+        disputeResults.innerHTML = `<p style="text-align:center; color:#ef4444;">Error fetching records.</p>`;
+        } finally {
+        disputeSearchBtn.textContent = originalText;
+        disputeSearchBtn.disabled = false;
+        }
+    });
+    }
+});

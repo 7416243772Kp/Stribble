@@ -1,4 +1,4 @@
-//C:\Ebook\src\models\order.js
+// src/models/order.js
 import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema({
@@ -26,9 +26,17 @@ const OrderSchema = new mongoose.Schema({
 
   // Email delivery tracking
   emailSent: { type: Boolean, default: false },
+  emailSentAt: { type: Date }, // <--- NEW: Tracks exactly when the email went out
 
   createdAt: { type: Date, default: Date.now, index: true },
   paidAt: { type: Date },
+
+  // Download History for Disputes
+  downloadHistory: [{
+    timestamp: { type: Date, default: Date.now },
+    ip: String,
+    userAgent: String
+  }],
 
   referrer: { type: String, default: null, index: true }, 
   promoterCommission: { type: Number, default: 0 },
