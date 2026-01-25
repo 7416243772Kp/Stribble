@@ -1,4 +1,6 @@
-// C:\Ebook\public\js\checkout.js
+// public/js/checkout.js
+
+// 1. Get Params & API Base
 const urlParams = new URLSearchParams(window.location.search);
 let selectedCourseId = urlParams.get("courseId");
 
@@ -21,15 +23,27 @@ async function safeJsonFetch(url, opts = {}) {
   return parsed;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // read course saved by course page (if present)
-  const course = JSON.parse(localStorage.getItem("selectedCourse") || "null");
-  if (!selectedCourseId && course?._id) {
-    selectedCourseId = course._id;
-    console.log("[checkout] courseId taken from localStorage:", selectedCourseId);
+document.addEventListener("DOMContentLoaded", async () => {
+  // 2. Initialize 'course' (CHANGED from const to let)
+  let course = JSON.parse(localStorage.getItem("selectedCourse") || "null");
+
+  // 3. FIX: If no course in localStorage but ID exists in URL, fetch it immediately
+  if (!course && selectedCourseId) {
+    try {
+      const data = await safeJsonFetch(`${API_BASE}/api/courses/${selectedCourseId}`);
+      course = data.course || data;
+      console.log("[checkout] Course fetched from API:", course.title);
+    } catch (err) {
+      console.error("[checkout] Failed to fetch course details:", err);
+    }
   }
 
-  // Elements mapping (match to your HTML)
+  // Fallback: Use localStorage ID if URL ID is missing
+  if (!selectedCourseId && course?._id) {
+    selectedCourseId = course._id;
+  }
+
+  // Elements mapping
   const emailInput = document.getElementById("email");
   const couponInput = document.getElementById("coupon");
   const otpInput = document.getElementById("otp");
@@ -38,59 +52,64 @@ document.addEventListener("DOMContentLoaded", () => {
   const paymentBtn = document.getElementById("payment-btn");
   const form = document.getElementById("checkoutForm");
 
-  // Price display elements you have in HTML
+  // Price display elements
   const priceBeforeEl = document.getElementById("priceBefore");
   const priceNowEl = document.getElementById("priceNow");
   const priceSavingsEl = document.getElementById("priceSavings");
+  const totalAmtEl = document.getElementById('totalAmount'); // Helper for storing raw price
 
-  // mini course info in price panel
+  // mini course info
   const miniThumb = document.getElementById("miniThumb");
   const miniTitle = document.getElementById("miniTitle");
-  const miniType = document.getElementById("miniType");
 
-  // coupon UI elements present in your HTML
+  // coupon UI elements
   const applyCouponBtn = document.getElementById("apply-coupon-btn");
   const couponHint = document.getElementById("couponHint");
   const defaultCouponTag = document.getElementById("defaultCouponTag");
 
-  // optional container where to show inline messages
+  // Notification Box Logic
   let notificationBox = document.getElementById("notification");
-  // if not present, create one inside the checkout card for consistent UI
   if (!notificationBox) {
     const checkoutCard = document.querySelector(".checkout-form");
     if (checkoutCard) {
       notificationBox = document.createElement("div");
       notificationBox.id = "notification";
-      notificationBox.setAttribute("aria-live", "polite");
       notificationBox.style.marginBottom = "8px";
       checkoutCard.insertBefore(notificationBox, checkoutCard.firstChild);
     }
   }
 
-  // internal price dataset when totalAmount id is not used
+  // 4. Initialize Price Dataset
   let priceDataset = {
-    amount: 0,       // base price (in ₹)
-    finalAmount: 0   // amount after coupon (in ₹)
+    amount: 0,       // base price
+    finalAmount: 0   // amount after coupon
   };
 
-  // Initialize price state from the 'course' stored or fallback zeros
+  // Populate UI with course data (Now works even if fetched from API)
   if (course) {
     const base = Number(course.price || 0);
     priceDataset.amount = base;
     priceDataset.finalAmount = base;
-    if (priceNowEl) priceNowEl.textContent = "₹" + base;
+    
+    // Update visual elements
+    if (priceNowEl) priceNowEl.textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(base);
     if (priceBeforeEl) priceBeforeEl.style.display = "none";
     if (priceSavingsEl) priceSavingsEl.style.display = "none";
-    // mini info
-    if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
+    
+    // Store raw amount in DOM for reliability
+    if (totalAmtEl) {
+        totalAmtEl.dataset.amount = base;
+        totalAmtEl.dataset.finalAmount = base;
+    }
 
+    // Mini Info
+    if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
     const placeholderThumb = "/images/placeholder-course.png";
     if (miniThumb) {
-      if (course.thumbnail && typeof course.thumbnail === "string" && course.thumbnail.trim() !== "") {
+      if (course.thumbnail && typeof course.thumbnail === "string") {
         if (course.thumbnail.startsWith("http") || course.thumbnail.startsWith("//")) {
              miniThumb.src = course.thumbnail;
         } else {
-             // If local path, prepend API_BASE if available to fetch from backend
              miniThumb.src = API_BASE ? `${API_BASE}${course.thumbnail}` : course.thumbnail;
         }
         miniThumb.style.display = "";
@@ -99,505 +118,207 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   } else {
-    // nothing selected
+    // Nothing selected
     if (priceNowEl) priceNowEl.textContent = "₹0";
   }
 
-  // helpers: UI notifications
+  // --- Notification Helpers ---
   let _notifyTimer = null;
   function clearNotifications() {
     if (!notificationBox) return;
     notificationBox.innerHTML = "";
     notificationBox.style.display = "none";
-    if (_notifyTimer) { clearTimeout(_notifyTimer); _notifyTimer = null; }
   }
   function showNotification(type, message, autoHideMs = 5000) {
-    if (!notificationBox) {
-      // fallback to alert/console
-      console.log(type, message);
-      return;
-    }
+    if (!notificationBox) { console.log(type, message); return; }
     clearNotifications();
     notificationBox.style.display = "block";
-    const card = document.createElement("div");
-    card.className = `notify-card notify-${type}`;
-    card.style.padding = "10px 12px";
-    card.style.borderRadius = "10px";
-    card.style.marginBottom = "8px";
-    card.style.display = "flex";
-    card.style.alignItems = "center";
-    card.style.justifyContent = "space-between";
-    card.style.gap = "12px";
-    card.style.boxShadow = "0 8px 18px rgba(0,0,0,0.04)";
-
-    const left = document.createElement("div");
-    left.style.display = "flex";
-    left.style.alignItems = "center";
-    left.style.gap = "10px";
-
-    const icon = document.createElement("div");
-    icon.textContent = (type === "success") ? "✓" : "⚠️";
-    icon.style.fontWeight = "700";
-
-    const msg = document.createElement("div");
-    msg.textContent = message;
-
-    left.appendChild(icon);
-    left.appendChild(msg);
-
-    const closeBtn = document.createElement("button");
-    closeBtn.innerHTML = "✕";
-    closeBtn.style.border = "none";
-    closeBtn.style.background = "transparent";
-    closeBtn.style.cursor = "pointer";
-    closeBtn.onclick = () => { clearNotifications(); };
-
-    card.appendChild(left);
-    card.appendChild(closeBtn);
-
-    notificationBox.appendChild(card);
+    
+    // Simple notification HTML
+    notificationBox.innerHTML = `
+      <div class="notify-card notify-${type}" style="padding:10px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; background:${type==='error'?'#fee2e2':'#d1fae5'}; color:${type==='error'?'#991b1b':'#065f46'};">
+         <strong>${type === "success" ? "✓" : "⚠️"}</strong> <span>${message}</span>
+      </div>
+    `;
 
     if (_notifyTimer) clearTimeout(_notifyTimer);
     _notifyTimer = setTimeout(() => { clearNotifications(); }, autoHideMs);
   }
-  function showSuccess(msg) { showNotification("success", msg, 5000); }
-
-  function clearError(inputId) {
-    const input = document.getElementById(inputId);
-    const errDiv = document.getElementById("err-" + inputId);
-
-    if (input) input.classList.remove("input-error", "shake");
-    if (errDiv) {
-      errDiv.style.display = "none";
-      errDiv.textContent = "";
-    }
-  }
-
-
-  ["email", "coupon", "otp"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("input", () => clearError(id));
-      el.addEventListener("focus", () => clearError(id));
-    }
-  });
-
-
   function showError(inputElOrMsg, msgMaybe) {
-    let msg = msgMaybe;
-    let inputEl = null;
-
-
-    if (typeof inputElOrMsg === "string" && !msgMaybe) {
-      msg = inputElOrMsg;
-    } else {
-      inputEl = inputElOrMsg;
+    let msg = typeof inputElOrMsg === "string" ? inputElOrMsg : msgMaybe;
+    let inputEl = typeof inputElOrMsg !== "string" ? inputElOrMsg : null;
+    
+    if (inputEl) {
+       inputEl.classList.add("input-error", "shake");
+       setTimeout(() => inputEl.classList.remove("shake"), 500);
+       const errDiv = document.getElementById("err-" + inputEl.id);
+       if (errDiv) { errDiv.textContent = msg; errDiv.style.display = "block"; return; }
     }
-
-
-    if (inputEl && inputEl.id) {
-
-      inputEl.classList.add("input-error", "shake");
-      setTimeout(() => inputEl.classList.remove("shake"), 500);
-
-
-      const errorDiv = document.getElementById("err-" + inputEl.id);
-      if (errorDiv) {
-        errorDiv.textContent = msg || "Invalid entry";
-        errorDiv.style.display = "block";
-        return;
-      }
-    }
-
-    if (typeof showNotification === "function") {
-      showNotification("error", msg || "Something went wrong", 5000);
-    } else {
-      alert(msg);
-    }
+    showNotification("error", msg || "Something went wrong");
+  }
+  function clearError(id) {
+     const el = document.getElementById(id);
+     if(el) el.classList.remove("input-error");
+     const err = document.getElementById("err-"+id);
+     if(err) err.style.display="none";
+  }
+  function showInlineSuccess(id, msg) {
+      const el = document.getElementById(id);
+      if(el) { el.innerHTML = `<span style='color:#10b981'>✓ ${msg}</span>`; el.style.display="block"; }
+  }
+  function setLoading(btn, isLoading, text) {
+      if(!btn) return;
+      if(isLoading) { btn.dataset.orig = btn.textContent; btn.textContent=text; btn.disabled=true; }
+      else { btn.textContent = btn.dataset.orig || btn.textContent; btn.disabled=false; }
   }
 
-  // REUSABLE INLINE SUCCESS FUNCTION
-  function showInlineSuccess(elementId, message) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    // 1. Render HTML (Green Box with Checkmark)
-    el.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-      <span>${message}</span>
-    `;
-
-    // 2. Apply Styles
-    el.className = "field-success"; // Uses the green CSS we added earlier
-    el.style.display = "flex";
-
-    // 3. Timer: Auto-hide after 3 seconds
-    if (el.dataset.timer) clearTimeout(el.dataset.timer);
-    el.dataset.timer = setTimeout(() => {
-      el.style.display = "none";
-      el.className = "";
-    }, 3000);
-  }
-
-  function setLoading(btn, loading, text) {
-    if (!btn) return;
-    if (loading) {
-      btn.dataset._orig = btn.textContent;
-      btn.textContent = text || "Processing…";
-      btn.disabled = true;
-    } else {
-      btn.textContent = btn.dataset._orig || btn.textContent;
-      btn.disabled = false;
-    }
-  }
-
-  // keep an appliedCoupon object
-  let appliedCoupon = null;
-
-  // fetch and show default coupon hint (if server provides) — errors ignored
-  async function fetchDefaultCoupon() {
-    if (!couponHint || !defaultCouponTag) return;
-    try {
-      const data = await safeJsonFetch(`${API_BASE}/api/coupons/default`);
-      const coupon = data.coupon || data;
-      if (coupon && coupon.code) {
-        couponHint.style.display = "flex";
-        defaultCouponTag.textContent = coupon.code;
-      } else {
-        couponHint.style.display = "none";
-      }
-    } catch (e) {
-      couponHint.style.display = "none";
-    }
-  }
-
-  // APPLY coupon handler (validate coupon-only)
+  // --- Coupon Logic ---
   async function applyCoupon() {
     const code = (couponInput.value || "").trim();
     if (!code) { showError(couponInput, "Enter coupon code"); return; }
+    // Ensure ID is set
     if (!selectedCourseId && course?._id) selectedCourseId = course._id;
+    
     setLoading(applyCouponBtn, true, "Checking…");
     try {
-      // Validate coupon via public endpoint (POST)
       const result = await safeJsonFetch(`${API_BASE}/api/validate/coupon`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ couponCode: code, courseId: selectedCourseId })
       });
-      console.log("DEBUG coupon-validate result:", result);
 
       const coupon = result.coupon || result;
-      if (!coupon) throw new Error("Invalid coupon code. Please enter a valid coupon code");
+      if (!coupon) throw new Error("Invalid coupon");
 
-      // compute savings robustly:
-
-      // --- FIX START: Sync with latest API-fetched price ---
-      const totalAmtEl = document.getElementById('totalAmount');
-      if (totalAmtEl && totalAmtEl.dataset.amount) {
-        // If the bottom script updated the DOM, use that price
-        priceDataset.amount = Number(totalAmtEl.dataset.amount);
-      } else if (priceNowEl) {
-        // Fallback: Read the visible price on screen (removes ₹ symbol)
-        const visiblePrice = Number(priceNowEl.textContent.replace(/[^0-9.]/g, ''));
-        if (visiblePrice > 0) priceDataset.amount = visiblePrice;
-      }
-      // --- FIX END ---
-
-      const base = Number(priceDataset.amount || (course?.price || 0));
+      // Calculate logic
+      const base = priceDataset.amount; // Use the robust dataset amount
       let savings = 0;
+      const pct = Number(coupon?.percent || 0);
+      const fixed = Number(coupon?.discount || coupon?.amount || 0);
 
-      // server may return percent or fixed discount using different keys
-      const pct = Number(coupon?.percent ?? coupon?.value?.percent ?? 0);
-      const fixed = Number(coupon?.discount ?? coupon?.value ?? coupon?.amount ?? 0);
+      if (pct > 0) savings = Math.round((base * pct) / 100);
+      else savings = fixed;
 
-      if (pct > 0) {
-        savings = Math.round((base * pct) / 100);
-      } else {
-        savings = fixed;
-      }
-      appliedCoupon = coupon;
       const final = Math.max(0, base - savings);
       priceDataset.finalAmount = final;
 
+      // Update UI
       if (priceBeforeEl) { priceBeforeEl.style.display = ""; priceBeforeEl.textContent = "₹" + base; }
       if (priceNowEl) priceNowEl.textContent = "₹" + final;
       if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
 
-      const shownCode = code || coupon?.code || coupon?.code?.toString?.() || "coupon";
+      showInlineSuccess("couponMessage", `Coupon '${code}' applied! Saved ₹${savings}`);
       sessionStorage.setItem("buyerCoupon", code);
-      const msgDiv = document.getElementById("couponMessage");
-      if (msgDiv) {
-        // 1. Render the message
-        msgDiv.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          <span>Coupon <strong>'${shownCode}'</strong> applied! You saved ₹${savings}</span>
-        `;
-
-        // 2. Show it with the green style
-        msgDiv.className = "field-success";
-        msgDiv.style.display = "flex";
-
-        // 3. AUTO-HIDE LOGIC (The Fix)
-        // Clear any existing timer so we don't hide the new message too early
-        if (window.couponTimer) clearTimeout(window.couponTimer);
-
-        window.couponTimer = setTimeout(() => {
-          msgDiv.style.display = "none";
-          msgDiv.className = ""; // Remove style class
-        }, 3000);
-      }
-
-      // Change "Apply" button to "Applied" visual state (Optional but nice)
-      if (applyCouponBtn) {
-        applyCouponBtn.textContent = "Applied";
-        applyCouponBtn.style.backgroundColor = "#10b981"; // Green
-        applyCouponBtn.style.borderColor = "#10b981";
-        setTimeout(() => {
-          applyCouponBtn.textContent = "Apply";
-          applyCouponBtn.style.backgroundColor = ""; // Reset
-          applyCouponBtn.style.borderColor = "";
-        }, 2000);
-      }
-
-      // Clear any previous error messages on the coupon field
       clearError('coupon');
     } catch (err) {
-      appliedCoupon = null;
-      if (priceBeforeEl) priceBeforeEl.style.display = "none";
-      if (priceSavingsEl) priceSavingsEl.style.display = "none";
-      if (priceNowEl) priceNowEl.textContent = "₹" + (priceDataset.amount || (course?.price || 0));
       showError(couponInput, err.message || "Invalid coupon");
+      // Reset price
+      priceDataset.finalAmount = priceDataset.amount;
+      if (priceNowEl) priceNowEl.textContent = "₹" + priceDataset.amount;
     } finally {
       setLoading(applyCouponBtn, false, "Apply");
     }
   }
   if (applyCouponBtn) applyCouponBtn.addEventListener("click", applyCoupon);
 
-  // Validate & Send OTP — coupon optional (allow empty coupon)
-  // VALIDATE & SEND OTP
+  // --- Validate & OTP ---
   if (validateBtn) {
     validateBtn.addEventListener("click", async () => {
-      const email = (emailInput.value || "").trim();
-      const couponCode = (couponInput.value || "").trim();
-      if (!selectedCourseId && course?._id) selectedCourseId = course._id;
-
-      // 1. Validate Email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        showError(emailInput, "Invalid email. Please enter a valid email");
-        return;
-      }
-
-      if (!selectedCourseId) {
-        showError(null, "No course selected.");
-        return;
-      }
-
-      setLoading(validateBtn, true, "Checking…");
-
-      try {
-        // 2. Call API
-        const serverResp = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, couponCode: couponCode || "", courseId: selectedCourseId })
-        });
-
-        const serverCoupon = serverResp?.coupon || null;
-
-        // Check if coupon was entered but rejected by server
-        if (couponCode && !serverCoupon) {
-          throw new Error("Invalid coupon code. Please enter a valid coupon code");
-        }
-
-        // 3. Handle Success (Coupon vs No Coupon)
-        const baseAmount = Number(priceDataset.amount || course?.price || 0);
-
-        if (serverCoupon) {
-          // --- COUPON VALID LOGIC ---
-          let savings = 0;
-          const pct = Number(serverCoupon.value ?? serverCoupon.percent ?? 0);
-          const fixed = Number(serverCoupon.value ?? serverCoupon.discount ?? 0);
-          if (pct > 0) savings = Math.round((baseAmount * pct) / 100);
-          else savings = fixed;
-
-          priceDataset.finalAmount = Math.max(0, baseAmount - savings);
-
-          // Update Price Panel
-          if (priceNowEl) {
-            priceNowEl.textContent = "₹" + priceDataset.finalAmount;
-            priceNowEl.classList.add("text-green");
-          }
-          if (priceBeforeEl) {
-            priceBeforeEl.textContent = "₹" + baseAmount;
-            priceBeforeEl.style.display = "";
-          }
-          if (priceSavingsEl) {
-            priceSavingsEl.textContent = `You saved ₹${savings}`;
-            priceSavingsEl.style.display = "";
-          }
-
-          sessionStorage.setItem("buyerCoupon", couponCode);
-
-          // SHOW INLINE SUCCESS (Green text below email)
-          showInlineSuccess("msg-email", "Coupon Validated & OTP Sent!");
-
-        } else {
-          // --- NO COUPON LOGIC ---
-          priceDataset.finalAmount = baseAmount;
-          if (priceNowEl) {
-            priceNowEl.textContent = "₹" + baseAmount;
-            priceNowEl.classList.remove("text-green");
-          }
-          if (priceBeforeEl) priceBeforeEl.style.display = "none";
-          if (priceSavingsEl) priceSavingsEl.style.display = "none";
-
-          sessionStorage.setItem("buyerCoupon", "");
-
-          // SHOW INLINE SUCCESS (Green text below email)
-          showInlineSuccess("msg-email", `OTP sent to ${email}`);
-        }
-
-        sessionStorage.setItem("buyerEmail", email);
-
-        // 4. Enable Next Steps
-        if (otpInput) otpInput.disabled = false;
-        if (verifyOtpBtn) verifyOtpBtn.disabled = false;
-
-        // Clear any previous errors
-        clearError('email');
-        clearError('coupon');
-
-      } catch (err) {
-        // Handle specific errors
-        let msg = err.message;
-        if (msg.toLowerCase().includes("coupon")) {
-          showError(couponInput, "Invalid coupon code. Please enter a valid coupon code");
-        } else {
-          showError(emailInput, msg || "Validation failed");
-        }
-
-        // Reset Prices on error
-        if (priceNowEl) {
-          priceNowEl.textContent = "₹" + (priceDataset.amount || 0);
-          priceNowEl.classList.remove("text-green");
-        }
-        if (priceBeforeEl) priceBeforeEl.style.display = "none";
-        if (priceSavingsEl) priceSavingsEl.style.display = "none";
-
-      } finally {
-        setLoading(validateBtn, false, "Validate & Send OTP");
-      }
+       const email = emailInput.value.trim();
+       if(!email) return showError(emailInput, "Enter email");
+       if(!selectedCourseId && course?._id) selectedCourseId = course._id;
+       
+       setLoading(validateBtn, true, "Sending OTP...");
+       try {
+           const res = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ email, couponCode: couponInput.value, courseId: selectedCourseId })
+           });
+           showInlineSuccess("msg-email", "OTP Sent!");
+           sessionStorage.setItem("buyerEmail", email);
+           if(otpInput) otpInput.disabled = false;
+           if(verifyOtpBtn) verifyOtpBtn.disabled = false;
+       } catch(e) {
+           showError(emailInput, e.message);
+       } finally {
+           setLoading(validateBtn, false, "Validate");
+       }
     });
   }
 
-  // Terms Checkbox Listener (Clear error on check)
-  const termsCheckbox = document.getElementById("termsCheckbox");
-  const termsErrorVal = document.getElementById("err-terms");
-  if (termsCheckbox) {
-    termsCheckbox.addEventListener("change", () => {
-      if (termsCheckbox.checked && termsErrorVal) {
-        termsErrorVal.style.display = "none";
-      }
-    });
-  }
-
-  // Verify OTP
-  // VERIFY OTP
+  // --- Verify OTP ---
   if (verifyOtpBtn) {
-    verifyOtpBtn.addEventListener("click", async () => {
-      const email = (emailInput.value || "").trim();
-      const otp = (otpInput.value || "").trim();
-
-      // 1. Basic Check
-      if (!otp) {
-        showError(otpInput, "Please enter the OTP");
-        return;
-      }
-
-      setLoading(verifyOtpBtn, true, "Verifying…");
-
-      try {
-        // 2. Call API
-        const data = await safeJsonFetch(`${API_BASE}/api/checkout/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, otp })
-        });
-
-        // 3. Handle Error
-        if (!data?.success) {
-          showError(otpInput, "Invalid OTP. Please enter a valid OTP");
-          return;
-        }
-
-        // 4. Handle Success
-        // SHOW INLINE SUCCESS (Green text below OTP)
-        showInlineSuccess("msg-otp", "OTP Verified Successfully!");
-
-        // Clear any error styles
-        clearError('otp');
-
-        // Enable Payment
-        if (paymentBtn) paymentBtn.disabled = false;
-
-      } catch (err) {
-        showError(otpInput, "Invalid OTP. Please enter a valid OTP");
-      } finally {
-        setLoading(verifyOtpBtn, false, "Verify OTP");
-      }
-    });
+      verifyOtpBtn.addEventListener("click", async () => {
+          const email = emailInput.value.trim();
+          const otp = otpInput.value.trim();
+          if(!otp) return showError(otpInput, "Enter OTP");
+          
+          setLoading(verifyOtpBtn, true, "Verifying...");
+          try {
+              const res = await safeJsonFetch(`${API_BASE}/api/checkout/verify-otp`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, otp })
+              });
+              if(!res.success) throw new Error("Invalid OTP");
+              showInlineSuccess("msg-otp", "Verified!");
+              if(paymentBtn) paymentBtn.disabled = false;
+          } catch(e) {
+              showError(otpInput, "Invalid OTP");
+          } finally {
+              setLoading(verifyOtpBtn, false, "Verify");
+          }
+      });
   }
 
-  // Payment submit — coupon optional; server will reject if an invalid coupon somehow slipped through
+  // --- PAYMENT SUBMIT ---
   if (form) {
     form.addEventListener("submit", async (e) => {
-      e.preventDefault(); // always prevent native submit
-      if (!course) { showError(null, "No course selected!"); return; }
+      e.preventDefault();
 
-      // Validate Terms & Conditions
-      const termsCheckbox = document.getElementById("termsCheckbox");
-      const termsErrorVal = document.getElementById("err-terms");
-      if (termsCheckbox && !termsCheckbox.checked) {
-        if (termsErrorVal) {
-          termsErrorVal.textContent = "Please accept Terms & Conditions";
-          termsErrorVal.style.display = "block";
-        }
-        return;
+      // THIS WAS THE BUG: 'course' was null in production because localStorage was empty.
+      // Now 'course' is populated by the fetch at the top of this file.
+      if (!course) { 
+          showError(null, "No course selected! (Try refreshing)"); 
+          return; 
       }
 
-      const email = (emailInput.value || "").trim();
-      const coupon = (couponInput.value || "").trim();
+      if (!document.getElementById("termsCheckbox")?.checked) {
+          showError(null, "Please accept Terms & Conditions");
+          return;
+      }
+
+      const email = emailInput.value.trim();
       const finalAmount = Number(priceDataset.finalAmount || course.price || 0);
 
-      if (!selectedCourseId && course?._id) selectedCourseId = course._id;
-      if (!selectedCourseId) return showError(null, "No course selected. Can't create order.");
+      if(!selectedCourseId && course?._id) selectedCourseId = course._id;
 
       setLoading(paymentBtn, true, "Processing Payment...");
 
       try {
-        // Server expects email + courseId + couponCode (couponCode may be empty string)
-        const payload = { email, courseId: selectedCourseId, couponCode: coupon || "" };
+        const payload = { 
+            email, 
+            courseId: selectedCourseId, 
+            couponCode: couponInput.value.trim() 
+        };
+        
         const data = await safeJsonFetch(`${API_BASE}/api/payment/order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
-        if (!data?.success) throw new Error(data?.message || "Payment order creation failed");
+        if (!data.success) throw new Error(data.message || "Order creation failed");
 
-        // open Razorpay
+        // Razorpay Options
         const options = {
-          key: data.keyId || (window.RAZORPAY_KEY_ID || ""),
-          amount: data.amountPaise,
+          key: data.keyId,
+          amount: data.amountPaise || data.amount * 100,
           currency: data.currency,
           name: "Stribble",
-          description: course.title || "Course purchase",
-          order_id: data.orderId,
+          description: course.title,
+          order_id: data.orderId || data.razorpayOrder.id,
           handler: async function (response) {
             try {
               const verifyData = await safeJsonFetch(`${API_BASE}/api/payment/verify`, {
@@ -741,146 +462,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const rzp = new Razorpay(options);
         rzp.on("payment.failed", function (resp) {
-          console.error("Razorpay payment.failed", resp);
-          showError(null, "Payment failed or cancelled. Please try again.");
+          showError(null, "Payment failed.");
         });
         rzp.open();
+
       } catch (err) {
-        showError(null, err.message || "Payment failed. Try again!");
+        showError(null, err.message || "Payment init failed");
       } finally {
         setLoading(paymentBtn, false, "Proceed to Pay");
       }
     });
   }
 
-  // Initialize UI: fetch default coupon and disable payment until OTP verify
-
-  if (paymentBtn) paymentBtn.disabled = true;
-
-  // small accessibility: show year
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
-});
-
-function _get(nodeOrId) {
-  return (typeof nodeOrId === 'string') ? document.getElementById(nodeOrId) : nodeOrId;
-}
-
-function bindClose(btn, container) {
-  if (!btn || !container) return;
-  btn.addEventListener('click', function () {
-    container.style.opacity = '0';
-    setTimeout(function () {
-      container.style.display = 'none';
-    }, 220);
-  });
-}
-
-function autoDismiss(container, timeout) {
-  if (!container) return;
-  if (!timeout || timeout <= 0) return;
-  setTimeout(function () {
-    if (!container) return;
-    container.style.opacity = '0';
-    setTimeout(function () {
-      if (container.parentNode) container.parentNode.removeChild(container);
-    }, 260);
-  }, timeout);
-}
-
-// Initialize Notifications
-document.addEventListener('DOMContentLoaded', function () {
-  var notifs = document.querySelectorAll('.notify-success');
-  notifs.forEach(function (n) {
-    var btn = n.querySelector('.notify-success__close');
-    bindClose(btn, n);
-  });
-});
-
-window.showSuccessNotif = function (id, opts) {
-  var el = _get(id);
-  if (!el) return;
-  opts = opts || {};
-  if (opts.title) {
-    var t = el.querySelector('.notify-success__title');
-    if (t) t.innerHTML = opts.title;
-  }
-  if (opts.desc) {
-    var d = el.querySelector('.notify-success__desc');
-    if (d) d.innerHTML = opts.desc;
-  }
-  if (opts.pillText) {
-    var pill = el.querySelector('.notify-success__pill') || document.getElementById('notif-coupon-pill');
-    if (pill) pill.textContent = opts.pillText;
-  }
-  el.style.display = 'flex';
-  el.style.opacity = '1';
-  el.style.transform = 'translateY(0) scale(1)';
-  var timeout = (typeof opts.timeout === 'number') ? opts.timeout : 6000;
-  if (timeout > 0) autoDismiss(el, timeout);
-};
-
-window.showPaymentSuccess = function () {
-  window.showSuccessNotif('notif-payment', { timeout: 5000 });
-};
-
-window.showCouponApplied = function (code, savedText) {
-  var pillText = code ? (code + ' • ' + (savedText || 'Coupon')) : (savedText || 'Coupon');
-  window.showSuccessNotif('notif-coupon', {
-    pillText: pillText,
-    desc: savedText ? ('Coupon ' + (code || '') + ' applied — you saved ' + savedText + '.') : ('Coupon applied.'),
-    timeout: 7000
-  });
-};
-
-// Checkout Initialization
-document.addEventListener('DOMContentLoaded', () => {
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-  const params = new URLSearchParams(window.location.search);
-  const courseId = params.get('courseId');
-
-  // Initialize based on URL or localStorage
-  if (courseId) {
-    const apiBase = window.API_BASE || '';
-    fetch(`${apiBase}/api/courses/${courseId}`)
-      .then(r => r.json())
-      .then(data => {
-        const cr = data.course || data;
-        if (!cr) return;
-        const price = Number(cr.price || 0);
-
-        const miniTitle = document.getElementById('miniTitle');
-        if (miniTitle) miniTitle.textContent = cr.title || 'Untitled';
-
-        const priceNow = document.getElementById('priceNow');
-        if (priceNow) priceNow.textContent = new Intl.NumberFormat("en-IN", {
-          style: "currency", currency: "INR", maximumFractionDigits: 0
-        }).format(price);
-
-        const totalAmt = document.getElementById('totalAmount');
-        if (totalAmt) {
-          totalAmt.dataset.amount = price;
-          totalAmt.dataset.finalAmount = price;
-        }
-
-        const thumbImg = document.getElementById('miniThumb');
-        if (thumbImg) {
-          let thumbSrc = cr.thumbnail || '/images/placeholder-course.png';
-          // Fix relative path if needed
-          if (thumbSrc.startsWith('/') && !thumbSrc.startsWith('//')) {
-            thumbSrc = apiBase + thumbSrc;
-          }
-          thumbImg.src = thumbSrc;
-        }
-      }).catch(console.error);
-  }
-
-  const navToggle = document.getElementById('navToggle');
-  if (navToggle) {
-    navToggle.addEventListener('click', () => {
-      // Mobile menu logic
-    });
-  }
 });
