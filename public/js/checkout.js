@@ -292,6 +292,19 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!coupon) throw new Error("Invalid coupon code. Please enter a valid coupon code");
 
       // compute savings robustly:
+
+      // --- FIX START: Sync with latest API-fetched price ---
+      const totalAmtEl = document.getElementById('totalAmount');
+      if (totalAmtEl && totalAmtEl.dataset.amount) {
+        // If the bottom script updated the DOM, use that price
+        priceDataset.amount = Number(totalAmtEl.dataset.amount);
+      } else if (priceNowEl) {
+        // Fallback: Read the visible price on screen (removes ₹ symbol)
+        const visiblePrice = Number(priceNowEl.textContent.replace(/[^0-9.]/g, ''));
+        if (visiblePrice > 0) priceDataset.amount = visiblePrice;
+      }
+      // --- FIX END ---
+
       const base = Number(priceDataset.amount || (course?.price || 0));
       let savings = 0;
 

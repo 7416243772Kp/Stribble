@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         a.innerHTML = `
         <div class="card__media">
-          <img src="${thumb}" alt="${(course.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" />
+          <img src="${thumb}" alt="${(course.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:auto; display:block;" />
         </div>
         <div class="card__body">
           <h3 class="card__title">${course.title || 'Untitled'}</h3>

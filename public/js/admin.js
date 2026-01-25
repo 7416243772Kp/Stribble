@@ -1,4 +1,4 @@
-//C:\Ebook\public\js\admin.js
+﻿//C:\Ebook\public\js\admin.js
 // =============================
 // Sidebar Navigation
 // =============================
@@ -921,6 +921,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (name === 'promoters' && typeof window.loadPromoters === 'function') {
       window.loadPromoters();
+    }
+
+    if (name === 'coupons') {
+      if (typeof window.loadCoupons === 'function') window.loadCoupons();
+      if (typeof window.loadCoursesForCoupons === 'function') window.loadCoursesForCoupons();
+    }
+
+    if (name === 'sales' || name === 'dashboard') {
+      if (typeof window.loadSalesDashboard === 'function') window.loadSalesDashboard();
+    }
+
+    if (name === 'courses') {
+      if (typeof window.fetchCourses === 'function') window.fetchCourses();
     }
   }
 
