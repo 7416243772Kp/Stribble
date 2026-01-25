@@ -24,6 +24,7 @@ import Payment from "./src/models/payment.js";
 import Course from "./src/models/course.js";
 import Order from "./src/models/order.js";
 import Contact from "./src/models/Contact.js";
+import Promoter from "./src/models/promoter.js";
 
 // ==== Routes & Middleware ====
 import adminRoutes from "./src/routes/adminRoutes.js";
@@ -426,21 +427,21 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
     // decide referrer: prefer cookie (promo_ref) then body.ref (explicit)
     let referrer = req.cookies?.promo_ref || req.body?.ref || null;
 
-    // validate promoter now to avoid saving invalid refs
+    let promoterCommission = 0;
+    // If a referrer exists and is valid, fetch the promoter's specific commission
     if (referrer) {
       try {
-        const Promoter = (await import('./src/models/promoter.js')).default;
-        const exists = await Promoter.exists({ refId: referrer, active: true });
-        if (!exists) {
-          referrer = null; // drop invalid ref
-        }
-      } catch (err) {
-        console.warn('Promoter validation failed while creating order:', err && err.message);
-        referrer = null;
+         const promoter = await Promoter.findOne({ refId: referrer, active: true });
+         if (promoter) {
+            promoterCommission = promoter.promoterCommission || 0;
+         } else {
+            referrer = null; // Invalid or inactive promoter
+         }
+      } catch (e) { 
+          console.log("Promoter lookup failed", e); 
+          referrer = null;
       }
     }
-
-    const promoterCommission = Number((coupon && coupon.influencerCommission) || 0);
 
     const amountPaise = Math.round(finalAmount * 100);
     
