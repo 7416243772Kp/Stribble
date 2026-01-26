@@ -47,26 +47,27 @@ async function loadCourseDetails(courseId) {
     // Render HTML
     courseDetailsContainer.innerHTML = `
       <div class="course-card">
-        <div style="flex:0 0 360px; max-width:360px; width:100%;">
-          <div style="border-radius:12px; overflow:hidden; background:#f0f0f0;">
+        <div class="course-media">
+          <div class="course-img-wrapper">
             <img src="${(course.thumbnail && (course.thumbnail.startsWith('http') || course.thumbnail.startsWith('//'))) ? course.thumbnail : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'))}" 
                  alt="${(course.title || '').replace(/\"/g, '')}" 
-                 style="width:100%; height:auto; display:block;" 
+                 class="course-detail-img" 
                  onerror="this.src='/images/placeholder-course.png'"/>
           </div>
         </div>
-        <div class="course-info" style="flex:1">
+        <div class="course-info">
           <h3 style="margin-top:0">${course.title}</h3>
-          <p style="color:var(--muted); line-height: 1.6;">${course.description}</p>
-          
-          <div style="margin-top:20px; display: flex; align-items: center; gap: 20px;">
-            <span class="price" style="font-weight:800; font-size: 2em; color: #0f172a;">₹${course.price}</span>
-            <button id="buy-btn" style="background-color: #000; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s;">
-              Buy Now
-            </button>
-          </div>
+          <p class="course-desc-text">${course.description}</p>
         </div>
       </div>
+      
+      <!-- Separate Action Bar (Mobile Sticky / Desktop Inline) -->
+       <div class="course-action-bar">
+          <div class="price-tag">₹${course.price}</div>
+          <button id="buy-btn" class="btn btn--primary btn-buy-lg">
+            Buy Now
+          </button>
+       </div>
     `;
 
     // Update Share Links

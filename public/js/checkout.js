@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     notificationBox.innerHTML = "";
     notificationBox.style.display = "none";
   }
-  function showNotification(type, message, autoHideMs = 5000) {
+  function showNotification(type, message, autoHideMs = 2000) {
     if (!notificationBox) { console.log(type, message); return; }
     clearNotifications();
     notificationBox.style.display = "block";
@@ -164,7 +164,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   function showInlineSuccess(id, msg) {
       const el = document.getElementById(id);
-      if(el) { el.innerHTML = `<span style='color:#10b981'>✓ ${msg}</span>`; el.style.display="block"; }
+      if(el) { 
+        el.innerHTML = `<span style='color:#10b981'>✓ ${msg}</span>`; 
+        el.style.display="block"; 
+        
+        // Auto-hide inline success after 2 seconds
+        if(el.dataset.timer) clearTimeout(el.dataset.timer);
+        el.dataset.timer = setTimeout(() => {
+            el.style.display = "none";
+        }, 2000);
+      }
   }
   function setLoading(btn, isLoading, text) {
       if(!btn) return;
