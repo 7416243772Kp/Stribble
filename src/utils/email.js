@@ -128,23 +128,23 @@ export async function sendPaymentEmail(opts = {}) {
                 <h3>Receipt Details</h3>
 
                 <div class="receipt-row">
-                  <span style="color: #64748b; font-size: 14px;">Course</span>
+                  <span style="color: #64748b; font-size: 14px;">Course: </span>
                   <span class="receipt-val" style="color: #0f172a; font-size: 14px;">${escapeHtml(courseName)}</span>
                 </div>
                 <div class="receipt-row">
-                  <span style="color: #64748b; font-size: 14px;">Amount Paid</span>
+                  <span style="color: #64748b; font-size: 14px;">Amount Paid: </span>
                   <span class="receipt-val" style="color: #10b981; font-size: 16px;">₹${escapeHtml(String(amount))}</span>
                 </div>
                 <div class="receipt-row">
-                  <span style="color: #64748b; font-size: 14px;">Order ID</span>
+                  <span style="color: #64748b; font-size: 14px;">Order ID: </span>
                   <span class="receipt-val" style="color: #334155; font-size: 14px; font-family: monospace;">${escapeHtml(orderId)}</span>
                 </div>
                 <div class="receipt-row">
-                  <span style="color: #64748b; font-size: 14px;">Payment ID</span>
+                  <span style="color: #64748b; font-size: 14px;">Payment ID: </span>
                   <span class="receipt-val" style="color: #334155; font-size: 14px; font-family: monospace;">${escapeHtml(paymentId || "N/A")}</span>
                 </div>
                 <div class="receipt-row">
-                  <span style="color: #64748b; font-size: 14px;">Date</span>
+                  <span style="color: #64748b; font-size: 14px;">Date: </span>
                   <span class="receipt-val" style="color: #334155; font-size: 14px;">${escapeHtml(dateTime)}</span>
                 </div>
               </div>
