@@ -1,4 +1,4 @@
-// C:\Ebook\src\routes\adminAuthRoutes.js
+// src/routes/adminAuthRoutes.js
 import express from "express";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcrypt";
@@ -10,7 +10,8 @@ import dotenv from "dotenv";
 import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
 import AdminUser from "../models/AdminUser.js";
 import authAdmin from "../middleware/authAdmin.js";
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+// 1. Import the transporter we created in email.js
+import { transporter } from "../utils/email.js";
 
 dotenv.config();
 const router = express.Router();
@@ -30,23 +31,8 @@ const loginLimiter = rateLimit({
   message: { success: false, message: "Too many login attempts. Please try again later." }
 });
 
-const REGION = process.env.AWS_REGION || "ap-south-1";
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "praveenkunche975@gmail.com").toLowerCase();
-
-// Build SES client safely (avoid invalid credentials object)
-const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-const ses = new SESClient(
-  hasAwsCreds
-    ? {
-      region: REGION,
-      credentials: {
-        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-      },
-    }
-    : { region: REGION } // fall back to default provider chain if running on AWS with role
-);
 
 // =============================
 // In-memory stores
@@ -103,23 +89,14 @@ async function sendOTPEmail(email, otp) {
   </body>
   </html>`;
 
-  if (!hasAwsCreds) {
-    console.warn("⚠️ AWS credentials not found in env. SES will use default provider chain or fail if not available.");
-  }
-
-  const command = new SendEmailCommand({
-    Destination: { ToAddresses: [email] },
-    Message: {
-      Subject: { Data: "Admin Password Reset OTP", Charset: "UTF-8" },
-      Body: {
-        Html: { Data: html, Charset: "UTF-8" },
-        Text: { Data: `Your OTP is ${otp}. It is valid for 10 minutes.`, Charset: "UTF-8" },
-      },
-    },
-    Source: FROM_EMAIL,
+  // 2. Use SMTP2GO Transporter
+  return transporter.sendMail({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Admin Password Reset OTP",
+    html: html,
+    text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
   });
-
-  return ses.send(command);
 }
 
 // =============================
@@ -343,7 +320,7 @@ router.post("/forgot-password", async (_req, res) => {
       await sendOTPEmail(ADMIN_EMAIL, otp);
       return res.json({ success: true, message: "OTP sent to admin email", expiresIn: 600 });
     } catch (err) {
-      console.error("SES send error:", err);
+      console.error("SMTP2GO send error:", err);
       // In dev, show OTP to make life easier
       if (process.env.NODE_ENV !== "production") {
         console.log("DEV OTP:", otp);

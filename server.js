@@ -13,10 +13,6 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import rateLimit from "express-rate-limit";
 
-// ==== AWS SES (v3) ====
-import pkg from "@aws-sdk/client-ses";
-const { SESClient, SendEmailCommand } = pkg;
-
 // ==== Models ====
 import AdminUser from "./src/models/AdminUser.js";
 import Coupon from "./src/models/coupon.js";
@@ -38,7 +34,7 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 import helmet from "helmet";
 // ==== Utilities ====
 import contactRoutes from "./src/routes/contactroutes.js";
-import { sendPaymentEmail } from "./src/utils/email.js";
+import { sendPaymentEmail, transporter } from "./src/utils/email.js";
 
 // ==== Path Setup ====
 const __filename = fileURLToPath(import.meta.url);
@@ -179,19 +175,9 @@ const razorpay = new Razorpay({
   key_secret: String(process.env.RAZORPAY_KEY_SECRET || "").trim(),
 });
 
-// ============================
-//  AWS SES Setup
-// ============================
-const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-const ses = hasAwsCreds
-  ? new SESClient({
-    region: process.env.AWS_REGION || "ap-south-1",
-    credentials: {
-      accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-      secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-    },
-  })
-  : new SESClient({ region: process.env.AWS_REGION || "ap-south-1" }); // will use default provider chain if available
+// ==== AWS SES Setup (REMOVED) ====
+// const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+// const ses = ... 
 
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 
@@ -273,16 +259,12 @@ app.post("/api/validate/email", async (req, res) => {
   otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
   try {
-    const command = new SendEmailCommand({
-      Destination: { ToAddresses: [email] },
-      Message: {
-        Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
-        Subject: { Data: "Stribble - Verify your email" },
-      },
-      Source: FROM_EMAIL,
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Stribble - Verify your email",
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
     });
-
-    await ses.send(command);
     res.json({ success: true, message: "OTP sent to email" });
   } catch (err) {
     console.error("❌ OTP send error:", err);
@@ -363,15 +345,12 @@ app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // valid for 5 min
 
-    const command = new SendEmailCommand({
-      Destination: { ToAddresses: [email] },
-      Message: {
-        Body: { Text: { Data: `Your OTP is ${otp}. It is valid for 5 minutes.` } },
-        Subject: { Data: "Stribble - Verify your email" },
-      },
-      Source: FROM_EMAIL,
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Stribble - Verify your email",
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
     });
-    await ses.send(command);
 
     res.json({
       success: true,

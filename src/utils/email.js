@@ -1,21 +1,22 @@
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import dotenv from "dotenv";
+// 1. Load environment variables IMMEDIATELY, before anything else
+dotenv.config();
+
+import nodemailer from "nodemailer";
 import Course from "../models/course.js";
 
 // Configuration
-const REGION = process.env.AWS_REGION || "ap-south-1";
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 
-const sesClient = new SESClient(
-  process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-    ? {
-      region: REGION,
-      credentials: {
-        accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
-        secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
-      },
-    }
-    : { region: REGION }
-);
+// Create reusable transporter object using SMTP2GO
+export const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "mail.smtp2go.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 function escapeHtml(str) {
   if (str == null) return "";
@@ -54,13 +55,6 @@ export async function sendPaymentEmail(opts = {}) {
   }
 
   // --- STRIBBLE BRANDED EMAIL TEMPLATE ---
-  // Matches public/css/theme.css variables:
-  // --primary: #0f172a
-  // --bg-body: #f8fafc
-  // --border-color: #e2e8f0
-  // Font: Inter/System
-
-  // --- STRIBBLE BRANDED EMAIL TEMPLATE (REDESIGNED) ---
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -94,13 +88,10 @@ export async function sendPaymentEmail(opts = {}) {
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc;">
-
   <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 40px 0;">
     <tr>
       <td align="center">
-
         <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 20px;">
-
           <tr>
             <td class="header">
               <div class="logo">
@@ -109,24 +100,18 @@ export async function sendPaymentEmail(opts = {}) {
               </div>
             </td>
           </tr>
-
           <tr>
             <td class="content">
-
               <h1 style="color: #0f172a; font-size: 28px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.02em;">You're all set!</h1>
               <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">
                 Hi <strong>${escapeHtml(customerName || "Customer")}</strong>, thank you for purchasing <strong>${escapeHtml(courseName)}</strong>. Your access link is ready below.
               </p>
-
               ${downloadLink
       ? `<a href="${escapeHtml(downloadLink)}" target="_blank" class="action-btn">Access Course Content</a>`
       : `<div class="unavailable">Download link unavailable. Please reply to this email.</div>`}
-
               <div style="height: 40px;"></div>
-
               <div class="receipt">
                 <h3>Receipt Details</h3>
-
                 <div class="receipt-row">
                   <span style="color: #64748b; font-size: 14px;">Course: </span>
                   <span class="receipt-val" style="color: #0f172a; font-size: 14px;">${escapeHtml(courseName)}</span>
@@ -148,22 +133,18 @@ export async function sendPaymentEmail(opts = {}) {
                   <span class="receipt-val" style="color: #334155; font-size: 14px;">${escapeHtml(dateTime)}</span>
                 </div>
               </div>
-
             </td>
           </tr>
-
           <tr>
             <td class="footer">
               <p>Need help? Contact <a href="mailto:${escapeHtml(supportEmail)}">${escapeHtml(supportEmail)}</a></p>
               <p>&copy; ${new Date().getFullYear()} Stribble. All rights reserved.</p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
   </table>
-
 </body>
 </html>
 `;
@@ -185,24 +166,17 @@ Payment ID: ${paymentId || "N/A"}
 Date: ${dateTime}
 `;
 
-  const params = {
-    Destination: { ToAddresses: [to] },
-    Message: {
-      Subject: { Charset: "UTF-8", Data: `Your Course: ${courseName}` },
-      Body: {
-        Html: { Charset: "UTF-8", Data: html },
-        Text: { Charset: "UTF-8", Data: text },
-      },
-    },
-    Source: FROM_EMAIL,
-  };
-
   try {
-    const command = new SendEmailCommand(params);
-    const res = await sesClient.send(command);
-    return { success: true, messageId: res.MessageId || null };
+    const info = await transporter.sendMail({
+      from: FROM_EMAIL,
+      to,
+      subject: `Your Course: ${courseName}`,
+      html,
+      text,
+    });
+    return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error("sendPaymentEmail SES error:", err);
+    console.error("sendPaymentEmail SMTP error:", err);
     throw err;
   }
 }
