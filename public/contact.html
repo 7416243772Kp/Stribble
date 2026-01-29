@@ -1,4 +1,3 @@
-<!-- C:\Ebook\public\contact.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,13 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - Stribble</title>
     <link rel="stylesheet" href="/css/theme.css">
+    <style>
+        /* Add specific styles for the contact details section */
+        .contact-details {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+        }
+        .contact-details h3 {
+            margin-bottom: 15px;
+            color: #0f172a;
+        }
+        .contact-details p {
+            margin: 5px 0;
+            color: #475569;
+        }
+    </style>
 </head>
 <body>
     <div class="container legal-page">
         <h1>Contact Us</h1>
-        <p>We'd love to hear from you! Reach out to us at <a href="mailto:contact@stribble.site">contact@stribble.site</a> or use the form below.</p>
-        <p>Have a question or need help? Send us a message below.</p>
-
+        <p>We'd love to hear from you! Reach out to us at <a href="mailto:support@stribble.site">support@stribble.site</a> or use the form below.</p>
+        
         <form id="contactForm" class="admin-form">
             <div class="form-group">
                 <label for="email">Your Email Address</label>
@@ -25,6 +40,21 @@
             <button type="submit" class="btn-primary">Send Message</button>
         </form>
         <div id="responseMsg" style="margin-top: 20px; display: none;"></div>
+
+        <div class="contact-details">
+            <h3>Registered Office</h3>
+            <p><strong>Stribble</strong></p>
+            <p><strong>Address:</strong></p>
+            <p>Pujari palem,<br></p>
+            <p>palivela,<br></p>
+            <p>Kotthapeta,<br></p>
+            <p>East Godavari District, 533229,<br></p>
+            <p>Andhra Pradesh, India</p>
+            
+            <h3 style="margin-top: 20px;">Contact Information</h3>
+            <p>📞 Phone: +91 7416243772</p>
+            <p>📧 Email: support@stribble.site</p>
+        </div>
     </div>
 
     <script src="/js/contact.js"></script>
