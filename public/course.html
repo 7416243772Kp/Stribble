@@ -37,16 +37,14 @@
         <h3 style="font-size:1.2rem; margin-bottom:15px;">Write a Review</h3>
         <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
           <span style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED BUYERS ONLY</span>
-          Please enter the Payment ID sent to your email.
+          Reviews are verified automatically using your purchase email.
         </p>
 
         <form id="reviewForm" style="display:grid; gap:12px;">
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <input type="text" id="rev-name" placeholder="Your Name" required class="input-field">
-            <input type="email" id="rev-email" placeholder="Your Email (used for purchase)" required class="input-field">
+            <input type="email" id="rev-email" placeholder="Your Email (must match purchase email)" required class="input-field">
           </div>
-          <input type="text" id="rev-paymentId" placeholder="Payment ID (e.g., pay_Os8...)" required class="input-field">
-
           <div class="rating-select" style="display:flex; gap:10px; align-items:center;">
             <label>Rating:</label>
             <select id="rev-rating" style="width:auto; padding:8px;">
@@ -91,7 +89,6 @@
   <footer class="footer">
     <div class="container footer__inner">
 
-      <!-- Brand & Contact -->
       <div>
         <div class="brand" style="margin-bottom: 0.75rem;">
           <span class="brand__dot"></span>
@@ -115,7 +112,6 @@
         </p>
       </div>
 
-      <!-- Legal -->
       <div>
         <h4>Legal</h4>
         <a href="privacy.html">Privacy Policy</a>
@@ -123,7 +119,6 @@
         <a href="refund.html">Refund Policy</a>
       </div>
 
-      <!-- Support -->
       <div>
         <h4>Support</h4>
         <a href="contact.html">Contact Us</a>

@@ -61,8 +61,7 @@ async function loadCourseDetails(courseId) {
         </div>
       </div>
       
-      <!-- Separate Action Bar (Mobile Sticky / Desktop Inline) -->
-       <div class="course-action-bar">
+      <div class="course-action-bar">
           <div class="price-tag">₹${course.price}</div>
           <button id="buy-btn" class="btn btn--primary btn-buy-lg">
             Buy Now
@@ -112,14 +111,14 @@ function initReviews(courseId) {
     
     submitBtn.disabled = true;
     submitBtn.textContent = "Verifying...";
-    msgDiv.textContent = "Verifying payment details...";
+    msgDiv.textContent = "Verifying email & purchase...";
     msgDiv.style.color = "#64748b";
 
     const payload = {
       courseId: courseId,
       name: document.getElementById("rev-name").value.trim(),
       email: document.getElementById("rev-email").value.trim(),
-      paymentId: document.getElementById("rev-paymentId").value.trim(),
+      // Payment ID removed
       rating: document.getElementById("rev-rating").value,
       comment: document.getElementById("rev-comment").value.trim()
     };
@@ -139,7 +138,7 @@ function initReviews(courseId) {
         form.reset();
         fetchReviews(); // Reload list
       } else {
-        msgDiv.textContent = data.message || "Verification failed. Check Payment ID.";
+        msgDiv.textContent = data.message || "Verification failed. Ensure you used the correct purchase email.";
         msgDiv.style.color = "#ef4444";
       }
     } catch (err) {
@@ -176,7 +175,7 @@ function initReviews(courseId) {
     }
   }
 
-  // 3. Render Stats (Bars Left, Stats Right) - THE MISSING FUNCTION
+  // 3. Render Stats (Bars Left, Stats Right)
   function renderStats(reviews) {
     const total = reviews.length;
     const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };

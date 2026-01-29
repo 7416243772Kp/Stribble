@@ -16,15 +16,19 @@ router.get("/:courseId", async (req, res) => {
     }
 });
 
-// POST a new Review (WITH PAYMENT VERIFICATION)
+// POST a new Review (VERIFIED BY EMAIL ONLY)
 router.post("/", async (req, res) => {
     try {
-        const { courseId, name, email, paymentId, rating, comment } = req.body;
+        // Removed paymentId from destructuring
+        const { courseId, name, email, rating, comment } = req.body;
+
+        if (!email || !courseId) {
+            return res.status(400).json({ success: false, message: "Email and Course ID are required." });
+        }
 
         // 1. VERIFICATION STEP
-        // Check if a successful payment exists with this Email + Payment ID + Course
+        // Check if a successful payment exists with this Email + Course
         const validPayment = await Payment.findOne({
-            razorpay_payment_id: paymentId,
             email: email,
             courseId: courseId,
             status: "success"
@@ -33,12 +37,12 @@ router.post("/", async (req, res) => {
         if (!validPayment) {
             return res.status(401).json({
                 success: false,
-                message: "Verification failed. Invalid Payment ID or Email for this course."
+                message: "Verification failed. No purchase found for this email."
             });
         }
 
-        // 2. Check if already reviewed
-        const existingReview = await Review.findOne({ paymentId, courseId });
+        // 2. Check if already reviewed by this email
+        const existingReview = await Review.findOne({ userEmail: email, courseId });
         if (existingReview) {
             return res.status(400).json({ success: false, message: "You have already reviewed this course." });
         }
@@ -48,7 +52,6 @@ router.post("/", async (req, res) => {
             courseId,
             userName: name,
             userEmail: email,
-            paymentId,
             rating,
             comment
         });
