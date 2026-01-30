@@ -88,7 +88,7 @@ async function loadCourseDetails(courseId) {
     const buyBtn = document.getElementById('buy-btn');
     if (buyBtn) {
       buyBtn.onclick = () => {
-        window.location.href = `checkout.html?courseId=${course._id}`;
+        window.location.href = `/checkout/${course._id}`;
       };
     }
 

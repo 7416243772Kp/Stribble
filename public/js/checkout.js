@@ -4,6 +4,14 @@
 const urlParams = new URLSearchParams(window.location.search);
 let selectedCourseId = urlParams.get("courseId");
 
+if (!selectedCourseId) {
+  const pathParts = window.location.pathname.split('/');
+  const segments = pathParts.filter(p => p.trim() !== "");
+  if (segments.length >= 2 && segments[segments.length - 2] === 'checkout') {
+     selectedCourseId = segments[segments.length - 1];
+  }
+}
+
 // API base (settings.js sets window.API_BASE)
 const API_BASE = (typeof window !== "undefined" && window.API_BASE) ? window.API_BASE : "";
 
