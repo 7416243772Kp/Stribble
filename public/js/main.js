@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function card(course) {
         const a = document.createElement("a");
         a.className = "card hover-lift";
-        a.href = `course.html?id=${course._id}`;
+        a.href = `/course/${course._id}`;
         a.setAttribute("data-title", (course.title || "").toLowerCase());
         a.setAttribute("data-desc", (course.description || "").toLowerCase());
 

@@ -7,8 +7,20 @@ document.addEventListener("DOMContentLoaded", () => {
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // 2. Get Course ID from URL
+  // 2. Get Course ID from URL
   const params = new URLSearchParams(window.location.search);
-  const courseId = params.get("id");
+  let courseId = params.get("id");
+
+  // Fallback: Try to get ID from path "/course/:id"
+  if (!courseId) {
+    const pathParts = window.location.pathname.split('/');
+    // Filter out empty strings to handle trailing slashes
+    const segments = pathParts.filter(p => p.trim() !== "");
+    // If the path is like /course/123, the last segment should be the ID
+    if (segments.length >= 2 && segments[segments.length - 2] === 'course') {
+       courseId = segments[segments.length - 1];
+    }
+  }
 
   // 3. Initialize Page
   if (courseId) {
