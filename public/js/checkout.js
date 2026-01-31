@@ -137,21 +137,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     notificationBox.innerHTML = "";
     notificationBox.style.display = "none";
   }
-  function showNotification(type, message, autoHideMs = 2000) {
+  function showNotification(type, message, autoHideMs = 3000) {
     if (!notificationBox) { console.log(type, message); return; }
     clearNotifications();
     notificationBox.style.display = "block";
     
-    // Simple notification HTML
+    // Clean CSS-class based HTML
+    const icon = type === "success" 
+      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>` 
+      : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+
     notificationBox.innerHTML = `
-      <div class="notify-card notify-${type}" style="padding:10px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; background:${type==='error'?'#fee2e2':'#d1fae5'}; color:${type==='error'?'#991b1b':'#065f46'};">
-         <strong>${type === "success" ? "✓" : "⚠️"}</strong> <span>${message}</span>
+      <div class="msg-toast msg-toast--${type}">
+         ${icon} <span>${message}</span>
       </div>
     `;
 
     if (_notifyTimer) clearTimeout(_notifyTimer);
     _notifyTimer = setTimeout(() => { clearNotifications(); }, autoHideMs);
   }
+
   function showError(inputElOrMsg, msgMaybe) {
     let msg = typeof inputElOrMsg === "string" ? inputElOrMsg : msgMaybe;
     let inputEl = typeof inputElOrMsg !== "string" ? inputElOrMsg : null;
@@ -160,27 +165,37 @@ document.addEventListener("DOMContentLoaded", async () => {
        inputEl.classList.add("input-error", "shake");
        setTimeout(() => inputEl.classList.remove("shake"), 500);
        const errDiv = document.getElementById("err-" + inputEl.id);
-       if (errDiv) { errDiv.textContent = msg; errDiv.style.display = "block"; return; }
+       if (errDiv) { 
+         errDiv.innerHTML = `<div class="field-msg error">⚠️ ${msg}</div>`; 
+         errDiv.style.display = "block"; 
+         return; 
+       }
     }
     showNotification("error", msg || "Something went wrong");
   }
+
   function clearError(id) {
      const el = document.getElementById(id);
      if(el) el.classList.remove("input-error");
      const err = document.getElementById("err-"+id);
      if(err) err.style.display="none";
   }
+
   function showInlineSuccess(id, msg) {
       const el = document.getElementById(id);
       if(el) { 
-        el.innerHTML = `<span style='color:#10b981'>✓ ${msg}</span>`; 
+        // Use CSS class instead of inline style
+        el.innerHTML = `<div class="field-msg success">
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+           ${msg}
+        </div>`; 
         el.style.display="block"; 
         
-        // Auto-hide inline success after 2 seconds
+        // Auto-hide inline success after 3 seconds
         if(el.dataset.timer) clearTimeout(el.dataset.timer);
         el.dataset.timer = setTimeout(() => {
             el.style.display = "none";
-        }, 2000);
+        }, 3000); // Increased to 3s for better readability
       }
   }
   function setLoading(btn, isLoading, text) {
