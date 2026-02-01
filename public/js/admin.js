@@ -961,32 +961,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const disputeResults = document.getElementById("dispute-results");
 
     if (disputeSearchBtn) {
-    disputeSearchBtn.addEventListener("click", async () => {
-        const email = disputeInput.value.trim();
-        if (!email) return showNotification("error", "Please enter an email address");
+        disputeSearchBtn.addEventListener("click", async () => {
+            const email = disputeInput.value.trim();
+            if (!email) return showNotification("error", "Please enter an email address");
 
-        const originalText = disputeSearchBtn.textContent;
-        disputeSearchBtn.textContent = "Searching...";
-        disputeSearchBtn.disabled = true;
+            const originalText = disputeSearchBtn.textContent;
+            disputeSearchBtn.textContent = "Searching...";
+            disputeSearchBtn.disabled = true;
 
-        try {
-        const res = await authFetch(`${window.API_BASE}/api/admin/search-orders?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
+            try {
+                const res = await authFetch(`${window.API_BASE}/api/admin/search-orders?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
 
-        if (!data.success) throw new Error(data.message);
+                if (!data.success) throw new Error(data.message);
 
-        if (data.orders.length === 0) {
-            disputeResults.innerHTML = `<p style="text-align:center; padding:20px; color:#64748b;">No orders found for <strong>${email}</strong></p>`;
-            return;
-        }
+                if (data.orders.length === 0) {
+                    disputeResults.innerHTML = `<p style="text-align:center; padding:20px; color:#64748b;">No orders found for <strong>${email}</strong></p>`;
+                    return;
+                }
 
-        // Render Audit Cards
-        disputeResults.innerHTML = data.orders.map(order => {
-            
-            // 1. Format Download Logs
-            let downloadLogsHtml = `<span style="color:#94a3b8; font-style:italic;">No downloads recorded</span>`;
-            if (order.downloadHistory && order.downloadHistory.length > 0) {
-            downloadLogsHtml = `
+                // Render Audit Cards
+                disputeResults.innerHTML = data.orders.map(order => {
+
+                    // 1. Format Download Logs
+                    let downloadLogsHtml = `<span style="color:#94a3b8; font-style:italic;">No downloads recorded</span>`;
+                    if (order.downloadHistory && order.downloadHistory.length > 0) {
+                        downloadLogsHtml = `
                 <ul style="margin:0; padding-left:20px; font-size:0.9rem; color:#475569;">
                 ${order.downloadHistory.map(log => `
                     <li>
@@ -995,23 +995,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     </li>
                 `).join('')}
                 </ul>`;
-            }
+                    }
 
-            // 2. Format Email Status
-            const emailStatusHtml = order.emailSent 
-            ? `<span style="color:#10b981; font-weight:bold;">✅ Sent</span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}`
-            : `<span style="color:#ef4444; font-weight:bold;">❌ Not Sent</span>`;
+                    // 2. Format Email Status (UPDATED LOGIC)
+                    // Only show "Not Sent" warning if the payment was actually completed.
+                    let emailStatusHtml;
+                    if (order.status === 'completed') {
+                        emailStatusHtml = order.emailSent
+                            ? `<span style="color:#10b981; font-weight:bold;">✅ Sent</span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}`
+                            : `<span style="color:#ef4444; font-weight:bold;">❌ Not Sent</span>`;
+                    } else {
+                        // If payment failed/pending, email is not expected
+                        emailStatusHtml = `<span style="color:#64748b;">— N/A (Payment ${order.status})</span>`;
+                    }
 
-            return `
+                    // 3. Format Payment Status Color
+                    const payStatusColor = order.status === 'completed' ? '#10b981' : (order.status === 'failed' ? '#ef4444' : '#f59e0b');
+
+                    return `
             <div style="border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin-bottom:16px; background:#f8fafc;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
                 <div>
                     <h4 style="margin:0; color:#0f172a;">${order.courseId?.title || "Unknown Course"}</h4>
-                    <div style="font-size:0.85rem; color:#64748b;">Order ID: ${order.razorpayOrderId}</div>
+                    <div style="font-size:0.9rem; color:#334155; margin-top:4px;"><strong>Customer:</strong> ${order.buyerEmail}</div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">Order ID: ${order.razorpayOrderId}</div>
                 </div>
                 <div style="text-align:right;">
-                    <div style="font-weight:bold; color:#0f172a;">₹${order.ownerAmount + (order.influencerCommission||0) + (order.ebookCreatorCommission||0)}</div>
-                    <div style="font-size:0.85rem; color:#64748b;">${new Date(order.createdAt).toLocaleDateString()}</div>
+                    <div style="font-weight:bold; color:#0f172a;">₹${order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)}</div>
+                    <div style="font-size:0.85rem; color:${payStatusColor}; font-weight:600; text-transform:capitalize;">${order.status}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">${new Date(order.createdAt).toLocaleDateString()}</div>
                 </div>
                 </div>
 
@@ -1034,16 +1046,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             </div>
             `;
-        }).join('');
+                }).join('');
 
-        } catch (err) {
-        console.error(err);
-        showNotification("error", "Search failed");
-        disputeResults.innerHTML = `<p style="text-align:center; color:#ef4444;">Error fetching records.</p>`;
-        } finally {
-        disputeSearchBtn.textContent = originalText;
-        disputeSearchBtn.disabled = false;
-        }
-    });
+            } catch (err) {
+                console.error(err);
+                showNotification("error", "Search failed");
+                disputeResults.innerHTML = `<p style="text-align:center; color:#ef4444;">Error fetching records.</p>`;
+            } finally {
+                disputeSearchBtn.textContent = originalText;
+                disputeSearchBtn.disabled = false;
+            }
+        });
     }
 });
