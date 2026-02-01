@@ -181,10 +181,77 @@ async function fetchDashboardStats() {
     const res = await authFetch(`${window.API_BASE}/api/admin/stats`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const data = await res.json();
+    
     if (data.success) {
-      document.getElementById("dashboard-courses").textContent = data.stats.courses;
-      document.getElementById("dashboard-coupons").textContent = data.stats.coupons;
-      document.getElementById("dashboard-sales").textContent = data.stats.sales;
+      const { 
+        courses, coupons, sales, 
+        todaySales, weekSales, monthSales, lastMonthSales,
+        perCourseSales = [], perCouponSales = [] 
+      } = data.stats;
+
+      const grid = document.querySelector("#dashboard .stats-grid");
+      if (grid) {
+        // Formatter for currency
+        const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+
+        // Build HTML for all cards
+        let html = `
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3>${courses}</h3>
+            <p>Total Courses</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3>${coupons}</h3>
+            <p>Total Coupons</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px;">
+            <h3>${sales}</h3>
+            <p>Total Sales (Count)</p>
+          </div>
+          
+          <!-- New Time-based Sales -->
+          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #3b82f6;">
+            <h3 style="color:#2563eb;">${fmt(todaySales)}</h3>
+            <p>Today's Sales</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #8b5cf6;">
+            <h3 style="color:#7c3aed;">${fmt(weekSales)}</h3>
+            <p>This Week's Sales</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #10b981;">
+            <h3 style="color:#059669;">${fmt(monthSales)}</h3>
+            <p>This Month's Sales</p>
+          </div>
+          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #f59e0b;">
+            <h3 style="color:#d97706;">${fmt(lastMonthSales || 0)}</h3>
+            <p>Last Month's Sales</p>
+          </div>
+        `;
+
+        // Append Per-Course Sales
+        perCourseSales.forEach(c => {
+           html += `
+            <div class="stat-card" style="flex: 1; min-width: 250px;">
+              <h4 style="font-size:1.1rem; margin-bottom:4px; color:#1e293b;">${c.title}</h4>
+              <h3 style="font-size:1.5rem;">${fmt(c.total)}</h3>
+              <p style="font-size:0.85rem;">${c.count} orders</p>
+            </div>
+           `; 
+        });
+
+        // Append Per-Coupon Sales
+        perCouponSales.forEach(c => {
+           html += `
+            <div class="stat-card" style="flex: 1; min-width: 200px;">
+              <h4 style="font-size:1.1rem; margin-bottom:4px; color:#1e293b;">Coupon: <span style="font-family:monospace; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${c.code}</span></h4>
+              <h3 style="font-size:1.5rem;">${fmt(c.total)}</h3>
+              <p style="font-size:0.85rem;">${c.count} uses</p>
+            </div>
+           `; 
+        });
+
+        grid.innerHTML = html;
+      }
     }
   } catch (err) {
     console.error("Dashboard stats error:", err);

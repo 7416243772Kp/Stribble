@@ -146,11 +146,102 @@ router.post("/resend-all-emails", async (req, res) => {
 // ===============================
 router.get("/stats", async (req, res) => {
   try {
-    const courses = await Course.countDocuments();
-    const coupons = await Coupon.countDocuments();
-    const sales = await Order.countDocuments({ status: "completed" });
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    res.json({ success: true, stats: { courses, coupons, sales } });
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday start
+    weekStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    // Last Month Calculation
+    const lastMonthStart = new Date();
+    lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+    lastMonthStart.setDate(1);
+    lastMonthStart.setHours(0, 0, 0, 0);
+
+    const lastMonthEnd = new Date();
+    lastMonthEnd.setDate(1);
+    lastMonthEnd.setHours(0, 0, 0, 0); // Start of current month is end of last month
+
+    // Helper for summing total amount
+    const totalAmountExpr = { $add: ["$ownerAmount", "$influencerCommission", "$ebookCreatorCommission"] };
+
+    const [
+      coursesCount,
+      couponsCount,
+      salesCount,
+      todaySales,
+      weekSales,
+      monthSales,
+      lastMonthSales,
+      perCourseSales,
+      perCouponSales
+    ] = await Promise.all([
+      Course.countDocuments(),
+      Coupon.countDocuments(),
+      Order.countDocuments({ status: "completed" }),
+      
+      // Today
+      Order.aggregate([
+        { $match: { status: "completed", paidAt: { $gte: todayStart } } },
+        { $group: { _id: null, total: { $sum: totalAmountExpr } } }
+      ]),
+
+      // This Week
+      Order.aggregate([
+        { $match: { status: "completed", paidAt: { $gte: weekStart } } },
+        { $group: { _id: null, total: { $sum: totalAmountExpr } } }
+      ]),
+
+      // This Month
+      Order.aggregate([
+        { $match: { status: "completed", paidAt: { $gte: monthStart } } },
+        { $group: { _id: null, total: { $sum: totalAmountExpr } } }
+      ]),
+
+      // Last Month
+      Order.aggregate([
+        { $match: { status: "completed", paidAt: { $gte: lastMonthStart, $lt: lastMonthEnd } } },
+        { $group: { _id: null, total: { $sum: totalAmountExpr } } }
+      ]),
+
+      // Course Sales Total
+      Order.aggregate([
+        { $match: { status: "completed" } },
+        { $group: { _id: "$courseId", total: { $sum: totalAmountExpr }, count: { $sum: 1 } } },
+        { $lookup: { from: "courses", localField: "_id", foreignField: "_id", as: "course" } },
+        { $unwind: "$course" },
+        { $project: { title: "$course.title", total: 1, count: 1 } }
+      ]),
+
+      // Coupon Sales Total
+      Order.aggregate([
+        { $match: { status: "completed", couponId: { $ne: null } } },
+        { $group: { _id: "$couponId", total: { $sum: totalAmountExpr }, count: { $sum: 1 } } },
+        { $lookup: { from: "coupons", localField: "_id", foreignField: "_id", as: "coupon" } },
+        { $unwind: "$coupon" },
+        { $project: { code: "$coupon.code", total: 1, count: 1 } },
+        { $sort: { total: -1 } }
+      ])
+    ]);
+
+    const stats = {
+      courses: coursesCount,
+      coupons: couponsCount,
+      sales: salesCount,
+      todaySales: todaySales[0]?.total || 0,
+      weekSales: weekSales[0]?.total || 0,
+      monthSales: monthSales[0]?.total || 0,
+      lastMonthSales: lastMonthSales[0]?.total || 0,
+      perCourseSales,
+      perCouponSales
+    };
+
+    res.json({ success: true, stats });
   } catch (err) {
     console.error("Stats error:", err);
     res.status(500).json({ success: false, message: "Server error" });
