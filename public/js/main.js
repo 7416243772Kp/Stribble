@@ -192,7 +192,7 @@ function renderAuthUI() {
     const authUI = document.getElementById('auth-ui');
     authUI.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px;">
-            <a href="/my-courses.html" class="btn btn--ghost" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">📚 My Courses</a>
+            <a href="/my-courses" class="btn btn--ghost" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">📚 My Courses</a>
             <span style="font-weight:500; font-size:0.9rem; margin-left:5px;">Hi, ${currentUser.name.split(' ')[0]}</span>
             <button onclick="logout()" class="btn btn--outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color:#ef4444; color:#ef4444;">Logout</button>
         </div>
@@ -224,7 +224,7 @@ function renderMyCourses() {
             <div class="card__body">
                 <h3 class="card__title">${course.title}</h3>
                 <div class="card__actions" style="margin-top:10px;">
-                    <a href="/read.html?id=${course._id}" class="btn btn--primary btn--block">📖 Read Now</a>
+                    <a href="/read?id=${course._id}" class="btn btn--primary btn--block">📖 Read Now</a>
                 </div>
             </div>
         </div>

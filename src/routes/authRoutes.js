@@ -26,8 +26,8 @@ router.get('/google/callback',
         // Send as HttpOnly Cookie
         res.cookie('user_token', sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
         
-        // Redirect to My Courses
-        res.redirect('/my-courses'); 
+        // Redirect to Home
+        res.redirect('/'); 
     } catch (err) {
         console.error("Auth callback error:", err);
         res.redirect('/login');
