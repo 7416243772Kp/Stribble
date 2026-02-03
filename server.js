@@ -519,6 +519,31 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Static Pages (Clean URLs)
+app.get('/my-courses', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'my-courses.html'));
+});
+
+app.get('/read', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'read.html'));
+});
+
+app.get('/contact', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+});
+
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'terms.html'));
+});
+
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+
+app.get('/refund', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'refund.html'));
+});
+
 // Admin login
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));

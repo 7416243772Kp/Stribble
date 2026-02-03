@@ -72,7 +72,7 @@ function renderPage(user) {
                         ${course.description || "No description available for this course."}
                     </p>
                     <div class="my-course-actions">
-                        <a href="/read.html?id=${course._id}" class="btn-start-reading">
+                        <a href="/read?id=${course._id}" class="btn-start-reading">
                              Start Reading
                         </a>
                     </div>
