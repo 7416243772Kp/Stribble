@@ -62,18 +62,18 @@ function renderPage(user) {
                 : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'));
 
             return `
-            <div class="card hover-lift" style="display:flex; flex-direction:column;">
-                <div class="card__media">
-                    <img src="${thumb}" alt="${course.title}" loading="lazy" style="width:100%; height:auto; object-fit:cover; aspect-ratio:16/9;" />
+            <div class="my-course-card">
+                <div class="my-course-media">
+                    <img src="${thumb}" alt="${course.title}" loading="lazy" />
                 </div>
-                <div class="card__body" style="flex:1; display:flex; flex-direction:column;">
-                    <h3 class="card__title" style="margin-bottom:10px;">${course.title}</h3>
-                    <p class="card__desc" style="font-size:0.9rem; color:#64748b; margin-bottom:20px; flex:1;">
-                        ${(course.description || "").slice(0, 80)}...
+                <div class="my-course-body">
+                    <h3 class="my-course-title">${course.title}</h3>
+                    <p class="my-course-desc">
+                        ${course.description || "No description available for this course."}
                     </p>
-                    <div class="card__footer" style="padding-top:0;">
-                        <a href="/read.html?id=${course._id}" class="btn btn--primary" style="width:100%; text-align:center; justify-content:center;">
-                            📖 Start Reading
+                    <div class="my-course-actions">
+                        <a href="/read.html?id=${course._id}" class="btn-start-reading">
+                             Start Reading
                         </a>
                     </div>
                 </div>

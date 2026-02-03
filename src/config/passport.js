@@ -9,7 +9,7 @@ dotenv.config();
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback" // Updated to match /auth mount point
+    callbackURL: process.env.CALLBACK_URL || "/auth/google/callback"
   },
   async function(accessToken, refreshToken, profile, cb) {
     try {

@@ -1641,3 +1641,121 @@ label {
   overflow: hidden;
   font-style: italic;
 }
+
+/* =========================================
+   MY COURSES PAGE
+   ========================================= */
+.my-courses-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.my-course-card {
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  height: 220px;
+}
+
+.my-course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.my-course-media {
+  width: 300px;
+  min-width: 300px;
+  position: relative;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.my-course-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.my-course-card:hover .my-course-media img {
+  transform: scale(1.05);
+}
+
+.my-course-body {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.my-course-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.my-course-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.my-course-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.btn-start-reading {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.btn-start-reading:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .my-courses-grid {
+      grid-template-columns: 1fr;
+      max-width: 100%;
+  }
+
+  .my-course-card {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .my-course-media {
+    width: 100%;
+    min-width: 100%;
+    height: 200px;
+  }
+}
