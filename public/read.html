@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Reader | Stribble</title>
+    <!-- PDF.js Local -->
+    <script src="/js/lib/pdf.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #1a1a1a; /* Dark background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none; /* Disable text selection */
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* Viewer Container */
+        #viewer-container {
+            position: relative;
+            margin: 20px 0 80px 0; /* Space for fixed footer */
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            background: #fff;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%; /* Responsive canvas */
+            height: auto;
+        }
+
+        /* 🔒 BLUR FILTER CLASS */
+        .blurred {
+            filter: blur(15px);
+            pointer-events: none;
+        }
+
+        /* 🔒 SECURITY WARNING OVERLAY */
+        #security-warning {
+            display:none; 
+            position:fixed; 
+            top:0; left:0; width:100%; height:100%; 
+            background:rgba(0,0,0,0.95); 
+            color:white; 
+            z-index:9999; 
+            text-align:center; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 🔒 DYNAMIC WATERMARK */
+        .watermark {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 50;
+            pointer-events: none; /* Let clicks pass through */
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Grid pattern */
+            grid-template-rows: repeat(10, 1fr);
+            opacity: 0.12; /* Subtle visibility */
+        }
+        
+        .watermark-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: rotate(-30deg);
+            font-size: 18px;
+            color: #ff0000;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Controls Footer */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            background: rgba(30, 30, 30, 0.9);
+            padding: 12px 24px;
+            border-radius: 50px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            backdrop-filter: blur(10px);
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover { background: #2563eb; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
+
+        #page-info {
+            color: #e2e8f0;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <!-- Disable Right Click -->
+
+    <div id="security-warning">
+        <h1 style="color: #ef4444; margin-bottom: 10px;">⚠️ Security Alert</h1>
+        <p style="font-size: 1.2rem; color: #cbd5e1;">Content is hidden while the window is inactive.</p>
+        <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 5px;">Please verify your identity if requested.</p>
+    </div>
+
+    <div id="viewer-container">
+        <!-- Canvas injected here -->
+        <div id="watermark-layer" class="watermark"></div>
+    </div>
+
+    <div class="controls">
+        <button id="prev">← Previous</button>
+        <span id="page-info">Loading...</span>
+        <button id="next">Next →</button>
+    </div>
+
+    <script>
+        // GLOBAL ERROR HANDLER
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            alert("Script Error: " + msg + "\nLine: " + lineNo);
+            return false;
+        };
+
+        if (typeof pdfjsLib === 'undefined') {
+            alert("Error: PDF Library could not be loaded. Please check your internet connection or try disabling ad blockers.");
+            document.getElementById('page-info').textContent = "Lib Error";
+            throw new Error("pdfjsLib missing");
+        }
+
+        // 1. Get Course ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id');
+
+        if (!courseId) {
+            alert("No course specified!");
+            window.location.href = "/";
+        }
+
+        // 2. Setup PDF.js Worker (Local)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/js/lib/pdf.worker.min.js';
+
+        let pdfDoc = null,
+            pageNum = 1,
+            pageRendering = false,
+            pageNumPending = null,
+            scale = 1.5,
+            canvas = document.createElement('canvas'),
+            ctx = canvas.getContext('2d'),
+            viewerContainer = document.getElementById('viewer-container');
+        
+        viewerContainer.appendChild(canvas);
+
+        // 3. User Info for Watermark
+        let userWatermarkText = "Stribble User";
+        
+        async function fetchUser() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                if (data.success) {
+                    userWatermarkText = `${data.user.email} - ${data.user.id}`;
+                    generateWatermark();
+                } else {
+                    // Not logged in? Redirect to login?
+                    // The stream endpoint will fail anyway, but good UI here:
+                     window.location.href = "/login?msg=Please login to view course";
+                }
+            } catch (e) { console.error("Auth check failed", e); }
+        }
+        fetchUser();
+
+        function generateWatermark() {
+            const wmLayer = document.getElementById('watermark-layer');
+            wmLayer.innerHTML = '';
+            // Create a grid of watermarks
+            for (let i = 0; i < 30; i++) {
+                const div = document.createElement('div');
+                div.className = 'watermark-item';
+                div.innerHTML = `${userWatermarkText}<br><span style="font-size:12px; opacity:0.7">DO NOT DISTRIBUTE</span>`;
+                wmLayer.appendChild(div);
+            }
+        }
+
+        // 4. Load Document
+        // 4. Load Document (Robust Fetch Method)
+        const streamUrl = `/api/courses/stream/${courseId}`;
+
+        async function loadPdf() {
+            try {
+                // DEBUG ALERTS
+                // alert("Debug: Starting fetch for " + streamUrl);
+                document.getElementById('page-info').textContent = "Authenticating...";
+                
+                const res = await fetch(streamUrl);
+                
+                // alert("Debug: Server Status " + res.status);
+
+                if (res.status === 401 || res.status === 403) {
+                     document.getElementById('page-info').textContent = "Access Denied";
+                     alert("Access Denied: You have not purchased this course or your session expired.");
+                     window.location.href = "/my-courses.html";
+                     return;
+                }
+                
+                if (res.status === 404) {
+                     document.getElementById('page-info').textContent = "File Not Found";
+                     // Try to read the error message
+                     const text = await res.text(); 
+                     alert("File Not Found Error: " + text);
+                     return;
+                }
+
+                if (!res.ok) {
+                    throw new Error(`Server Error: ${res.status}`);
+                }
+
+                document.getElementById('page-info').textContent = "Downloading PDF...";
+                
+                // Use ArrayBuffer to pass data directly to worker
+                const buffer = await res.arrayBuffer();
+                console.log("PDF downloaded, bytes:", buffer.byteLength);
+
+                if (buffer.byteLength < 1000) {
+                     // Check if it's text error
+                     try {
+                        const dec = new TextDecoder();
+                        const text = dec.decode(buffer);
+                        console.warn("Small text response:", text);
+                        alert("Server error: " + text);
+                        return;
+                     } catch(e){}
+                }
+
+                // Load directly with data
+                const loadingTask = pdfjsLib.getDocument({ data: buffer });
+                
+                loadingTask.promise.then(function(pdfDoc_) {
+                    pdfDoc = pdfDoc_;
+                    document.getElementById('page-info').textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
+                    renderPage(pageNum);
+                    // alert("Debug: PDF Loaded!");
+                }).catch(function(error) {
+                    console.error("PDF Parsing Error:", error);
+                    alert("Error parsing PDF file. \nDetails: " + error.message);
+                    document.getElementById('page-info').textContent = "Pdf Error";
+                });
+
+            } catch (err) {
+                console.error("Load Error:", err);
+                alert("Failed to load course: " + err.message);
+                document.getElementById('page-info').textContent = "Error";
+            }
+        }
+
+        loadPdf();
+
+        // 5. Render Page
+        function renderPage(num) {
+            pageRendering = true;
+            
+            // Adjust scale based on window width for responsiveness
+            const containerWidth = viewerContainer.clientWidth;
+             // We can calculate scale dynamically here if we want fit-to-width
+            // But let's stick to base scale for clarity first
+
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({scale: scale});
+                
+                // Set canvas dimensions
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Adjust container width to match canvas if needed
+                viewerContainer.style.width = viewport.width + 'px';
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                const renderTask = page.render(renderContext);
+
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
+            document.getElementById('prev').disabled = num <= 1;
+            document.getElementById('next').disabled = num >= pdfDoc.numPages;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function onPrevPage() {
+            if (!pdfDoc || pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        function onNextPage() {
+            if (!pdfDoc || pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+
+        document.getElementById('prev').addEventListener('click', onPrevPage);
+        document.getElementById('next').addEventListener('click', onNextPage);
+
+        // Keyboard Navigation (Arrow Keys)
+        document.addEventListener('keydown', (e) => {
+            if (!pdfDoc) return;
+            if (e.key === 'ArrowLeft') onPrevPage();
+            if (e.key === 'ArrowRight') onNextPage();
+        });
+
+
+        // 🔒 6. SECURITY FEATURES
+
+        // Disable Copy Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'c' || e.key === 'u')) {
+                e.preventDefault();
+                alert('Printing and saving are disabled for security.');
+            }
+        });
+
+        // Blur on Tab Switch / Window Blur
+        window.addEventListener('blur', () => {
+            document.getElementById('viewer-container').classList.add('blurred');
+            document.getElementById('security-warning').style.display = 'flex';
+            document.title = "⚠️ Security Warning";
+        });
+
+        window.addEventListener('focus', () => {
+            document.getElementById('viewer-container').classList.remove('blurred');
+            document.getElementById('security-warning').style.display = 'none';
+            document.title = "Secure Course Reader";
+        });
+        
+        // Disable Dragging images (if any)
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+        });
+
+        // Periodically check session (Optional heartbeat)
+        setInterval(async () => {
+             try {
+                const res = await fetch('/api/auth/me'); // Simple pings
+                if(res.status === 401) location.reload(); // Kick if session died
+             } catch(e){}
+        }, 60000); // Check every minute
+
+    </script>
+</body>
+</html>

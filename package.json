@@ -22,6 +22,7 @@
     "express": "^5.1.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.1.0",
+    "express-session": "^1.19.0",
     "file-type": "^21.1.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -29,6 +30,8 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
     "nodemon": "^3.1.10",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
     "speakeasy": "^2.0.0"

@@ -12,6 +12,9 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import rateLimit from "express-rate-limit";
+import passport from "passport";
+import session from "express-session";
+import "./src/config/passport.js";
 
 // ==== Models ====
 import AdminUser from "./src/models/AdminUser.js";
@@ -21,9 +24,11 @@ import Course from "./src/models/course.js";
 import Order from "./src/models/order.js";
 import Contact from "./src/models/Contact.js";
 import Promoter from "./src/models/promoter.js";
+import User from "./src/models/User.js";
 
 // ==== Routes & Middleware ====
 import adminRoutes from "./src/routes/adminRoutes.js";
+import authRoutes from "./src/routes/authRoutes.js";
 import adminAuthRoutes from "./src/routes/adminAuthRoutes.js";
 import couponRoutes from "./src/routes/couponRoutes.js";
 import courseRoutes from "./src/routes/courseRoutes.js";
@@ -34,7 +39,7 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 import helmet from "helmet";
 // ==== Utilities ====
 import contactRoutes from "./src/routes/contactroutes.js";
-import { sendPaymentEmail, transporter } from "./src/utils/email.js";
+// Email utils removed
 
 // ==== Path Setup ====
 const __filename = fileURLToPath(import.meta.url);
@@ -79,6 +84,7 @@ app.use(
           "'unsafe-inline'",
           "'unsafe-eval'" // Required by some Razorpay builds
         ],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
@@ -146,6 +152,20 @@ app.use(cors({
   // This allows the browser to see the Razorpay tracking header without warning
   exposedHeaders: ["x-rtb-fingerprint-id"], 
 }));
+
+// ==== Session & Passport ====
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'super_secret_key_change_me',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ==== Static Files ====
 app.use(express.static(path.join(__dirname, "public")));
@@ -235,6 +255,7 @@ app.use((req, res, next) => {
 // ============================
 
 // ---- Admin Routes ----
+app.use("/auth", authRoutes); // Google Auth
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
@@ -243,46 +264,7 @@ app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactLimiter, contactRoutes);
 
-// ---- OTP & Email Validation ----
-// Validate and send OTP to email
-app.post("/api/validate/email", async (req, res) => {
-  const { email } = req.body;
-
-  // Basic format check
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
-  }
-
-  // Generate OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-
-  try {
-    await transporter.sendMail({
-      from: FROM_EMAIL,
-      to: email,
-      subject: "Stribble - Verify your email",
-      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
-    });
-    res.json({ success: true, message: "OTP sent to email" });
-  } catch (err) {
-    console.error("❌ OTP send error:", err);
-    console.error("❌ SES error details:", err.message || err);
-    res.status(500).json({ success: false, message: "Error sending OTP" });
-  }
-});
-
-app.post("/api/validate/otp", otpLimiter, (req, res) => {
-  const { email, otp } = req.body;
-  const record = otpStore.get(email);
-
-  if (!record || record.otp !== otp || Date.now() > record.expiresAt)
-    return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-
-  otpStore.delete(email);
-  res.json({ success: true, message: "OTP verified successfully" });
-});
+// ---- OTP & Email Validation REMOVED ----
 
 // ---- Coupon Validation ----
 app.post("/api/validate/coupon", async (req, res) => {
@@ -311,70 +293,7 @@ app.post("/api/validate/coupon", async (req, res) => {
   }
 });
 
-// ---- Checkout Validate + OTP (alias used by checkout.js) ----
-app.post("/api/checkout/validate", otpLimiter, async (req, res) => {
-  try {
-    const { email, couponCode, courseId } = req.body;
-
-    // Only email and courseId required here — couponCode optional
-    if (!email || !courseId) {
-      return res.status(400).json({ success: false, message: "Missing fields: email and courseId are required" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email format" });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({ success: false, message: "Invalid courseId" });
-    }
-
-    let coupon = null;
-    const code = String(couponCode || "").trim().toUpperCase();
-
-    if (code) {
-      coupon = await Coupon.findOne({ code, courseId: new mongoose.Types.ObjectId(courseId), isActive: true });
-      if (!coupon) {
-        return res.status(400).json({ success: false, message: "Invalid coupon" });
-      }
-    }
-
-    // Generate OTP and send via SES (same behavior irrespective of coupon)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // valid for 5 min
-
-    await transporter.sendMail({
-      from: FROM_EMAIL,
-      to: email,
-      subject: "Stribble - Verify your email",
-      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
-    });
-
-    res.json({
-      success: true,
-      message: "OTP sent",
-      coupon: coupon ? { id: coupon._id, code: coupon.code, discount: coupon.discountValue || coupon.discount || 0, influencerCommission: coupon.influencerCommission || 0, ebookCreatorCommission: coupon.creatorCommission || coupon.ebookCreatorCommission || 0 } : null,
-    });
-  } catch (err) {
-    console.error("❌ Checkout validate error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-// ---- Checkout OTP verify (alias used by checkout.js) ----
-app.post("/api/checkout/verify-otp", otpLimiter, (req, res) => {
-  const { email, otp } = req.body;
-  const record = otpStore.get(email);
-
-  if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
-    return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-  }
-
-  otpStore.delete(email);
-  res.json({ success: true, message: "OTP verified successfully" });
-});
+// ---- Checkout Validate Routes REMOVED ----
 
 // Create order (includes validated referrer)
 app.post("/api/payment/order", paymentLimiter, async (req, res) => {
@@ -498,6 +417,15 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
       if (order.couponId) await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => { });
       if (order.courseId?._id) await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => { });
 
+      // === CRITICAL: Update User's Purchased Courses ===
+      if (order.buyerEmail) {
+          await User.findOneAndUpdate(
+              { email: order.buyerEmail },
+              { $addToSet: { purchasedCourses: order.courseId._id } }
+          ).catch(err => console.error("Failed to link course to user:", err));
+      }
+      // ===============================================
+
       // Record Payment
       const amountPaid = Number(order.ownerAmount || 0) + Number(order.influencerCommission || 0) + Number(order.ebookCreatorCommission || 0);
       await Payment.create({
@@ -510,30 +438,7 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
         status: "success",
         createdAt: new Date(),
       });
-
-      // Send Email
-      const downloadLink = order.courseId?.googleDriveLink || null;
-      if (downloadLink) {
-        await sendPaymentEmail({
-          to: order.buyerEmail,
-          customerName: order.buyerEmail.split("@")[0],
-          courseName: order.courseId.title,
-          amount: amountPaid,
-          orderId: order.razorpayOrderId,
-          paymentId: order.razorpayPaymentId,
-          dateTime: new Date(order.paidAt).toLocaleString(),
-          downloadLink,
-          supportEmail: "support@stribble.site",
-        });
-        
-        // Update Email Status & Timestamp
-        order.emailSent = true;
-        order.emailSentAt = new Date(); // <--- NEW: Save the timestamp
-        
-        await order.save().catch((err) => { 
-            console.error("Failed to save email status:", err);
-        });
-      }
+      // Email sending removed as per user request
     }
 
     // 2. SEND LINK TO FRONTEND

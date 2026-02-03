@@ -88,12 +88,8 @@
 <!-- Form -->
 <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
 
-  <label for="email">Email Address</label>
-  <input type="email" id="email" placeholder="you@example.com" required />
-  <div id="err-email" class="field-error"></div>
-  <div id="msg-email" aria-live="polite"></div>
-
-  <label for="coupon">Coupon Code</label>
+  <!-- Coupon Section -->
+  <label for="coupon">Coupon Code <span style="font-weight:400; color:#666;">(Optional)</span></label>
   <div style="display:flex; gap:8px; align-items:center;">
     <div class="coupon-wrapper" style="flex:1; display:flex;">
       <input type="text" id="coupon" placeholder="Enter coupon code" />
@@ -103,14 +99,7 @@
   <div id="err-coupon" class="field-error"></div>
   <div id="couponMessage" aria-live="polite"></div>
 
-  <label for="otp">OTP</label>
-  <input type="text" id="otp" placeholder="Enter OTP" disabled />
-  <div id="err-otp" class="field-error"></div>
-  <div id="msg-otp" aria-live="polite"></div>
-
   <div class="checkout-actions">
-    <button type="button" id="validate-btn" class="btn">Validate & Send OTP</button>
-    <button type="button" id="verify-otp-btn" class="btn" disabled>Verify OTP</button>
     <div class="terms-container" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa;">
       <label style="display: flex; align-items: flex-start; cursor: pointer;">
         <input type="checkbox" id="termsCheckbox" style="margin-top: 5px; margin-right: 10px;">
@@ -120,7 +109,7 @@
       </label>
       <div id="err-terms" class="field-error" style="margin-top: 5px; display: none;"></div>
     </div>
-    <button type="submit" id="payment-btn" class="btn" disabled>Proceed to Pay</button>
+    <button type="submit" id="payment-btn" class="btn btn--primary btn--block" disabled>Proceed to Pay</button>
     <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9em; display: flex; align-items: center; justify-content: center; gap: 6px;">
       <img src="https://badges.razorpay.com/badge-light.png" alt="Razorpay" style="height: 18px;">
       Secure payments by Razorpay

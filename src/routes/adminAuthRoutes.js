@@ -10,8 +10,7 @@ import dotenv from "dotenv";
 import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
 import AdminUser from "../models/AdminUser.js";
 import authAdmin from "../middleware/authAdmin.js";
-// 1. Import the transporter we created in email.js
-import { transporter } from "../utils/email.js";
+// Email import removed
 
 dotenv.config();
 const router = express.Router();
@@ -31,7 +30,6 @@ const loginLimiter = rateLimit({
   message: { success: false, message: "Too many login attempts. Please try again later." }
 });
 
-const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "praveenkunche975@gmail.com").toLowerCase();
 
 // =============================
@@ -66,38 +64,7 @@ function setAdminCookie(req, res, token) {
   });
 }
 
-async function sendOTPEmail(email, otp) {
-  const html = `<!doctype html>
-  <html>
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-  <body style="font-family:Arial,sans-serif;background:#f7f9fc;padding:24px">
-  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #eef2ff">
-    <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:22px;color:#fff">
-      <h2 style="margin:0;font-weight:700;font-size:18px">CourseHub Admin</h2>
-      <div style="opacity:.9;margin-top:6px">Password Reset OTP</div>
-    </div>
-    <div style="padding:22px">
-      <p>We received a request to reset the admin password.</p>
-      <div style="background:#f8faff;border:1px dashed #c7d2fe;padding:18px;border-radius:10px;text-align:center">
-        <div style="font-size:13px;color:#6b7280;margin-bottom:6px">Your OTP (valid 10 min)</div>
-        <div style="letter-spacing:10px;font-size:28px;font-weight:800;color:#4f46e5">${otp}</div>
-      </div>
-      <p style="font-size:12px;color:#6b7280;margin-top:16px">If you did not request this, please ignore this email and review your account security.</p>
-    </div>
-    <div style="background:#f8fafc;padding:14px 22px;color:#94a3b8;font-size:12px;border-top:1px solid #eef2ff">Sent by CourseHub • Do not reply</div>
-  </div>
-  </body>
-  </html>`;
-
-  // 2. Use SMTP2GO Transporter
-  return transporter.sendMail({
-    from: FROM_EMAIL,
-    to: email,
-    subject: "Admin Password Reset OTP",
-    html: html,
-    text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
-  });
-}
+// Email sending removed
 
 // =============================
 // Check auth status
@@ -316,18 +283,8 @@ router.post("/forgot-password", async (_req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
 
-    try {
-      await sendOTPEmail(ADMIN_EMAIL, otp);
-      return res.json({ success: true, message: "OTP sent to admin email", expiresIn: 600 });
-    } catch (err) {
-      console.error("SMTP2GO send error:", err);
-      // In dev, show OTP to make life easier
-      if (process.env.NODE_ENV !== "production") {
-        console.log("DEV OTP:", otp);
-        return res.json({ success: true, message: "OTP generated (development mode)" });
-      }
-      return res.status(500).json({ success: false, message: "Failed to send OTP email." });
-    }
+    // Email service disabled
+    return res.status(403).json({ success: false, message: "Password reset via email is disabled. Please contact support." });
   } catch (err) {
     console.error("Forgot password error:", err);
     return res.status(500).json({ success: false, message: "Internal Server Error" });

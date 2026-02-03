@@ -88,10 +88,13 @@
             <input type="number" id="edit-price" required />
           </div>
         </div>
+        
         <div class="field">
-          <label for="edit-link">Google Drive Link</label>
-          <input type="text" id="edit-link" placeholder="Enter new link to update" />
+           <label for="edit-pdf">Update Course PDF (Optional)</label>
+           <input type="file" id="edit-pdf" name="coursePdf" accept="application/pdf" />
+           <small style="color:#666;">Leave empty to keep existing file.</small>
         </div>
+
         <div style="display:flex; gap:12px; margin-top:10px;">
           <button type="button" class="btn btn--ghost" id="cancel-edit-btn" style="flex:1;">Cancel</button>
           <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
@@ -144,6 +147,25 @@
     </div>
   </div>
 
+  <!-- CUSTOM CONFIRMATION MODAL -->
+  <div id="confirm-overlay" class="login-overlay hidden" aria-hidden="true" style="z-index: 10000;">
+      <div class="login-box" role="dialog" aria-modal="true" style="max-width: 400px; padding: 25px; text-align: center;">
+          <div style="margin-bottom: 15px;">
+              <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 8V13" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M11.9945 16H12.0035" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+          </div>
+          <h3 id="confirm-title" style="margin-bottom: 10px; color: #1f2937;">Confirm Action</h3>
+          <p id="confirm-message" style="color: #6b7280; font-size: 0.95rem; margin-bottom: 20px;">Are you sure you want to proceed?</p>
+          <div style="display:flex; gap:10px; justify-content: center;">
+              <button id="btn-cancel-confirm" class="btn btn--ghost" style="min-width: 100px;">Cancel</button>
+              <button id="btn-proceed-confirm" class="btn btn--primary" style="background-color: #EF4444; border-color: #EF4444; min-width: 100px;">Delete</button>
+          </div>
+      </div>
+  </div>
+
   <div class="admin-root" id="adminRoot">
 
     <aside class="sidebar" aria-label="Admin Navigation">
@@ -191,10 +213,19 @@
           <textarea name="description" placeholder="Course Description" required rows="3"></textarea>
           <div style="display:flex; gap:10px;">
             <input type="number" name="price" placeholder="Price (₹)" required style="flex:1" />
-            <input type="file" name="thumbnail" accept="image/*" required style="flex:1" />
+            
+            <div style="flex:1">
+                <label style="font-size:12px; color:#666;">Thumbnail (Image)</label>
+                <input type="file" name="thumbnail" accept="image/*" required />
+            </div>
           </div>
-          <input type="text" name="googleDriveLink" placeholder="Google Drive Link" required />
-          <button type="submit" class="btn btn--primary">Add Course</button>
+          
+          <div style="margin-top:10px;">
+              <label style="font-size:12px; color:#666;">Course PDF (Protected)</label>
+              <input type="file" name="coursePdf" accept="application/pdf" required />
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="margin-top:10px;">Add Course</button>
         </form>
         <div id="course-list" style="margin-top:24px" aria-live="polite"></div>
       </section>

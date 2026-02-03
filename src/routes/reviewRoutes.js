@@ -2,8 +2,23 @@ import express from "express";
 import Review from "../models/Review.js";
 import Payment from "../models/payment.js";
 import mongoose from "mongoose";
+import protectUser from "../middleware/authUser.js";
 
 const router = express.Router();
+
+// GET Top 5-Star Reviews (Across all courses)
+router.get("/top", async (req, res) => {
+    try {
+        const reviews = await Review.find({ rating: 5 })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .populate("courseId", "title"); // Only get title
+        res.json({ success: true, reviews });
+    } catch (err) {
+        console.error("Error fetching top reviews:", err);
+        res.status(500).json({ success: false, message: "Error fetching top reviews" });
+    }
+});
 
 // GET Reviews for a specific course
 router.get("/:courseId", async (req, res) => {
@@ -16,42 +31,43 @@ router.get("/:courseId", async (req, res) => {
     }
 });
 
-// POST a new Review (VERIFIED BY EMAIL ONLY)
-router.post("/", async (req, res) => {
+// POST a new Review (VERIFIED BY ACCOUNT)
+router.post("/", protectUser, async (req, res) => {
     try {
-        // Removed paymentId from destructuring
-        const { courseId, name, email, rating, comment } = req.body;
+        const { courseId, rating, comment } = req.body;
+        const user = req.user; // populated by protectUser
 
-        if (!email || !courseId) {
-            return res.status(400).json({ success: false, message: "Email and Course ID are required." });
+        if (!courseId) {
+            return res.status(400).json({ success: false, message: "Course ID is required." });
         }
 
-        // 1. VERIFICATION STEP
-        // Check if a successful payment exists with this Email + Course
-        const validPayment = await Payment.findOne({
-            email: email,
-            courseId: courseId,
-            status: "success"
-        });
-
-        if (!validPayment) {
-            return res.status(401).json({
+        // 1. CHECK OWNERSHIP
+        const hasCourse = user.purchasedCourses.some(id => id.toString() === courseId);
+        if (!hasCourse) {
+            return res.status(403).json({
                 success: false,
-                message: "Verification failed. No purchase found for this email."
+                message: "You must purchase this course to review it."
             });
         }
 
-        // 2. Check if already reviewed by this email
-        const existingReview = await Review.findOne({ userEmail: email, courseId });
+        // 2. CHECK EXISTING REVIEW (By User ID now, not just email)
+        const existingReview = await Review.findOne({
+            $or: [
+                { userId: user._id, courseId: courseId }, // New check
+                { userEmail: user.email, courseId: courseId } // Legacy check
+            ]
+        });
+
         if (existingReview) {
             return res.status(400).json({ success: false, message: "You have already reviewed this course." });
         }
 
-        // 3. Create Review
+        // 3. CREATE REVIEW
         const newReview = new Review({
             courseId,
-            userName: name,
-            userEmail: email,
+            userId: user._id, // Link to account
+            userName: user.name, // Use account name
+            userEmail: user.email, // Use account email
             rating,
             comment
         });

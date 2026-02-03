@@ -32,13 +32,43 @@ async function safeJsonFetch(url, opts = {}) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // 2. Initialize 'course' (CHANGED from const to let)
+  // 2. CHECK SESSION (User MUST be logged in)
+  let currentUser = null;
+  try {
+      const res = await safeJsonFetch(`${API_BASE}/auth/me`);
+      if (res.success) {
+          currentUser = res.user;
+          console.log("[checkout] User logged in:", currentUser.email);
+
+          // CHECK OWNERSHIP (Double Purchase Prevention)
+          // We need selectedCourseId to be defined. It is defined at top of file.
+          if (selectedCourseId && currentUser.purchasedCourses) {
+              const isOwned = currentUser.purchasedCourses.some(c => (c._id || c) === selectedCourseId);
+              if (isOwned) {
+                  alert("You have already purchased this course!");
+                  window.location.href = `/read.html?id=${selectedCourseId}`;
+                  return;
+              }
+          }
+      } else {
+          // Not logged in -> Redirect to home/login
+          alert("Please login to purchase courses.");
+          window.location.href = "/";
+          return;
+      }
+  } catch (e) {
+      console.error("Session check failed", e);
+      window.location.href = "/";
+      return;
+  }
+
+  // 3. Initialize 'course'
   let course = JSON.parse(localStorage.getItem("selectedCourse") || "null");
 
-  // 3. FIX: If no course in localStorage but ID exists in URL, fetch it immediately
+  // FIX: If no course in localStorage but ID exists in URL, fetch it immediately
   if (!course && selectedCourseId) {
     try {
-      const data = await safeJsonFetch(`${API_BASE}/api/courses/${selectedCourseId}`);
+      const data = await safeJsonFetch(`${API_BASE}/api/courses/${selectedCourseId}`, { credentials: 'include' });
       course = data.course || data;
       console.log("[checkout] Course fetched from API:", course.title);
     } catch (err) {
@@ -52,12 +82,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Elements mapping
-  const emailInput = document.getElementById("email");
   const couponInput = document.getElementById("coupon");
-  const otpInput = document.getElementById("otp");
-  const validateBtn = document.getElementById("validate-btn");
-  const verifyOtpBtn = document.getElementById("verify-otp-btn");
   const paymentBtn = document.getElementById("payment-btn");
+  if(paymentBtn) paymentBtn.disabled = false; // Enable by default since no OTP needed
   const form = document.getElementById("checkoutForm");
 
   // Price display elements
@@ -253,64 +280,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   if (applyCouponBtn) applyCouponBtn.addEventListener("click", applyCoupon);
 
-  // --- Validate & OTP ---
-  if (validateBtn) {
-    validateBtn.addEventListener("click", async () => {
-       const email = emailInput.value.trim();
-       if(!email) return showError(emailInput, "Enter email");
-       if(!selectedCourseId && course?._id) selectedCourseId = course._id;
-       
-       setLoading(validateBtn, true, "Sending OTP...");
-       try {
-           const res = await safeJsonFetch(`${API_BASE}/api/checkout/validate`, {
-               method: "POST",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify({ email, couponCode: couponInput.value, courseId: selectedCourseId })
-           });
-           showInlineSuccess("msg-email", "OTP Sent!");
-           sessionStorage.setItem("buyerEmail", email);
-           if(otpInput) otpInput.disabled = false;
-           if(verifyOtpBtn) verifyOtpBtn.disabled = false;
-       } catch(e) {
-           showError(emailInput, e.message);
-       } finally {
-           setLoading(validateBtn, false, "Validate");
-       }
-    });
-  }
 
-  // --- Verify OTP ---
-  if (verifyOtpBtn) {
-      verifyOtpBtn.addEventListener("click", async () => {
-          const email = emailInput.value.trim();
-          const otp = otpInput.value.trim();
-          if(!otp) return showError(otpInput, "Enter OTP");
-          
-          setLoading(verifyOtpBtn, true, "Verifying...");
-          try {
-              const res = await safeJsonFetch(`${API_BASE}/api/checkout/verify-otp`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email, otp })
-              });
-              if(!res.success) throw new Error("Invalid OTP");
-              showInlineSuccess("msg-otp", "Verified!");
-              if(paymentBtn) paymentBtn.disabled = false;
-          } catch(e) {
-              showError(otpInput, "Invalid OTP");
-          } finally {
-              setLoading(verifyOtpBtn, false, "Verify");
-          }
-      });
-  }
 
   // --- PAYMENT SUBMIT ---
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // THIS WAS THE BUG: 'course' was null in production because localStorage was empty.
-      // Now 'course' is populated by the fetch at the top of this file.
       if (!course) { 
           showError(null, "No course selected! (Try refreshing)"); 
           return; 
@@ -321,7 +297,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           return;
       }
 
-      const email = emailInput.value.trim();
+      // Use logged in user email
+      const email = currentUser.email;
       const finalAmount = Number(priceDataset.finalAmount || course.price || 0);
 
       if(!selectedCourseId && course?._id) selectedCourseId = course._id;
@@ -330,7 +307,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       try {
         const payload = { 
-            email, 
+            email, // From session user
             courseId: selectedCourseId, 
             couponCode: couponInput.value.trim() 
         };
@@ -374,6 +351,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const downloadUrl = verifyData.downloadLink || "#";
 
                 // Inject Styles + HTML
+                // Inject Styles + HTML
                 const successStyles = `
                   <style>
                     body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
@@ -395,20 +373,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                     .success-desc {
                       color: #64748b; font-size: 1.05rem; line-height: 1.6; margin-bottom: 32px;
                     }
-                    .email-highlight { color: #0f172a; font-weight: 700; }
                     
-                    /* Primary Action: Download */
-                    .btn-download {
+                    /* Primary Action: Read Now */
+                    .btn-read {
                       display: inline-flex; align-items: center; justify-content: center;
-                      background-color: #2563eb; /* Bright Blue */
+                      background-color: #10b981; /* Emerald Green */
                       color: white; width: 100%; max-width: 280px;
                       padding: 16px 24px; border-radius: 12px; text-decoration: none;
                       font-weight: 700; font-size: 1.1rem;
-                      transition: all 0.2s; box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+                      transition: all 0.2s; box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
                       margin-bottom: 16px;
                       cursor: pointer;
                     }
-                    .btn-download:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); }
+                    .btn-read:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.5); }
                     
                     /* Secondary: Home */
                     .btn-home {
@@ -449,38 +426,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                       <h1 class="success-title">Payment Successful!</h1>
                       
                       <p class="success-desc">
-                        Thank you for your purchase. You can download your course below.
-                        <br><span style="font-size:0.9rem; opacity:0.8;">(A copy has also been sent to <span class="email-highlight">${email}</span>)</span>
+                        Thank you for your purchase. You can now access your course.
                       </p>
 
-                      <a href="${downloadUrl}" target="_blank" class="btn-download" id="btn-download-final">
-                        Download Course ⬇
+                      <a href="/read.html?id=${selectedCourseId}" class="btn-read">
+                        📖 Read Confirmation
                       </a>
                       
                       <br>
 
-                      <a href="/" class="btn-home">Return to Home</a>
+                      <a href="/my-courses.html" class="btn-home">Go to My Courses</a>
                       
                       <div style="margin-top:30px; border-top:1px solid #f1f5f9; padding-top:20px;">
-                        <a href="#" onclick="window.print()" style="color:#94a3b8; font-size:0.8rem;">Download Receipt</a>
+                        <a href="#" onclick="window.print()" style="color:#94a3b8; font-size:0.8rem;">Print Receipt</a>
                       </div>
 
                     </div>
                   </div>
                 `;
-
-                // --- NEW: Attach Click Listener to Log Download ---
-                const dlBtn = document.getElementById("btn-download-final");
-                if (dlBtn) {
-                  dlBtn.addEventListener("click", () => {
-                    // Send log to server without waiting (fire and forget)
-                    safeJsonFetch(`${API_BASE}/api/order/log-download`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ razorpayOrderId: response.razorpay_order_id })
-                    }).catch(err => console.error("Download log failed", err));
-                  });
-                }
+                
+                // No more download logging required here as it is streaming.
 
               } else {
                 showError(null, verifyData.message || "Payment verification failed");

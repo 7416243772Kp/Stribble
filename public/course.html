@@ -37,14 +37,11 @@
         <h3 style="font-size:1.2rem; margin-bottom:15px;">Write a Review</h3>
         <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
           <span style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED BUYERS ONLY</span>
-          Reviews are verified automatically using your purchase email.
+          Reviews are verified automatically via your account.
         </p>
 
         <form id="reviewForm" style="display:grid; gap:12px;">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-            <input type="text" id="rev-name" placeholder="Your Name" required class="input-field">
-            <input type="email" id="rev-email" placeholder="Your Email (must match purchase email)" required class="input-field">
-          </div>
+          <!-- Name/Email inferred from account -->
           <div class="rating-select" style="display:flex; gap:10px; align-items:center;">
             <label>Rating:</label>
             <select id="rev-rating" style="width:auto; padding:8px;">

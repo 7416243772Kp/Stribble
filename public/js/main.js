@@ -107,8 +107,50 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function loadReviews() {
+        try {
+            const marquee = document.getElementById("reviewsMarquee");
+            if (!marquee) return;
+
+            const apiBase = window.API_BASE || '';
+            const res = await fetch(`${apiBase}/api/reviews/top`);
+            const data = await res.json();
+
+            if (!data.success || !data.reviews || data.reviews.length === 0) {
+                const section = document.querySelector(".reviews-section");
+                if (section) section.style.display = "none";
+                return;
+            }
+
+            const reviews = data.reviews;
+
+            // Generate Cards
+            const cardsHtml = reviews.map(r => `
+            <div class="review-card">
+                <div class="review-header">
+                    <div>
+                        <div class="review-user">${r.userName || 'Student'}</div>
+                        <div class="review-course">${r.courseId?.title || 'Verified Course'}</div>
+                    </div>
+                    <div class="review-stars">★★★★★</div>
+                </div>
+                <p class="review-text">"${r.comment}"</p>
+            </div>
+        `).join('');
+
+            // Inject and Duplicate for endless scroll
+            marquee.innerHTML = cardsHtml + cardsHtml;
+
+        } catch (e) {
+            console.error("Failed to load reviews:", e);
+            const section = document.querySelector(".reviews-section");
+            if (section) section.style.display = "none";
+        }
+    }
+
     // Mobile Nav Logic
     loadCourses();
+    loadReviews();
 
     const navToggle = document.getElementById('navToggle');
     const links = document.querySelector('.nav__links');
@@ -121,3 +163,172 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+// ===============================
+// AUTHENTICATION & DASHBOARD LOGIC
+// ===============================
+
+let currentUser = null;
+
+async function checkSession() {
+    try {
+        const res = await fetch('/auth/me');
+        const data = await res.json();
+        if (data.success) {
+            currentUser = data.user;
+            renderAuthUI();
+            renderMyCourses();
+        } else {
+            document.getElementById('auth-ui').innerHTML = `
+                <button onclick="toggleLoginModal()" class="btn btn--primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Login / Signup</button>
+            `;
+            document.getElementById('my-courses-section').classList.add('hidden');
+        }
+    } catch (e) {
+        console.error("Session check failed", e);
+    }
+}
+
+function renderAuthUI() {
+    const authUI = document.getElementById('auth-ui');
+    authUI.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+            <a href="/my-courses.html" class="btn btn--ghost" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">📚 My Courses</a>
+            <span style="font-weight:500; font-size:0.9rem; margin-left:5px;">Hi, ${currentUser.name.split(' ')[0]}</span>
+            <button onclick="logout()" class="btn btn--outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color:#ef4444; color:#ef4444;">Logout</button>
+        </div>
+    `;
+    // Close modal if open
+    document.getElementById('student-login-overlay').style.display = 'none';
+}
+
+function renderMyCourses() {
+    const section = document.getElementById('my-courses-section');
+    const grid = document.getElementById('my-courses-grid');
+    
+    if (!currentUser.purchasedCourses || currentUser.purchasedCourses.length === 0) {
+        section.classList.add('hidden'); // Hide if no courses
+        return;
+    }
+
+    section.classList.remove('hidden');
+    grid.innerHTML = currentUser.purchasedCourses.map(course => {
+        // Handle case where course might be populated or just ID
+        // The backend should populate it.
+        if (typeof course !== 'object') return ''; 
+
+        return `
+        <div class="card course-card">
+            <div class="card__media">
+                <img src="${course.thumbnail}" alt="${course.title}" loading="lazy" />
+            </div>
+            <div class="card__body">
+                <h3 class="card__title">${course.title}</h3>
+                <div class="card__actions" style="margin-top:10px;">
+                    <a href="/read.html?id=${course._id}" class="btn btn--primary btn--block">📖 Read Now</a>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+async function logout() {
+    try {
+        await fetch('/auth/logout', { method: 'POST' });
+        window.location.reload();
+    } catch (e) {
+        window.location.reload();
+    }
+}
+
+// === MODAL TABS === //
+window.switchAuthTab = function(tab) { // Make global
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const tabLogin = document.getElementById('tab-login');
+    const tabSignup = document.getElementById('tab-signup');
+
+    if (tab === 'login') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        tabLogin.classList.add('active-tab');
+        tabSignup.classList.remove('active-tab');
+    } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        tabLogin.classList.remove('active-tab');
+        tabSignup.classList.add('active-tab');
+    }
+}
+
+// === FORM HANDLERS === //
+document.addEventListener('DOMContentLoaded', () => {
+    checkSession();
+
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(loginForm);
+            const payload = Object.fromEntries(formData);
+            
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Login failed');
+                }
+            } catch (err) { alert('Server error'); }
+        });
+    }
+
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(signupForm);
+            const payload = Object.fromEntries(formData);
+            
+            try {
+                const res = await fetch('/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Signup failed');
+                }
+            } catch (err) { alert('Server error'); }
+        });
+    }
+});
+
+// Toggle Student Login Modal
+window.toggleLoginModal = function() {
+  const modal = document.getElementById('student-login-overlay');
+  if (modal.style.display === 'none' || !modal.style.display) {
+    modal.style.display = 'flex';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+
+// Close modal if clicking outside the box
+const overlay = document.getElementById('student-login-overlay');
+if(overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) toggleLoginModal();
+    });
+}

@@ -22,11 +22,10 @@ const courseSchema = new mongoose.Schema(
       type: String, // e.g. /uploads/thumbnail.png
       required: true
     },
-    googleDriveLink: {
-      type: String, // used for email course delivery
-      required: true,
-      trim: true,
-      select: false // always exclude from query results unless explicitly included
+    pdfFile: { 
+      type: String, 
+      required: true, 
+      select: false // Keeps it hidden from public API calls
     },
     soldCount: {
       type: Number,

@@ -50,11 +50,25 @@ async function loadCourseDetails(courseId) {
   if (!courseDetailsContainer) return;
 
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${courseId}`);
-    if (!res.ok) throw new Error(`Course fetch failed: ${res.status}`);
+    // Parallel fetch: Course Details + User Session
+    const [courseRes, userRes] = await Promise.all([
+      fetch(`${API_BASE}/api/courses/${courseId}`),
+      fetch(`${API_BASE}/auth/me`)
+    ]);
 
-    const data = await res.json();
-    const course = data.course || data;
+    if (!courseRes.ok) throw new Error(`Course fetch failed: ${courseRes.status}`);
+
+    const courseData = await courseRes.json();
+    const course = courseData.course || courseData;
+
+    let user = null;
+    try {
+        const userData = await userRes.json();
+        if (userData.success) user = userData.user;
+    } catch (e) { console.log("User not logged in"); }
+
+    // Check ownership
+    const isOwned = user && user.purchasedCourses && user.purchasedCourses.some(c => (c._id || c) === course._id);
 
     // Render HTML
     courseDetailsContainer.innerHTML = `
@@ -75,21 +89,26 @@ async function loadCourseDetails(courseId) {
       
       <div class="course-action-bar">
           <div class="price-tag">₹${course.price}</div>
-          <button id="buy-btn" class="btn btn--primary btn-buy-lg">
-            Buy Now
-          </button>
+          ${isOwned 
+            ? `<a href="/read.html?id=${course._id}" class="btn btn--primary btn-buy-lg" style="background-color:#10b981; border-color:#10b981;">📖 Read Now (Purchased)</a>`
+            : `<button id="buy-btn" class="btn btn--primary btn-buy-lg">Buy Now</button>`
+          }
        </div>
     `;
 
     // Update Share Links
     updateShareLinks(course, window.location.href);
 
-    // Attach Buy Button Listener
-    const buyBtn = document.getElementById('buy-btn');
-    if (buyBtn) {
-      buyBtn.onclick = () => {
-        window.location.href = `/checkout/${course._id}`;
-      };
+    // Attach Buy Button Listener (Only if not owned)
+    if (!isOwned) {
+        const buyBtn = document.getElementById('buy-btn');
+        if (buyBtn) {
+          buyBtn.onclick = () => {
+             // Store selection locally
+             localStorage.setItem("selectedCourse", JSON.stringify(course));
+             window.location.href = `/checkout/${course._id}`;
+          };
+        }
     }
 
   } catch (err) {
@@ -118,19 +137,19 @@ function initReviews(courseId) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     
+    // Check if user is logged in (using global checkSession logic usually)
+    // Or just try to submit and handle 401
+    
     const submitBtn = document.getElementById("btn-submit-review");
     const originalBtnText = submitBtn.textContent;
     
     submitBtn.disabled = true;
-    submitBtn.textContent = "Verifying...";
-    msgDiv.textContent = "Verifying email & purchase...";
-    msgDiv.style.color = "#64748b";
+    submitBtn.textContent = "Posting...";
+    msgDiv.textContent = "";
 
+    // We don't need name/email inputs anymore if we trust the account
     const payload = {
       courseId: courseId,
-      name: document.getElementById("rev-name").value.trim(),
-      email: document.getElementById("rev-email").value.trim(),
-      // Payment ID removed
       rating: document.getElementById("rev-rating").value,
       comment: document.getElementById("rev-comment").value.trim()
     };
@@ -143,6 +162,18 @@ function initReviews(courseId) {
       });
       
       const data = await res.json();
+      
+      if (res.status === 401) {
+          msgDiv.innerHTML = `You need to <a href="#" onclick="toggleLoginModal(); return false;">Login</a> to review.`;
+          msgDiv.style.color = "#ef4444";
+          return;
+      }
+      
+      if (res.status === 403) {
+          msgDiv.textContent = "You must purchase this course to review it.";
+          msgDiv.style.color = "#ef4444";
+          return;
+      }
 
       if (data.success) {
         msgDiv.textContent = "Review posted successfully!";
@@ -150,7 +181,7 @@ function initReviews(courseId) {
         form.reset();
         fetchReviews(); // Reload list
       } else {
-        msgDiv.textContent = data.message || "Verification failed. Ensure you used the correct purchase email.";
+        msgDiv.textContent = data.message || "Failed to post review.";
         msgDiv.style.color = "#ef4444";
       }
     } catch (err) {

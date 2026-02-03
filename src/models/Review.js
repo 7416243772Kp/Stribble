@@ -6,6 +6,7 @@ const ReplySchema = new mongoose.Schema({
 });
 const ReviewSchema = new mongoose.Schema({
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Link to user account
     userEmail: { type: String, required: true },
     userName: { type: String, required: true },
     // paymentId removed

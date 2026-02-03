@@ -185,7 +185,7 @@ async function fetchDashboardStats() {
     if (data.success) {
       const { 
         courses, coupons, sales, 
-        todaySales, weekSales, monthSales, lastMonthSales,
+        todaySales, todayCount, weekSales, monthSales, lastMonthSales,
         perCourseSales = [], perCouponSales = [] 
       } = data.stats;
 
@@ -212,7 +212,7 @@ async function fetchDashboardStats() {
           <!-- New Time-based Sales -->
           <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #3b82f6;">
             <h3 style="color:#2563eb;">${fmt(todaySales)}</h3>
-            <p>Today's Sales</p>
+            <p>Today's Sales <strong>(${todayCount || 0} sold)</strong></p>
           </div>
           <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #8b5cf6;">
             <h3 style="color:#7c3aed;">${fmt(weekSales)}</h3>
@@ -403,22 +403,28 @@ if (editForm) {
     console.log("Edit form submitted");
 
     const id = document.getElementById('edit-course-id').value;
-    const title = document.getElementById('edit-title').value;
-    const description = document.getElementById('edit-desc').value;
-    const price = document.getElementById('edit-price').value;
-    const googleDriveLink = document.getElementById('edit-link').value;
-
     const submitBtn = editForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.textContent = "Saving...";
     submitBtn.disabled = true;
 
+    // Create FormData object (Required for file uploads)
+    const formData = new FormData();
+    formData.append('title', document.getElementById('edit-title').value);
+    formData.append('description', document.getElementById('edit-desc').value);
+    formData.append('price', document.getElementById('edit-price').value);
+
+    // Only append files if the user selected a new one
+    const pdfInput = document.getElementById('edit-pdf'); 
+    if (pdfInput && pdfInput.files[0]) {
+        formData.append('coursePdf', pdfInput.files[0]);
+    }
+
     try {
+      // Do NOT set Content-Type header when sending FormData! Browser sets it automatically.
       const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, {
         method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, price, googleDriveLink }),
+        body: formData, 
       });
 
       const data = await res.json();
@@ -460,22 +466,28 @@ if (editOverlay) {
 
 async function deleteCourse(id) {
   console.log("deleteCourse called with id:", id);
-  if (!confirm("Delete this course?")) return;
-  try {
-    const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const data = await res.json();
-    console.log("Delete response:", data);
-    if (data.success) {
-      showNotification("success", "Course deleted");
-      fetchCourses();
-    } else {
-      showNotification("error", data.message);
-    }
-  } catch (err) {
-    console.error("Delete error:", err);
-    showNotification("error", "Server error while deleting course");
-  }
+  
+  showConfirmModal(
+      "Delete Course?", 
+      "Are you sure you want to permanently delete this course? This action cannot be undone.",
+      async () => {
+          try {
+            const res = await authFetch(`${window.API_BASE}/api/courses/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error(`Server returned ${res.status}`);
+            const data = await res.json();
+            console.log("Delete response:", data);
+            if (data.success) {
+              showNotification("success", "Course deleted");
+              fetchCourses();
+            } else {
+              showNotification("error", data.message);
+            }
+          } catch (err) {
+            console.error("Delete error:", err);
+            showNotification("error", "Server error while deleting course");
+          }
+      }
+  );
 }
 
 // CRITICAL: Attach to window so HTML onclick="..." can find them
@@ -749,33 +761,36 @@ async function editCoupon(id) {
 // ===============================
 // ACTION: Delete Coupon
 // ===============================
+// ===============================
+// ACTION: Delete Coupon
+// ===============================
 async function deleteCoupon(id) {
-  if (!confirm("Are you sure you want to PERMANENTLY delete this coupon?")) return;
+  showConfirmModal(
+      "Delete Coupon?",
+      "Are you sure you want to PERMANENTLY delete this coupon?",
+      async () => {
+          try {
+            const url = `${window.API_BASE}/api/admin/coupons/${id}`;
+            const res = await authFetch(url, { method: "DELETE" });
 
-  try {
-    // Log URL to check if API_BASE is correct
-    const url = `${window.API_BASE}/api/admin/coupons/${id}`;
-    console.log("Deleting coupon at:", url);
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.message || `Server Error (${res.status})`);
+            }
 
-    const res = await authFetch(url, { method: "DELETE" });
-
-    if (!res.ok) {
-      // Try to parse error message from server
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || `Server Error (${res.status})`);
-    }
-
-    const result = await res.json();
-    if (result.success) {
-      showNotification("success", "Coupon deleted successfully");
-      loadCoupons(); // Refresh the list
-    } else {
-      showNotification("error", result.message || "Failed to delete");
-    }
-  } catch (err) {
-    console.error("Delete Coupon Failed:", err);
-    showNotification("error", "Error: " + err.message);
-  }
+            const result = await res.json();
+            if (result.success) {
+              showNotification("success", "Coupon deleted successfully");
+              loadCoupons(); 
+            } else {
+              showNotification("error", result.message || "Failed to delete");
+            }
+          } catch (err) {
+            console.error("Delete Coupon Failed:", err);
+            showNotification("error", "Error: " + err.message);
+          }
+      }
+  );
 }
 
 // ===============================
@@ -1125,4 +1140,59 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+  
 });
+
+// ===============================
+// CUSTOM CONFIRMATION MODAL HELPER
+// ===============================
+window.showConfirmModal = function(title, message, onConfirmCallback) {
+    const overlay = document.getElementById('confirm-overlay');
+    const titleEl = document.getElementById('confirm-title');
+    const msgEl = document.getElementById('confirm-message');
+    const btnProceed = document.getElementById('btn-proceed-confirm');
+    const btnCancel = document.getElementById('btn-cancel-confirm');
+
+    if (!overlay) {
+        // Fallback if modal missing
+        if (confirm(`${title}\n\n${message}`)) {
+            onConfirmCallback();
+        }
+        return;
+    }
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    
+    // Remove old listeners to prevent stacking (Clone node trick)
+    const newProceed = btnProceed.cloneNode(true);
+    const newCancel = btnCancel.cloneNode(true);
+    btnProceed.parentNode.replaceChild(newProceed, btnProceed);
+    btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+    newProceed.addEventListener('click', async () => {
+        const originalText = newProceed.textContent;
+        newProceed.textContent = "Processing...";
+        newProceed.disabled = true;
+        try {
+            await onConfirmCallback();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            overlay.classList.add('hidden');
+            newProceed.textContent = originalText;
+            newProceed.disabled = false;
+        }
+    });
+
+    newCancel.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+    });
+
+    // Close on overlay click
+    overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.classList.add('hidden');
+    };
+
+    overlay.classList.remove('hidden');
+};
