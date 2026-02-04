@@ -69,32 +69,78 @@ async function loadCourseDetails(courseId) {
 
     // Check ownership
     const isOwned = user && user.purchasedCourses && user.purchasedCourses.some(c => (c._id || c) === course._id);
+    const thumb = (course.thumbnail && (course.thumbnail.startsWith('http') || course.thumbnail.startsWith('//'))) 
+                  ? course.thumbnail 
+                  : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'));
 
-    // Render HTML
+    // 1. Render Premium Layout
     courseDetailsContainer.innerHTML = `
-      <div class="course-card">
-        <div class="course-media">
-          <div class="course-img-wrapper">
-            <img src="${(course.thumbnail && (course.thumbnail.startsWith('http') || course.thumbnail.startsWith('//'))) ? course.thumbnail : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'))}" 
-                 alt="${(course.title || '').replace(/\"/g, '')}" 
-                 class="course-detail-img" 
-                 onerror="this.src='/images/placeholder-course.png'"/>
-          </div>
-        </div>
-        <div class="course-info">
-          <h3 style="margin-top:0">${course.title}</h3>
-          <p class="course-desc-text">${course.description}</p>
+      <!-- HERO SECTION -->
+      <div class="course-hero">
+        <div class="course-hero__inner">
+            <div class="course-breadcrumb">Courses &nbsp;/&nbsp; ${course.title}</div>
+            <h1>${course.title}</h1>
+            <p class="course-hero__desc">${course.description.slice(0, 150)}${course.description.length > 150 ? '...' : ''}</p>
         </div>
       </div>
-      
-      <div class="course-action-bar">
-          <div class="price-tag">₹${course.price}</div>
-          ${isOwned 
-            ? `<a href="/read.html?id=${course._id}" class="btn btn--primary btn-buy-lg" style="background-color:#10b981; border-color:#10b981;">📖 Read Now (Purchased)</a>`
-            : `<button id="buy-btn" class="btn btn--primary btn-buy-lg">Buy Now</button>`
-          }
-       </div>
+
+      <!-- MAIN GRID -->
+      <div class="course-container">
+        <div class="course-grid-layout">
+            
+            <!-- LEFT COLUMN (Content) -->
+            <div class="course-content" id="course-content-area">
+                <div class="course-tabs">
+                    <div class="course-tab active">About Course</div>
+                    <div class="course-tab">Reviews</div>
+                </div>
+                
+                <div style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:40px;">
+                    <p>${course.description.replace(/\n/g, '<br>')}</p>
+                </div>
+
+                <!-- Reviews and Share will be moved here -->
+            </div>
+
+            <!-- RIGHT COLUMN (Sidebar) -->
+            <div class="course-sidebar">
+                <div class="pricing-card">
+                    <img src="${thumb}" alt="${course.title}">
+                    
+                    <div class="pricing-price">₹${course.price}</div>
+                    
+                    <div class="pricing-features">
+                        <div class="pricing-feature-item">
+                            <span style="color:#10b981;">✔</span> <span>Lifetime Access</span>
+                        </div>
+                        <div class="pricing-feature-item">
+                            <span style="color:#10b981;">✔</span> <span>Certificate of Completion</span>
+                        </div>
+                        <div class="pricing-feature-item">
+                             <span style="color:#10b981;">✔</span> <span>Premium Support</span>
+                        </div>
+                    </div>
+
+                    ${isOwned 
+                        ? `<a href="/read?id=${course._id}" class="btn btn--primary btn--block" style="padding:1rem; font-size:1rem; background-color:#10b981;">📖 Read Now</a>`
+                        : `<button id="buy-btn" class="btn btn--primary btn--block" style="padding:1rem; font-size:1rem;">Buy Now</button>`
+                    }
+                </div>
+            </div>
+
+        </div>
+      </div>
     `;
+
+    // 2. Move Reviews & Share into Left Column
+    const contentArea = document.getElementById("course-content-area");
+    const reviewsSection = document.getElementById("reviews-section");
+    const shareBar = document.getElementById("share-bar");
+
+    if (contentArea) {
+        if (reviewsSection) contentArea.appendChild(reviewsSection); // Reviews first
+        if (shareBar) contentArea.appendChild(shareBar); // Share below reviews
+    }
 
     // Update Share Links
     updateShareLinks(course, window.location.href);

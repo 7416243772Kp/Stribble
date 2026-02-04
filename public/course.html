@@ -25,61 +25,65 @@
     </div>
   </header>
 
-  <main class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-    <div id="course-details" class="course-grid"></div>
-    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0;">
+  <main class="course-main">
+    <div id="course-details"></div>
+    
+    <!-- Reviews and other content will be moved by JS or stay here -->
+    <div class="course-container">
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0;">
 
-    <section id="reviews-section" style="max-width: 800px; margin: 0 auto;">
-      <h2 style="margin-bottom: 20px;">Course Reviews</h2>
-
-      <div class="review-form-card"
-        style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:30px;">
-        <h3 style="font-size:1.2rem; margin-bottom:15px;">Write a Review</h3>
-        <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
-          <span style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED BUYERS ONLY</span>
-          Reviews are verified automatically via your account.
-        </p>
-
-        <form id="reviewForm" style="display:grid; gap:12px;">
-          <!-- Name/Email inferred from account -->
-          <div class="rating-select" style="display:flex; gap:10px; align-items:center;">
-            <label>Rating:</label>
-            <select id="rev-rating" style="width:auto; padding:8px;">
-              <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
-              <option value="4">⭐⭐⭐⭐ (Good)</option>
-              <option value="3">⭐⭐⭐ (Average)</option>
-              <option value="2">⭐⭐ (Poor)</option>
-              <option value="1">⭐ (Bad)</option>
-            </select>
+        <section id="reviews-section">
+          <h2 style="margin-bottom: 20px;">Course Reviews</h2>
+    
+          <div class="review-form-card"
+            style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:30px;">
+            <h3 style="font-size:1.2rem; margin-bottom:15px;">Write a Review</h3>
+            <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
+              <span style="background:#f0f9ff; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">VERIFIED BUYERS ONLY</span>
+              Reviews are verified automatically via your account.
+            </p>
+    
+            <form id="reviewForm" style="display:grid; gap:12px;">
+              <!-- Name/Email inferred from account -->
+              <div class="rating-select" style="display:flex; gap:10px; align-items:center;">
+                <label>Rating:</label>
+                <select id="rev-rating" style="width:auto; padding:8px;">
+                  <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                  <option value="4">⭐⭐⭐⭐ (Good)</option>
+                  <option value="3">⭐⭐⭐ (Average)</option>
+                  <option value="2">⭐⭐ (Poor)</option>
+                  <option value="1">⭐ (Bad)</option>
+                </select>
+              </div>
+    
+              <textarea id="rev-comment" rows="3" placeholder="Share your experience..." required class="input-field"></textarea>
+    
+              <button type="submit" id="btn-submit-review" class="btn btn--primary" style="justify-self:start;">Submit Review</button>
+              
+              <div id="rev-msg" style="font-size:0.9rem; margin-top:5px;"></div>
+            </form>
           </div>
-
-          <textarea id="rev-comment" rows="3" placeholder="Share your experience..." required class="input-field"></textarea>
-
-          <button type="submit" id="btn-submit-review" class="btn btn--primary" style="justify-self:start;">Submit Review</button>
-          
-          <div id="rev-msg" style="font-size:0.9rem; margin-top:5px;"></div>
-        </form>
-      </div>
-
-      <div id="rating-summary" class="review-summary-card hidden"></div>
-
-      <div id="reviews-list-header" style="margin-bottom:15px; display:none; justify-content:space-between; align-items:center;">
-        <h3 id="reviews-filter-msg" style="font-size:1.1rem; margin:0;">All Reviews</h3>
-        <button id="clear-filter-btn" style="font-size:0.85rem; color:#3b82f6; background:none; border:none; cursor:pointer; text-decoration:underline;">Clear Filter</button>
-      </div>
+    
+          <div id="rating-summary" class="review-summary-card hidden"></div>
+    
+          <div id="reviews-list-header" style="margin-bottom:15px; display:none; justify-content:space-between; align-items:center;">
+            <h3 id="reviews-filter-msg" style="font-size:1.1rem; margin:0;">All Reviews</h3>
+            <button id="clear-filter-btn" style="font-size:0.85rem; color:#3b82f6; background:none; border:none; cursor:pointer; text-decoration:underline;">Clear Filter</button>
+          </div>
+            
+          <div id="reviews-list" style="display:flex; flex-direction:column; gap:20px;">
+            <p style="color:#64748b; text-align:center;">Loading reviews...</p>
+          </div>
+        </section>
         
-      <div id="reviews-list" style="display:flex; flex-direction:column; gap:20px;">
-        <p style="color:#64748b; text-align:center;">Loading reviews...</p>
-      </div>
-    </section>
-
-    <div id="share-bar" style="margin-top: 20px;">
-      <h4>Share this course:</h4>
-      <button id="copy-link">Copy Link</button>
-      <a id="whatsapp-link" target="_blank" rel="noopener" href="#">WhatsApp</a>
-      <a id="facebook-link" target="_blank" rel="noopener" href="#">Facebook</a>
-      <a id="x-link" target="_blank" rel="noopener" href="#">X</a>
-      <a id="linkedin-link" target="_blank" rel="noopener" href="#">LinkedIn</a>
+        <div id="share-bar" style="margin-top: 40px; margin-bottom: 40px;">
+          <h4 style="display:inline-block; margin-right:10px;">Share this course:</h4>
+          <button id="copy-link">Copy Link</button>
+          <a id="whatsapp-link" target="_blank" rel="noopener" href="#">WhatsApp</a>
+          <a id="facebook-link" target="_blank" rel="noopener" href="#">Facebook</a>
+          <a id="x-link" target="_blank" rel="noopener" href="#">X</a>
+          <a id="linkedin-link" target="_blank" rel="noopener" href="#">LinkedIn</a>
+        </div>
     </div>
   </main>
 

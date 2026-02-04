@@ -11,111 +11,82 @@
   <script src="/js/checkout.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
-<h2 class="checkout-title">Checkout</h2>
+  <main class="checkout-page">
+    <div class="checkout-layout">
+        
+        <!-- LEFT PANEL: Course Summary -->
+        <div class="checkout-summary-panel">
+             <div class="checkout-header" style="text-align:left; margin-bottom:20px;">
+                <h1 style="font-size: 1.5rem; color:#64748b; font-weight:500;">Order Summary</h1>
+            </div>
 
-<div id="notif-payment" class="notify-success" role="status" style="display:none">
-  <div class="notify-success__icon" aria-hidden="true">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20 6L9 17l-5-5"></path>
-    </svg>
-  </div>
+            <img id="miniThumb" class="checkout-course-large-thumb skeleton" 
+                 src="/images/placeholder-course.png" 
+                 alt="Course Thumbnail">
+            
+            <h2 id="miniTitle" class="checkout-course-title">Loading Course...</h2>
+            <div id="miniType" class="checkout-course-type">Digital Course</div>
 
-  <div class="notify-success__text">
-    <div class="notify-success__title">Payment successful! 🎉</div>
-    <div class="notify-success__desc">Course has been sent to your email.</div>
-  </div>
+            <div style="font-size:0.95rem; line-height:1.6; color:#475569; margin-bottom:30px;">
+                You are purchasing lifetime access to this course, including all future updates and downloadables.
+            </div>
 
-  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-</div>
+            <div class="checkout-price-row">
+                <span style="font-size:1.1rem; color:#64748b; font-weight:500;">Total Price</span>
+                <div>
+                     <span id="priceBefore" class="price-original" style="font-size:1.2rem; display:none; margin-right:10px;">₹0</span>
+                     <span id="priceNow" class="checkout-total-price">₹0</span>
+                </div>
+            </div>
+             <div id="priceSavings" class="price-savings" style="display:none; float:right;"></div>
+             <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
+        </div>
 
-<div id="notif-coupon" class="notify-success" role="status" style="display:none">
-  <div class="notify-success__icon" aria-hidden="true">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20.59 13.41L13 21 3 11l7.59-7.59a2 2 0 012.82 0l7.18 7.18a2 2 0 010 2.82z"></path>
-      <circle cx="7" cy="7" r="1"></circle>
-    </svg>
-  </div>
+        <!-- RIGHT PANEL: Payment Form -->
+        <div class="checkout-form-panel">
+            <div class="checkout-form-header">
+                <h2>Payment Details</h2>
+            </div>
 
-  <div class="notify-success__text">
-    <div class="notify-success__title">
-      Coupon <span id="notif-coupon-pill" class="notify-success__pill">CODE • 0% OFF</span>
+            <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
+                
+                <label for="coupon">Have a Coupon?</label>
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom: 20px;">
+                    <div class="coupon-wrapper" style="flex:1; display:flex;">
+                    <input type="text" id="coupon" placeholder="Enter coupon code" />
+                    </div>
+                    <button type="button" id="apply-coupon-btn" class="btn btn--ghost" style="padding: 10px 20px;">Apply</button>
+                </div>
+                <div id="err-coupon" class="field-error"></div>
+                <div id="couponMessage" aria-live="polite"></div>
+
+                <div class="terms-container" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                    <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 12px;">
+                        <input type="checkbox" id="termsCheckbox" style="margin-top: 4px;">
+                        <span style="font-size: 0.9rem; color: #475569; line-height: 1.5;">
+                            I agree to the <a href="/terms.html" target="_blank" style="text-decoration: underline;">Terms & Conditions</a> and acknowledge that this is a <strong style="color: #ef4444;">non-refundable</strong> digital product (PDF).
+                        </span>
+                    </label>
+                    <div id="err-terms" class="field-error" style="margin-top: 5px; display: none;"></div>
+                </div>
+
+                <button type="submit" id="payment-btn" class="btn btn--primary btn--block big-btn" style="padding: 16px; font-size: 1.1rem;" disabled>
+                    Proceed to Pay
+                </button>
+
+                <div class="secure-badge">
+                    <img src="https://badges.razorpay.com/badge-light.png" alt="Razorpay" style="height: 20px;">
+                    <span>Secure payments by Razorpay</span>
+                </div>
+                
+                 <div style="text-align: center; margin-top: 20px;">
+                    <a href="/" style="color: #64748b; font-size: 0.85rem;">Cancel Order</a>
+                </div>
+            </form>
+        </div>
+
     </div>
-    <div id="notif-coupon-desc" class="notify-success__desc">Coupon applied — you saved ₹0.</div>
-  </div>
-
-  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-</div>
-
-<div id="notif-otp" class="notify-success" role="status" style="display:none">
-  <div class="notify-success__icon" aria-hidden="true">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 20v-6"></path>
-      <path d="M12 4v4"></path>
-      <circle cx="12" cy="12" r="8"></circle>
-    </svg>
-  </div>
-
-  <div class="notify-success__text">
-    <div class="notify-success__title">OTP verified</div>
-    <div id="notif-otp-desc" class="notify-success__desc">Your Email is confirmed. You can proceed to
-      pay.</div>
-  </div>
-
-  <button class="notify-success__close" aria-label="Dismiss notification">&times;</button>
-</div>
-<!-- ====== end notifications ====== -->
-
-<!-- Price panel -->
-<div class="price-panel" id="pricePanel" aria-live="polite">
-  <div class="price-left">
-    <!-- lazy thumbnail -->
-    <img id="miniThumb" class="course-mini-thumb skeleton" data-src="/images/placeholder-course.png"
-      alt="course thumbnail" loading="lazy" />
-    <div class="price-left__meta">
-      <div id="miniTitle" class="mini-title">Untitled course</div>
-      <div id="miniType" class="mini-type">Digital course</div>
-    </div>
-  </div>
-
-  <div class="price-right" aria-hidden="false">
-    <div id="priceBefore" class="price-original" style="display:none">₹0</div>
-    <div id="priceNow" class="price-current">₹0</div>
-    <div id="priceSavings" class="price-savings" style="display:none"></div>
-    <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
-  </div>
-</div>
-
-<!-- Form -->
-<form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
-
-  <!-- Coupon Section -->
-  <label for="coupon">Coupon Code <span style="font-weight:400; color:#666;">(Optional)</span></label>
-  <div style="display:flex; gap:8px; align-items:center;">
-    <div class="coupon-wrapper" style="flex:1; display:flex;">
-      <input type="text" id="coupon" placeholder="Enter coupon code" />
-    </div>
-    <button type="button" id="apply-coupon-btn" class="btn">Apply</button>
-  </div>
-  <div id="err-coupon" class="field-error"></div>
-  <div id="couponMessage" aria-live="polite"></div>
-
-  <div class="checkout-actions">
-    <div class="terms-container" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa;">
-      <label style="display: flex; align-items: flex-start; cursor: pointer;">
-        <input type="checkbox" id="termsCheckbox" style="margin-top: 5px; margin-right: 10px;">
-        <span style="font-size: 14px; color: #333;">
-          I agree to the <a href="/terms.html" target="_blank">Terms & Conditions</a> and acknowledge that this is a <span style="color: red; font-weight: bold;">non-refundable</span> digital product(PDF).
-        </span>
-      </label>
-      <div id="err-terms" class="field-error" style="margin-top: 5px; display: none;"></div>
-    </div>
-    <button type="submit" id="payment-btn" class="btn btn--primary btn--block" disabled>Proceed to Pay</button>
-    <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9em; display: flex; align-items: center; justify-content: center; gap: 6px;">
-      <img src="https://badges.razorpay.com/badge-light.png" alt="Razorpay" style="height: 18px;">
-      Secure payments by Razorpay
-    </div>
-  </div>
-</form>
+  </main>
   <footer class="footer">
     <div class="container footer__inner">
 
