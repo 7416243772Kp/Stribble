@@ -113,8 +113,9 @@ import escapeHtml from "escape-html";
 const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());
 
 // allow JSON bodies (already present) + urlencoded for admin forms if needed
-app.use(express.json({ limit: "200kb" }));
-app.use(express.urlencoded({ extended: false }));
+// allow JSON bodies (increased limit for base64 uploads)
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // cookie parser (populates req.cookies)
 app.use(cookieParser());
