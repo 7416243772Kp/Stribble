@@ -257,6 +257,9 @@ function initReviews(courseId) {
           listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
           summaryContainer.classList.add("hidden");
         }
+      } else {
+         // Handle explicit failure from API
+         listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">${data.message || "Could not load reviews."}</p>`;
       }
     } catch (err) {
       console.error("Failed to load reviews", err);

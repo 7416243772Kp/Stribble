@@ -30,9 +30,15 @@ router.get("/top", async (req, res) => {
 router.get("/:courseId", async (req, res) => {
     try {
         const { courseId } = req.params;
+        
+        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+             return res.status(400).json({ success: false, message: "Invalid Course ID" });
+        }
+
         const reviews = await Review.find({ courseId }).sort({ createdAt: -1 });
         res.json({ success: true, reviews });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ success: false, message: "Error fetching reviews" });
     }
 });
