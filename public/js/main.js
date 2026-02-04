@@ -282,9 +282,9 @@ function renderMyCourses() {
             <div class="card__body">
                 <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
                 <h3 class="card__title">${course.title}</h3>
-                <div class="card__actions" style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <a href="/read?id=${course._id}" class="btn btn--primary" style="text-align:center; justify-content:center; padding: 10px; background-color: #0f172a;">📖 Read Course</a>
-                    <button onclick="openReviewModal('${course._id}', '${course.title.replace(/'/g, "\\'")}')" class="btn" style="padding: 10px; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s;">⭐ Review Course</button>
+                <div class="card__actions" style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <a href="/read?id=${course._id}" class="btn btn--primary" style="text-align:center; justify-content:center; padding: 8px 4px; font-size: 0.8rem; background-color: #0f172a; white-space:nowrap;">📖 Read</a>
+                    <button onclick="openReviewModal('${course._id}', '${course.title.replace(/'/g, "\\'")}')" class="btn" style="padding: 8px 4px; font-size: 0.8rem; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space:nowrap;">⭐ Review</button>
                 </div>
             </div>
         </div>
