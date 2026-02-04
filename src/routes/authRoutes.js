@@ -10,11 +10,29 @@ const router = express.Router();
 // Passport Config is now in src/config/passport.js
 
 // Routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Routes
+router.get('/google', (req, res, next) => {
+    // Dynamic Callback URL Construction
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const callbackURL = `${protocol}://${host}/auth/google/callback`;
+    
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        callbackURL: callbackURL
+    })(req, res, next);
+});
 
-router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  async (req, res) => {
+router.get('/google/callback', (req, res, next) => {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const callbackURL = `${protocol}://${host}/auth/google/callback`;
+
+    passport.authenticate('google', { 
+        failureRedirect: '/login',
+        callbackURL: callbackURL
+    })(req, res, next);
+}, async (req, res) => {
     try {
         // Generate Session Token
         const sessionToken = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
@@ -32,8 +50,7 @@ router.get('/google/callback',
         console.error("Auth callback error:", err);
         res.redirect('/login');
     }
-  }
-);
+});
 
 // Email/Password Signup
 router.post('/signup', async (req, res) => {

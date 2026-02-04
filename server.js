@@ -47,6 +47,8 @@ const __dirname = path.dirname(__filename);
 
 // ==== App Initialization ====
 const app = express();
+// Enable trust proxy for correct protocol detection (req.protocol) behind proxies (Nginx, etc.)
+app.set('trust proxy', 1);
 
 // ============================
 //  CRITICAL SECURITY CONFIGURATION
@@ -160,7 +162,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production',
+    // Respect COOKIE_SECURE if set (string 'true'/'false'), otherwise fallback to NODE_ENV
+    secure: process.env.COOKIE_SECURE !== undefined 
+            ? process.env.COOKIE_SECURE === 'true' 
+            : process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));

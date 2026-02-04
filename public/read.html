@@ -56,30 +56,7 @@
             align-items: center;
         }
 
-        /* 🔒 DYNAMIC WATERMARK */
-        .watermark {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 50;
-            pointer-events: none; /* Let clicks pass through */
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Grid pattern */
-            grid-template-rows: repeat(10, 1fr);
-            opacity: 0.12; /* Subtle visibility */
-        }
-        
-        .watermark-item {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transform: rotate(-30deg);
-            font-size: 18px;
-            color: #ff0000;
-            font-weight: bold;
-            text-align: center;
-            white-space: nowrap;
-        }
+
 
         /* Controls Footer */
         .controls {
@@ -130,7 +107,6 @@
 
     <div id="viewer-container">
         <!-- Canvas injected here -->
-        <div id="watermark-layer" class="watermark"></div>
     </div>
 
     <div class="controls">
@@ -176,33 +152,31 @@
         viewerContainer.appendChild(canvas);
 
         // 3. User Info for Watermark
-        let userWatermarkText = "Stribble User";
-        
-        async function fetchUser() {
-            try {
-                const res = await fetch('/api/auth/me');
-                const data = await res.json();
-                if (data.success) {
-                    userWatermarkText = `${data.user.email} - ${data.user.id}`;
-                    generateWatermark();
-                } else {
-                    // Not logged in? Redirect to login?
-                    // The stream endpoint will fail anyway, but good UI here:
-                     window.location.href = "/login?msg=Please login to view course";
-                }
-            } catch (e) { console.error("Auth check failed", e); }
-        }
-        fetchUser();
+        let watermarkText = "Loading...";
 
-        function generateWatermark() {
-            const wmLayer = document.getElementById('watermark-layer');
-            wmLayer.innerHTML = '';
-            // Create a grid of watermarks
-            for (let i = 0; i < 30; i++) {
-                const div = document.createElement('div');
-                div.className = 'watermark-item';
-                div.innerHTML = `${userWatermarkText}<br><span style="font-size:12px; opacity:0.7">DO NOT DISTRIBUTE</span>`;
-                wmLayer.appendChild(div);
+        // 🔒 INIT VIEWER: Check Access & Get Watermark
+        async function initViewer() {
+            try {
+                const response = await fetch(`/api/courses/access/${courseId}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message);
+                    window.location.href = "/my-courses"; 
+                    return;
+                }
+
+                // Set the unique watermark text
+                // watermarkText = data.watermarkText; 
+                
+                // CSS Watermark Grid (Extra Layer) - REMOVED
+
+                // Now Load the PDF
+                loadPdf();
+
+            } catch (err) {
+                console.error(err);
+                alert("Error verifying access.");
             }
         }
 
@@ -277,26 +251,33 @@
             }
         }
 
-        loadPdf();
+        // loadPdf(); // Removed: Called by initViewer instead
 
         // 5. Render Page
         function renderPage(num) {
             pageRendering = true;
             
-            // Adjust scale based on window width for responsiveness
-            const containerWidth = viewerContainer.clientWidth;
-             // We can calculate scale dynamically here if we want fit-to-width
-            // But let's stick to base scale for clarity first
-
             pdfDoc.getPage(num).then(function(page) {
-                const viewport = page.getViewport({scale: scale});
+                const containerWidth = viewerContainer.clientWidth;
                 
-                // Set canvas dimensions
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+                // 1. Base Scale (Fit Width)
+                const unscaledViewport = page.getViewport({ scale: 1 });
+                const fitScale = containerWidth / unscaledViewport.width;
 
-                // Adjust container width to match canvas if needed
-                viewerContainer.style.width = viewport.width + 'px';
+                // 2. High-DPI Multiplier (Quality Boost)
+                // Force Ultra High Quality (4.0x) - Equivalent to ~300 DPI print quality
+                const outputScale = 4.0; 
+
+                // 3. Create High-Res Viewport
+                const viewport = page.getViewport({ scale: fitScale * outputScale });
+                
+                // 4. Set Canvas Dimensions (Physical Pixels)
+                canvas.width = Math.floor(viewport.width);
+                canvas.height = Math.floor(viewport.height);
+
+                // 5. Enhance Rendering Context
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
 
                 const renderContext = {
                     canvasContext: ctx,
@@ -307,6 +288,11 @@
 
                 renderTask.promise.then(function() {
                     pageRendering = false;
+                    
+                    // 🛑 CANVAS WATERMARK REMOVED
+                    // ctx.save();
+                    // ctx.restore();
+
                     if (pageNumPending !== null) {
                         renderPage(pageNumPending);
                         pageNumPending = null;
@@ -377,6 +363,8 @@
         document.addEventListener('dragstart', function(e) {
             e.preventDefault();
         });
+
+        initViewer(); // Start the process
 
         // Periodically check session (Optional heartbeat)
         setInterval(async () => {

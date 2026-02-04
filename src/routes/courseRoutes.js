@@ -162,6 +162,46 @@ router.delete("/:id", adminAuth, async (req, res) => {
   }
 });
 
+// 🔒 CHECK ACCESS & GET WATERMARK DATA
+router.get("/access/:courseId", protectUser, async (req, res) => {
+  try {
+    // 1. Check if user is logged in
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ success: false, message: "Please login to view this course." });
+    }
+
+    // 2. Find the COMPLETED order for this user & course
+    const order = await Order.findOne({
+      buyerEmail: req.user.email,
+      courseId: req.params.courseId,
+      status: "completed"
+    }).select("buyerEmail razorpayOrderId");
+
+    if (!order) {
+        // Fallback: Check if they have the course in their profile (e.g. manually added by admin)
+        // In this case, we might not have an Order ID, so we fallback to Email/User ID
+        const user = await User.findById(req.user._id);
+        if (user && user.purchasedCourses.includes(req.params.courseId)) {
+             return res.json({
+                success: true,
+                // watermarkText: ...
+            });
+        }
+        return res.status(403).json({ success: false, message: "You have not purchased this course." });
+    }
+
+    // 3. Return success (Watermark removed)
+    res.json({
+      success: true,
+      // watermarkText: `Order: ${order ? order.razorpayOrderId : req.user.email}` // Deprecated
+    });
+
+  } catch (err) {
+    console.error("Access Check Error:", err);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 // 🔒 SECURE STREAM ROUTE
 router.get("/stream/:courseId", protectUser, async (req, res) => {
   try {

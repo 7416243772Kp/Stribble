@@ -84,7 +84,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Elements mapping
   const couponInput = document.getElementById("coupon");
   const paymentBtn = document.getElementById("payment-btn");
-  if(paymentBtn) paymentBtn.disabled = false; // Enable by default since no OTP needed
+  // if(paymentBtn) paymentBtn.disabled = true; // No longer blocking by default
+  const termsCheckbox = document.getElementById("termsCheckbox");
+  
+  // if (termsCheckbox && paymentBtn) {
+  //     termsCheckbox.addEventListener('change', (e) => {
+  //         paymentBtn.disabled = !e.target.checked;
+  //     });
+  // }
   const form = document.getElementById("checkoutForm");
 
   // Price display elements
@@ -293,7 +300,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (!document.getElementById("termsCheckbox")?.checked) {
-          showError(null, "Please accept Terms & Conditions");
+          // Show error on click
+          showError(null, "Please accept the Terms & Privacy Policy");
+           // Also highlight the checkbox area
+           const termContainer = document.querySelector('.terms-container');
+           if(termContainer) {
+              termContainer.style.border = "1px solid red";
+              termContainer.style.borderRadius = "8px";
+              termContainer.style.padding = "8px";
+              setTimeout(() => { 
+                  termContainer.style.border = "none"; 
+                  termContainer.style.padding = "0";
+              }, 2000);
+           }
           return;
       }
 

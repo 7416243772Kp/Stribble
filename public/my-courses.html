@@ -9,11 +9,104 @@
   <script src="/js/my-courses.js" defer></script>
   
   <style>
-      .course-card {
+      /* GRID LAYOUT - Wider columns for horizontal cards */
+      .my-courses-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+          gap: 24px;
+          margin-top: 30px;
+      }
+
+      /* CARD STYLING - HORIZONTAL */
+      .my-course-card {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          transition: transform 0.2s, box-shadow 0.2s;
+          display: flex;
+          flex-direction: row; /* Horizontal Layout */
+          align-items: stretch;
+      }
+      .my-course-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08);
+      }
+
+      /* MEDIA (Thumbnail) - Left Side, 1:1 Ratio */
+      .my-course-media {
+          width: 140px; /* Fixed width */
+          flex-shrink: 0;
+          aspect-ratio: 1/1; /* Square */
+          background: #f1f5f9;
+          border-right: 1px solid #f1f5f9;
+          position: relative;
+      }
+      .my-course-media img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+      }
+
+      /* BODY - Right Side */
+      .my-course-body {
+          padding: 16px 20px;
+          flex: 1;
           display: flex;
           flex-direction: column;
-          height: 100%;
+          justify-content: center;
       }
+
+      .my-course-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 6px;
+          line-height: 1.35;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+      }
+
+      .my-course-desc {
+          font-size: 0.85rem;
+          color: #64748b;
+          margin-bottom: 12px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          line-height: 1.5;
+      }
+
+      .my-course-actions {
+          margin-top: auto;
+      }
+
+      /* BUTTON */
+      .btn-start-reading {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #0f172a;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          text-decoration: none;
+          transition: background 0.2s, transform 0.1s;
+          width: auto; /* Allow natural width */
+          align-self: flex-start;
+      }
+      .btn-start-reading:hover {
+          background-color: #334155;
+      }
+
       .empty-state {
           text-align: center;
           padding: 60px 20px;
