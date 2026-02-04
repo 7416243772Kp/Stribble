@@ -48,7 +48,12 @@ router.post("/", protectUser, async (req, res) => {
         }
 
         // 1. CHECK OWNERSHIP
-        const hasCourse = user.purchasedCourses.some(id => id.toString() === courseId);
+        const hasCourse = user.purchasedCourses.some(id => {
+            // Handle both populated objects and raw IDs
+            const ownedId = id._id ? id._id.toString() : id.toString();
+            return ownedId === courseId;
+        });
+
         if (!hasCourse) {
             return res.status(403).json({
                 success: false,
