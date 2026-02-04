@@ -52,44 +52,111 @@ router.get('/google/callback', (req, res, next) => {
     }
 });
 
-// Email/Password Signup
+// In-memory OTP store (Use Redis in production)
+const otpStore = new Map(); // { email: { otp, expiresAt, name, passwordHash } }
+
+import { sendEmail } from '../utils/email.js';
+
+// 1. SIGNUP STEP 1: Request OTP
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Basic validation
         if (!name || !email || !password) {
             return res.status(400).json({ success: false, message: "Please provide all fields" });
         }
 
-        // Check if user exists
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ success: false, message: "User already exists" });
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: "User already exists. Please login." });
         }
 
-        // Hash password
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Hash password temporarily so we don't store plain text even in memory
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
-        user = await User.create({
+        // Store in memory (Expires in 10 mins)
+        otpStore.set(email, {
+            otp,
             name,
-            email,
-            password: hashedPassword,
+            passwordHash: hashedPassword,
+            expiresAt: Date.now() + 10 * 60 * 1000
         });
 
-        // Auto-login (Generate Token)
+        // Send Email
+        const emailSent = await sendEmail({
+            to: email,
+            subject: "Your Verification Code - Stribble",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #3b82f6;">Verify your email</h2>
+                    <p>Hi ${name},</p>
+                    <p>Use the code below to complete your signup:</p>
+                    <div style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #2563eb; margin: 20px 0;">${otp}</div>
+                    <p>This code expires in 10 minutes.</p>
+                </div>
+            `
+        });
+
+        if (!emailSent) {
+            return res.status(500).json({ success: false, message: "Failed to send OTP email" });
+        }
+
+        res.json({ success: true, message: "OTP sent to your email", step: "otp" });
+
+    } catch (err) {
+        console.error("Signup error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// 2. SIGNUP STEP 2: Verify OTP & Create Account
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: "Email and OTP required" });
+        }
+
+        const record = otpStore.get(email);
+
+        if (!record) {
+            return res.status(400).json({ success: false, message: "OTP expired or invalid request" });
+        }
+
+        if (record.expiresAt < Date.now()) {
+            otpStore.delete(email);
+            return res.status(400).json({ success: false, message: "OTP expired" });
+        }
+
+        if (record.otp !== otp) {
+             return res.status(400).json({ success: false, message: "Invalid OTP" });
+        }
+
+        // Create User
+        const user = await User.create({
+            name: record.name,
+            email: email,
+            password: record.passwordHash, // Already hashed
+        });
+
+        // Clear OTP
+        otpStore.delete(email);
+
+        // Auto-login
         const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        
         user.activeSessionToken = sessionToken;
         await user.save();
 
         res.cookie('user_token', sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-        res.status(201).json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
+        res.json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
 
     } catch (err) {
-        console.error("Signup error:", err);
+        console.error("OTP Verification Error:", err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 });

@@ -291,9 +291,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const otpForm = document.getElementById('otp-form');
+    let pendingEmail = "";
+
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = signupForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Sending Code...";
+
             const formData = new FormData(signupForm);
             const payload = Object.fromEntries(formData);
             
@@ -305,12 +312,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 
-                if (data.success) {
-                    window.location.reload();
+                if (data.success && data.step === 'otp') {
+                    // Show OTP Form
+                    pendingEmail = payload.email;
+                    document.getElementById('otp-email').textContent = pendingEmail;
+                    
+                    signupForm.style.display = 'none';
+                    otpForm.style.display = 'block';
+                    document.getElementById('tab-signup').style.display = 'none';
+                    document.getElementById('tab-login').style.display = 'none';
+                    document.querySelector('.auth-tab').parentElement.style.display = 'none'; // Hide tabs
                 } else {
                     alert(data.message || 'Signup failed');
                 }
             } catch (err) { alert('Server error'); }
+            finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Sign Up";
+            }
+        });
+    }
+
+    if (otpForm) {
+        otpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = otpForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Verifying...";
+
+            const otp = otpForm.querySelector('input[name="otp"]').value;
+
+            try {
+                const res = await fetch('/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingEmail, otp })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Verification failed');
+                }
+            } catch(e) { alert('Verification error'); }
+            finally {
+                 submitBtn.disabled = false;
+                 submitBtn.textContent = "Verify & Login";
+            }
         });
     }
 });
