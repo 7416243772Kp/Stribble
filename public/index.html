@@ -300,36 +300,62 @@
 
   <!-- REVIEW MODAL -->
   <div id="review-modal" class="login-overlay" style="display: none;">
-    <div class="login-box" style="max-width: 500px;">
+    <div class="login-box" style="max-width: 480px; padding: 30px; text-align: center;">
       <button class="close-btn" onclick="toggleReviewModal()">×</button>
-      <h3 style="margin-bottom: 15px;">Rate this Course</h3>
-      <p id="review-course-title" style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;"></p>
+      
+      <h3 style="font-size: 1.4rem; color: #1e293b; margin-bottom: 8px;">How was the course?</h3>
+      <p id="review-course-title" style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;"></p>
       
       <form id="global-review-form">
           <input type="hidden" id="review-course-id" name="courseId">
+          <input type="hidden" id="review-rating-value" name="rating" value="0">
           
-          <div class="field">
-              <label>Rating</label>
-              <select id="review-rating" name="rating" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
-                  <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                  <option value="4">⭐⭐⭐⭐ Good</option>
-                  <option value="3">⭐⭐⭐ Average</option>
-                  <option value="2">⭐⭐ Poor</option>
-                  <option value="1">⭐ Bad</option>
-              </select>
+          <!-- Star Widget -->
+          <div class="star-rating-widget" style="margin-bottom: 25px;">
+              <div class="stars" id="star-container">
+                  <span class="star" data-value="1">★</span>
+                  <span class="star" data-value="2">★</span>
+                  <span class="star" data-value="3">★</span>
+                  <span class="star" data-value="4">★</span>
+                  <span class="star" data-value="5">★</span>
+              </div>
+              <p id="rating-text" style="font-size: 0.9rem; color: #64748b; margin-top: 8px; height: 1.2em;">Select a rating</p>
           </div>
 
-          <div class="field">
-              <label>Review</label>
-              <textarea id="review-comment" name="comment" rows="4" placeholder="Share your experience..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;" required></textarea>
+          <div class="field" style="text-align: left;">
+              <label style="font-weight: 500; color: #334155;">Your Review</label>
+              <textarea id="review-comment" name="comment" rows="4" 
+                placeholder="What did you learn? Did you like the examples?" 
+                style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; resize: vertical; margin-top: 6px;" 
+                required></textarea>
           </div>
 
-          <button type="submit" class="btn btn--primary btn--block">Submit Review</button>
+          <button type="submit" class="btn btn--primary btn--block" style="padding: 12px; font-size: 1rem; margin-top: 10px;">Submit Review</button>
       </form>
     </div>
   </div>
 
   <style>
+  /* Star Rating Styles */
+  .star-rating-widget .stars {
+      display: inline-flex;
+      gap: 8px;
+      cursor: pointer;
+  }
+  .star-rating-widget .star {
+      font-size: 2.5rem;
+      color: #e2e8f0; /* Empty star color */
+      transition: color 0.2s, transform 0.1s;
+      line-height: 1;
+  }
+  .star-rating-widget .star.active,
+  .star-rating-widget .star.hover {
+      color: #fbbf24; /* Gold */
+  }
+  .star-rating-widget .star:hover {
+      transform: scale(1.1);
+  }
+
   /* Login Modal Styles */
   .login-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;

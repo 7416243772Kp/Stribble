@@ -282,9 +282,9 @@ function renderMyCourses() {
             <div class="card__body">
                 <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
                 <h3 class="card__title">${course.title}</h3>
-                <div class="card__actions" style="margin-top:10px; display:flex; gap:10px;">
-                    <a href="/read?id=${course._id}" class="btn btn--primary" style="flex:1; text-align:center;">📖 Read Now</a>
-                    <button onclick="openReviewModal('${course._id}', '${course.title.replace(/'/g, "\\'")}')" class="btn btn--outline" style="padding: 0.5rem;">⭐ Rate</button>
+                <div class="card__actions" style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <a href="/read?id=${course._id}" class="btn btn--primary" style="text-align:center; justify-content:center; padding: 10px; background-color: #0f172a;">📖 Read Course</a>
+                    <button onclick="openReviewModal('${course._id}', '${course.title.replace(/'/g, "\\'")}')" class="btn" style="padding: 10px; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s;">⭐ Review Course</button>
                 </div>
             </div>
         </div>
@@ -520,19 +520,82 @@ window.openReviewModal = function(courseId, courseTitle) {
     const modal = document.getElementById('review-modal');
     const titleEl = document.getElementById('review-course-title');
     const idInput = document.getElementById('review-course-id');
+    const ratingInput = document.getElementById('review-rating-value');
     
-    if (modal && titleEl && idInput) {
-        titleEl.textContent = `Reviewing: ${courseTitle}`;
-        idInput.value = courseId;
-        modal.style.display = 'flex';
+    // Reset State
+    if (ratingInput) ratingInput.value = "0";
+    if (modal) {
+        document.querySelectorAll('.star-rating-widget .star').forEach(s => {
+            s.classList.remove('active', 'hover');
+        });
+        document.getElementById('rating-text').textContent = "Select a rating";
+    
+        if (titleEl && idInput) {
+            titleEl.textContent = courseTitle;
+            idInput.value = courseId;
+            modal.style.display = 'flex';
+        }
     }
 }
+
+// Star Interaction Logic
+document.addEventListener('DOMContentLoaded', () => {
+   const starContainer = document.getElementById('star-container');
+   const ratingText = document.getElementById('rating-text');
+   const ratingInput = document.getElementById('review-rating-value');
+   
+   if(starContainer && ratingInput) {
+       const stars = starContainer.querySelectorAll('.star');
+       const comments = ["Bad", "Poor", "Average", "Good", "Excellent"];
+       
+       stars.forEach(star => {
+           // Hover
+           star.addEventListener('mouseenter', () => {
+               const val = parseInt(star.dataset.value);
+               stars.forEach(s => {
+                   s.classList.toggle('hover', parseInt(s.dataset.value) <= val);
+               });
+               ratingText.textContent = comments[val-1];
+           });
+           
+           // Click
+           star.addEventListener('click', () => {
+               const val = parseInt(star.dataset.value);
+               ratingInput.value = val;
+               stars.forEach(s => {
+                   s.classList.toggle('active', parseInt(s.dataset.value) <= val);
+               });
+           });
+       });
+       
+       starContainer.addEventListener('mouseleave', () => {
+           const currentVal = parseInt(ratingInput.value);
+           stars.forEach(s => s.classList.remove('hover'));
+           
+           if(currentVal > 0) {
+              // Restore active state visual if moved out without click (though click persists active class)
+              // Actually active class should persist. Just reset text if needed?
+              ratingText.textContent = comments[currentVal-1];
+           } else {
+              ratingText.textContent = "Select a rating";
+           }
+       });
+   }
+});
 
 // Handle Global Review Submission
 const reviewForm = document.getElementById('global-review-form');
 if (reviewForm) {
     reviewForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Validate Rating
+        const rating = document.getElementById('review-rating-value').value;
+        if(!rating || rating === "0") {
+            alert("Please select a star rating!");
+            return;
+        }
+
         const btn = reviewForm.querySelector('button[type="submit"]');
         const originalText = btn.textContent;
         btn.disabled = true;
