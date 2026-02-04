@@ -282,8 +282,9 @@ function renderMyCourses() {
             <div class="card__body">
                 <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
                 <h3 class="card__title">${course.title}</h3>
-                <div class="card__actions" style="margin-top:10px;">
-                    <a href="/read?id=${course._id}" class="btn btn--primary btn--block">📖 Read Now</a>
+                <div class="card__actions" style="margin-top:10px; display:flex; gap:10px;">
+                    <a href="/read?id=${course._id}" class="btn btn--primary" style="flex:1; text-align:center;">📖 Read Now</a>
+                    <button onclick="openReviewModal('${course._id}', '${course.title.replace(/'/g, "\\'")}')" class="btn btn--outline" style="padding: 0.5rem;">⭐ Rate</button>
                 </div>
             </div>
         </div>
@@ -501,5 +502,69 @@ const overlay = document.getElementById('student-login-overlay');
 if(overlay) {
     overlay.addEventListener('click', function(e) {
       if (e.target === this) toggleLoginModal();
+    });
+}
+
+// ===============================
+// REVIEW MODAL LOGIC
+// ===============================
+window.toggleReviewModal = function() {
+    const modal = document.getElementById('review-modal');
+    if (modal) {
+        const isHidden = modal.style.display === 'none';
+        modal.style.display = isHidden ? 'flex' : 'none';
+    }
+}
+
+window.openReviewModal = function(courseId, courseTitle) {
+    const modal = document.getElementById('review-modal');
+    const titleEl = document.getElementById('review-course-title');
+    const idInput = document.getElementById('review-course-id');
+    
+    if (modal && titleEl && idInput) {
+        titleEl.textContent = `Reviewing: ${courseTitle}`;
+        idInput.value = courseId;
+        modal.style.display = 'flex';
+    }
+}
+
+// Handle Global Review Submission
+const reviewForm = document.getElementById('global-review-form');
+if (reviewForm) {
+    reviewForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = reviewForm.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Submitting...";
+
+        const formData = new FormData(reviewForm);
+        const payload = Object.fromEntries(formData);
+        
+        // API_BASE Check
+        const apiBase = window.API_BASE || '';
+
+        try {
+            const res = await fetch(`${apiBase}/api/reviews`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert("Review submitted successfully!");
+                toggleReviewModal();
+                reviewForm.reset();
+            } else {
+                alert(data.message || "Failed to submit review");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error submitting review");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
     });
 }

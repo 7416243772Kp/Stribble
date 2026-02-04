@@ -298,6 +298,37 @@
     </div>
   </div>
 
+  <!-- REVIEW MODAL -->
+  <div id="review-modal" class="login-overlay" style="display: none;">
+    <div class="login-box" style="max-width: 500px;">
+      <button class="close-btn" onclick="toggleReviewModal()">×</button>
+      <h3 style="margin-bottom: 15px;">Rate this Course</h3>
+      <p id="review-course-title" style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;"></p>
+      
+      <form id="global-review-form">
+          <input type="hidden" id="review-course-id" name="courseId">
+          
+          <div class="field">
+              <label>Rating</label>
+              <select id="review-rating" name="rating" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                  <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                  <option value="4">⭐⭐⭐⭐ Good</option>
+                  <option value="3">⭐⭐⭐ Average</option>
+                  <option value="2">⭐⭐ Poor</option>
+                  <option value="1">⭐ Bad</option>
+              </select>
+          </div>
+
+          <div class="field">
+              <label>Review</label>
+              <textarea id="review-comment" name="comment" rows="4" placeholder="Share your experience..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;" required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--block">Submit Review</button>
+      </form>
+    </div>
+  </div>
+
   <style>
   /* Login Modal Styles */
   .login-overlay {
