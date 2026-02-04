@@ -162,6 +162,82 @@ router.post('/verify-otp', async (req, res) => {
     }
 });
 
+// 3. FORGOT PASSWORD STEP 1: Request OTP
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store purpose to distinguish from signup
+        otpStore.set(email, {
+            otp,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+            purpose: 'reset'
+        });
+
+        await sendEmail({
+            to: email,
+            subject: "Reset Password Code - Stribble",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #3b82f6;">Reset Your Password</h2>
+                    <p>Use the code below to reset your password:</p>
+                    <div style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #2563eb; margin: 20px 0;">${otp}</div>
+                    <p>If you didn't request this, ignore this email.</p>
+                </div>
+            `
+        });
+
+        res.json({ success: true, message: "OTP sent to email" });
+
+    } catch (err) {
+        console.error("Forgot Password Error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// 4. FORGOT PASSWORD STEP 2: Reset Password
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        
+        const record = otpStore.get(email);
+        
+        if (!record || record.purpose !== 'reset') {
+             return res.status(400).json({ success: false, message: "Invalid or expired request" });
+        }
+        
+        if (record.expiresAt < Date.now()) {
+            otpStore.delete(email);
+            return res.status(400).json({ success: false, message: "OTP expired" });
+        }
+
+        if (record.otp !== otp) {
+             return res.status(400).json({ success: false, message: "Invalid OTP" });
+        }
+
+        // Update Password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        
+        await User.findOneAndUpdate({ email }, { password: hashedPassword });
+        
+        otpStore.delete(email);
+        
+        res.json({ success: true, message: "Password reset successfully" });
+
+    } catch (err) {
+        console.error("Reset Password Error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
 // Email/Password Login
 router.post('/login', async (req, res) => {
     try {

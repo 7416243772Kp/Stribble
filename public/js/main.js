@@ -5,6 +5,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("searchInput");
     const INR = (v) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v || 0);
 
+    // Toast Notification Helper
+    window.showToast = function(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = 'ℹ️';
+        if(type === 'success') icon = '✅';
+        if(type === 'error') icon = '⚠️';
+
+        toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        
+        // Remove after 3s (animation handles fade out)
+        setTimeout(() => toast.remove(), 3000);
+    };
+
     function setYear() {
         const yearEl = document.getElementById("year");
         if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -367,20 +386,65 @@ async function logout() {
     }
 }
 
-// === MODAL TABS === //
-window.switchAuthTab = function(tab) { // Make global
+// Toast Notification Helper
+window.showToast = function(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    let icon = 'ℹ️';
+    if(type === 'success') icon = '✅';
+    if(type === 'error') icon = '⚠️';
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+    
+    // Remove after 3s (animation handles fade out)
+    setTimeout(() => toast.remove(), 3000);
+};
+
+// Toggle Student Login Modal
+window.toggleLoginModal = function() {
+  const modal = document.getElementById('student-login-overlay');
+  if (modal.style.display === 'none' || !modal.style.display) {
+    modal.style.display = 'flex';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+
+window.showForgotForm = function() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('forgot-form').style.display = 'block';
+    
+    // Hide tabs visual
+    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+}
+
+window.switchAuthTab = function(tab) {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
+    const forgotForm = document.getElementById('forgot-form');
+    const resetForm = document.getElementById('reset-form');
+    const otpForm = document.getElementById('otp-form');
     const tabLogin = document.getElementById('tab-login');
     const tabSignup = document.getElementById('tab-signup');
+    
+    // Reset all
+    [loginForm, signupForm, forgotForm, resetForm, otpForm].forEach(f => {
+        if(f) f.style.display = 'none';
+    });
+    
+    // Restore tabs visual
+    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'block');
 
     if (tab === 'login') {
         loginForm.style.display = 'block';
-        signupForm.style.display = 'none';
         tabLogin.classList.add('active-tab');
         tabSignup.classList.remove('active-tab');
     } else {
-        loginForm.style.display = 'none';
         signupForm.style.display = 'block';
         tabLogin.classList.remove('active-tab');
         tabSignup.classList.add('active-tab');
@@ -389,10 +453,15 @@ window.switchAuthTab = function(tab) { // Make global
 
 // === FORM HANDLERS === //
 document.addEventListener('DOMContentLoaded', () => {
+    // ... existing checkSession etc ...
     checkSession();
 
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
+    const forgotForm = document.getElementById('forgot-form');
+    const resetForm = document.getElementById('reset-form');
+    
+    let resetEmail = ""; // Store for reset flow
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -409,14 +478,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 
                 if (data.success) {
+                    showToast("Login successful!", "success");
                     window.location.reload();
                 } else {
-                    alert(data.message || 'Login failed');
+                    showToast(data.message || 'Login failed', "error");
                 }
-            } catch (err) { alert('Server error'); }
+            } catch (err) { showToast('Server error', "error"); }
         });
     }
 
+    // Signup & OTP Logic (Simplified for brevity, ensuring existing vars match)
     const otpForm = document.getElementById('otp-form');
     let pendingEmail = "";
 
@@ -426,10 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = signupForm.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.textContent = "Sending Code...";
-
+            
             const formData = new FormData(signupForm);
             const payload = Object.fromEntries(formData);
-            
+
             try {
                 const res = await fetch('/auth/signup', {
                     method: 'POST',
@@ -438,20 +509,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 
-                if (data.success && data.step === 'otp') {
-                    // Show OTP Form
+                if (data.success) {
                     pendingEmail = payload.email;
                     document.getElementById('otp-email').textContent = pendingEmail;
                     
                     signupForm.style.display = 'none';
                     otpForm.style.display = 'block';
-                    document.getElementById('tab-signup').style.display = 'none';
-                    document.getElementById('tab-login').style.display = 'none';
-                    document.querySelector('.auth-tab').parentElement.style.display = 'none'; // Hide tabs
+                    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
                 } else {
-                    alert(data.message || 'Signup failed');
+                    showToast(data.message || 'Signup failed', "error");
                 }
-            } catch (err) { alert('Server error'); }
+            } catch (err) { showToast('Server error', "error"); }
             finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Sign Up";
@@ -465,7 +533,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = otpForm.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.textContent = "Verifying...";
-
             const otp = otpForm.querySelector('input[name="otp"]').value;
 
             try {
@@ -475,30 +542,79 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email: pendingEmail, otp })
                 });
                 const data = await res.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'Verification failed');
-                }
-            } catch(e) { alert('Verification error'); }
+                if (data.success) window.location.reload();
+                else showToast(data.message || 'Verification failed', "error");
+            } catch(e) { showToast('Verification error', "error"); }
             finally {
-                 submitBtn.disabled = false;
-                 submitBtn.textContent = "Verify & Login";
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Verify & Login";
             }
         });
     }
+    
+    // FORGOT PASSWORD HANDLERS
+    if (forgotForm) {
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = forgotForm.querySelector('button[type="submit"]');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Sending...";
+            
+            const email = forgotForm.querySelector('input[name="email"]').value;
+            
+            try {
+                const res = await fetch('/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    resetEmail = email;
+                    document.getElementById('reset-email-display').textContent = `Code sent to ${email}`;
+                    forgotForm.style.display = 'none';
+                    resetForm.style.display = 'block';
+                } else {
+                    showToast(data.message || "Failed to send code", "error");
+                }
+            } catch(e) { showToast("Server error", "error"); }
+            finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        });
+    }
+    
+    if (resetForm) {
+         resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = resetForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            
+            const otp = resetForm.querySelector('input[name="otp"]').value;
+            const newPassword = resetForm.querySelector('input[name="newPassword"]').value;
+            
+            try {
+                 const res = await fetch('/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: resetEmail, otp, newPassword })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast("Password reset! Please login.", "success");
+                    switchAuthTab('login');
+                } else {
+                    showToast(data.message || "Reset failed", "error");
+                }
+            } catch (e) { showToast("Server error", "error"); }
+            finally { btn.disabled = false; }
+         });
+    }
 });
-
-// Toggle Student Login Modal
-window.toggleLoginModal = function() {
-  const modal = document.getElementById('student-login-overlay');
-  if (modal.style.display === 'none' || !modal.style.display) {
-    modal.style.display = 'flex';
-  } else {
-    modal.style.display = 'none';
-  }
-}
 
 // Close modal if clicking outside the box
 const overlay = document.getElementById('student-login-overlay');
@@ -586,6 +702,25 @@ document.addEventListener('DOMContentLoaded', () => {
    }
 });
 
+// Toast Notification Helper
+window.showToast = function(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    let icon = 'ℹ️';
+    if(type === 'success') icon = '✅';
+    if(type === 'error') icon = '⚠️';
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+    
+    // Remove after 3s (animation handles fade out)
+    setTimeout(() => toast.remove(), 3000);
+};
+
 // Handle Global Review Submission
 const reviewForm = document.getElementById('global-review-form');
 if (reviewForm) {
@@ -619,16 +754,16 @@ if (reviewForm) {
             const data = await res.json();
 
             if (data.success) {
-                alert("Review submitted successfully!");
+                showToast("Review submitted successfully!", "success");
                 toggleReviewModal();
                 reviewForm.reset();
-                window.location.reload(); // Refresh to hide button
+                setTimeout(() => window.location.reload(), 1000); // Delay slightly to show toast
             } else {
-                alert(data.message || "Failed to submit review");
+                showToast(data.message || "Failed to submit review", "error");
             }
         } catch (err) {
             console.error(err);
-            alert("Error submitting review");
+            showToast("Error submitting review", "error");
         } finally {
             btn.disabled = false;
             btn.textContent = originalText;
