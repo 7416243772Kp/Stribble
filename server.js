@@ -579,14 +579,21 @@ app.get('/api/admin/messages', authAdmin, async (req, res) => {
     }
 });
 
-// ---- SEARCH ORDERS (For Disputes) ----
+// ---- SEARCH ORDERS (For Disputes & Refunds) ----
 app.get("/api/admin/search-orders", authAdmin, async (req, res) => {
   try {
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+    const { email, orderId } = req.query;
+    if (!email && !orderId) return res.status(400).json({ success: false, message: "Email or Order ID required" });
+
+    let query = {};
+    if (orderId) {
+        query.razorpayOrderId = orderId.trim();
+    } else if (email) {
+        query.buyerEmail = new RegExp(email, 'i');
+    }
 
     // Find orders and populate course details
-    const orders = await Order.find({ buyerEmail: new RegExp(email, 'i') }) // Case-insensitive search
+    const orders = await Order.find(query)
       .populate("courseId", "title price")
       .sort({ createdAt: -1 });
 

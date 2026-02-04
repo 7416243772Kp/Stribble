@@ -798,6 +798,92 @@ async function deleteCoupon(id) {
 // ===============================
 window.loadCoupons = loadCoupons;
 window.editCoupon = editCoupon;
+
+// ===============================
+// REFUND SYSTEM LOGIC
+// ===============================
+const btnSearchUserOrders = document.getElementById('btn-search-user-orders');
+const refundSearchEmailInput = document.getElementById('refund-search-email');
+const userPurchaseList = document.getElementById('user-purchase-list');
+
+if (btnSearchUserOrders) {
+  btnSearchUserOrders.addEventListener('click', async () => {
+    const email = refundSearchEmailInput.value.trim();
+    if(!email) return showNotification("error", "Please enter an email");
+
+    const originalText = btnSearchUserOrders.textContent;
+    btnSearchUserOrders.textContent = "Searching...";
+    btnSearchUserOrders.disabled = true;
+
+    try {
+      const res = await authFetch(`${window.API_BASE}/api/admin/user-orders-by-email?email=${email}`);
+      const data = await res.json();
+
+      if(data.orders.length === 0) {
+        userPurchaseList.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#64748b; background:#f8fafc; border-radius:8px;">
+                No completed purchases found for this email.
+            </div>`;
+        return;
+      }
+
+      userPurchaseList.innerHTML = data.orders.map(order => {
+        const isRefunded = (order.refundStatus === "processed");
+        const refundBtn = isRefunded 
+            ? `<span style="color:#64748b; font-size:0.9rem; font-weight:600;">Refunded</span>`
+            : `<button onclick="processRefund('${order._id}')" class="btn" style="background:#ef4444; color:white; padding:6px 14px; font-size:0.9rem;">Refund</button>`;
+
+        return `
+        <div style="border:1px solid #e2e8f0; padding:16px; border-radius:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; background:#fff;">
+          <div>
+            <div style="font-weight:600; color:#0f172a; font-size:1.05rem;">${order.courseId?.title || 'Unknown Course'}</div>
+            <div style="color:#64748b; font-size:0.9rem; margin-top:4px;">
+                Price: ₹${order.price || order.amount} • Ord: <code style="background:#f1f5f9; padding:2px 4px; border-radius:4px;">${order.razorpayOrderId}</code>
+            </div>
+            <div style="color:#94a3b8; font-size:0.8rem; margin-top:2px;">
+                Date: ${new Date(order.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+          <div>${refundBtn}</div>
+        </div>
+      `}).join('');
+      
+    } catch (err) {
+      console.error(err);
+      showNotification("error", "Search failed");
+    } finally {
+      btnSearchUserOrders.textContent = originalText;
+      btnSearchUserOrders.disabled = false;
+    }
+  });
+}
+
+// Global function for onclick
+async function processRefund(orderId) {
+  showConfirmModal(
+    "Confirm Refund?", 
+    "This will revoke course access and refund the payment immediately. Continue?", 
+    async () => {
+        try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/process-refund`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId })
+        });
+        const data = await res.json();
+        if(data.success) {
+            showNotification("success", "Refund successful");
+            // Refresh list
+            document.getElementById('btn-search-user-orders').click(); 
+        } else {
+            showNotification("error", data.message);
+        }
+        } catch (err) {
+            showNotification("error", "Refund failed");
+        }
+  });
+}
+window.processRefund = processRefund;
 window.deleteCoupon = deleteCoupon;
 
 // =============================

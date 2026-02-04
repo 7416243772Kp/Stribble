@@ -179,6 +179,7 @@
         <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
         <a href="#" data-section="disputes" id="nav-disputes">🔎 Disputes</a>
         <a href="#" data-section="messagesSection" id="nav-inquiries">📧 Inquiries</a>
+        <a href="#" data-section="refundSection" id="nav-refund">💸 Refunds</a>
         <a href="#" id="nav-logout">🚪 Logout</a>
       </nav>
     </aside>
@@ -353,6 +354,25 @@
           <div id="dispute-results">
             <p style="text-align:center; color:#94a3b8; margin-top:40px;">No records loaded.</p>
           </div>
+        </div>
+      </section>
+
+      <section id="refundSection" class="content-section hidden">
+        <h2>💸 Email-Based Refund</h2>
+        <div style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; max-width:600px;">
+            <p style="margin-bottom:16px; color:#64748b;">Search for a student's email to view and refund their purchases.</p>
+            
+            <div class="field">
+                <label>Student Email Address</label>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <input type="email" id="refund-search-email" placeholder="student@gmail.com" style="flex:1;" />
+                    <button id="btn-search-user-orders" class="btn btn--primary">Find Purchases</button>
+                </div>
+            </div>
+
+            <div id="user-purchase-list" style="margin-top:20px;">
+                <!-- Results injected here -->
+            </div>
         </div>
       </section>
 

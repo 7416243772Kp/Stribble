@@ -41,6 +41,15 @@ const OrderSchema = new mongoose.Schema({
   referrer: { type: String, default: null, index: true }, 
   promoterCommission: { type: Number, default: 0 },
   promoterPaid: { type: Boolean, default: false },
+
+  // Refund Tracking
+  refundStatus: { 
+    type: String, 
+    enum: ["none", "pending", "processed", "failed"], 
+    default: "none" 
+  },
+  refundId: { type: String }, // Razorpay Refund ID
+  refundedAt: { type: Date },
 });
 
 // Indexes for analytics

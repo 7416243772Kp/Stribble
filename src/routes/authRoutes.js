@@ -209,6 +209,41 @@ router.get('/logout', (req, res) => { // Keep GET for legacy/link support
     });
 });
 
+import Order from '../models/order.js';
+
+// Get User Orders (History)
+router.get('/orders', async (req, res) => {
+    // 1. Get User ID (from Passport or Token)
+    let userId = req.user?._id;
+    if (!userId) {
+        const token = req.cookies.user_token;
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.id;
+            } catch (e) {}
+        }
+    }
+
+    if (!userId) return res.status(401).json({ success: false });
+
+    // 2. Fetch Orders
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.status(401).json({ success: false });
+
+        const orders = await Order.find({ buyerEmail: user.email, status: 'completed' })
+            .sort({ createdAt: -1 })
+            .select('razorpayOrderId courseId amount ownerAmount createdAt status')
+            .populate('courseId', 'title thumbnail');
+
+        res.json({ success: true, orders });
+    } catch (err) {
+        console.error("Order fetch error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
 // Get Current User (Helper for frontend)
 router.get('/me', async (req, res) => {
     // Check for passport user or custom JWT middleware user

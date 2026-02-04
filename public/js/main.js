@@ -89,17 +89,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await res.json();
             const courses = Array.isArray(data) ? data : (data.courses || []);
-
-            wrap.innerHTML = "";
-
-            if (courses.length === 0) {
-                empty.classList.remove("hidden");
-            } else {
-                courses.forEach(c => {
-                    wrap.appendChild(card(c));
-                });
-                empty.classList.add("hidden");
-            }
+            
+            // Store globally and render
+            allCourses = courses;
+            renderCatalog(allCourses);
 
         } catch (err) {
             console.error(err);
@@ -168,6 +161,66 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===============================
 
 let currentUser = null;
+let allCourses = [];
+
+// Helper to render catalog with filtering
+function renderCatalog(courses) {
+    const wrap = document.getElementById("courses");
+    const empty = document.getElementById("emptyState");
+    if(!wrap || !empty) return;
+
+    wrap.innerHTML = "";
+
+    // IDs of purchased courses
+    const ownedIds = (currentUser && currentUser.purchasedCourses) 
+        ? currentUser.purchasedCourses.map(c => (c._id || c)) 
+        : [];
+
+    const availableCourses = courses.filter(c => !ownedIds.includes(c._id));
+
+    if (availableCourses.length === 0) {
+         empty.classList.remove("hidden");
+         if(ownedIds.length > 0 && courses.length > 0) {
+             empty.innerHTML = `
+                <div class="empty__card">
+                  <h3 style="margin-bottom: 0.5rem;">All courses purchased! 🚀</h3>
+                  <p>Check your library above.</p>
+                </div>
+            `;
+         }
+    } else {
+        availableCourses.forEach(c => {
+             const apiBase = window.API_BASE || '';
+             let thumb = c.thumbnail || '/images/placeholder-course.png';
+             if (thumb.startsWith('/') && !thumb.startsWith('//')) {
+                thumb = apiBase + thumb;
+             }
+             
+             const div = document.createElement('a');
+             div.className = "card hover-lift";
+             div.href = `/course/${c._id}`;
+             
+             // Formatting helper
+             const priceFmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(c.price || 0);
+
+             div.innerHTML = `
+                <div class="card__media">
+                  <img src="${thumb}" alt="${(c.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:auto; display:block;" />
+                </div>
+                <div class="card__body">
+                  <h3 class="card__title">${c.title || 'Untitled'}</h3>
+                  <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
+                  <div class="card__footer">
+                    <span class="price">${priceFmt}</span>
+                    <span class="cta">View</span>
+                  </div>
+                </div>
+             `;
+             wrap.appendChild(div);
+        });
+        empty.classList.add("hidden");
+    }
+}
 
 async function checkSession() {
     try {
@@ -177,7 +230,11 @@ async function checkSession() {
             currentUser = data.user;
             renderAuthUI();
             renderMyCourses();
+            
+            // Filter catalog
+            if(allCourses.length > 0) renderCatalog(allCourses);
         } else {
+            currentUser = null; // Ensure null if not logged in
             document.getElementById('auth-ui').innerHTML = `
                 <button onclick="toggleLoginModal()" class="btn btn--primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Login / Signup</button>
             `;
@@ -213,15 +270,15 @@ function renderMyCourses() {
     section.classList.remove('hidden');
     grid.innerHTML = currentUser.purchasedCourses.map(course => {
         // Handle case where course might be populated or just ID
-        // The backend should populate it.
         if (typeof course !== 'object') return ''; 
 
         return `
-        <div class="card course-card">
+        <div class="card course-card" style="border-left: 4px solid #10b981;">
             <div class="card__media">
                 <img src="${course.thumbnail}" alt="${course.title}" loading="lazy" />
             </div>
             <div class="card__body">
+                <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
                 <h3 class="card__title">${course.title}</h3>
                 <div class="card__actions" style="margin-top:10px;">
                     <a href="/read?id=${course._id}" class="btn btn--primary btn--block">📖 Read Now</a>
@@ -230,6 +287,69 @@ function renderMyCourses() {
         </div>
         `;
     }).join('');
+}
+
+// Render Catalog (Filtered)
+function renderCatalog(courses) {
+    const wrap = document.getElementById("courses");
+    const empty = document.getElementById("emptyState");
+    wrap.innerHTML = "";
+
+    // IDs of purchased courses
+    const ownedIds = (currentUser && currentUser.purchasedCourses) 
+        ? currentUser.purchasedCourses.map(c => (c._id || c)) 
+        : [];
+
+    const availableCourses = courses.filter(c => !ownedIds.includes(c._id));
+
+    if (availableCourses.length === 0) {
+        if(ownedIds.length > 0) {
+            empty.innerHTML = `
+                <div class="empty__card">
+                  <h3 style="margin-bottom: 0.5rem;">All courses purchased! 🚀</h3>
+                  <p>Check your library above.</p>
+                </div>
+            `;
+            empty.classList.remove("hidden");
+        } else {
+             empty.classList.remove("hidden");
+        }
+    } else {
+        availableCourses.forEach(c => {
+             // Re-use card function wrapper or just inline card logic?
+             // Since 'card()' function is defined inside DOMContentLoaded scope but NOT available here easily unless I move it out or use 'window'. 
+             // Actually, I am modifying 'checkSession' which is outside DOMContentLoaded scope in the file structure I see.
+             // Wait, `card` function is defined INSIDE `DOMContentLoaded`.
+             // I need to be careful. The `checkSession` and `renderMyCourses` are OUTSIDE.
+             // I should move `card()` to global scope or duplicate logic.
+             // Duplicating logic is cleaner for now to avoid refactoring the whole file. 
+             
+             const apiBase = window.API_BASE || '';
+             let thumb = c.thumbnail || '/images/placeholder-course.png';
+             if (thumb.startsWith('/') && !thumb.startsWith('//')) {
+                thumb = apiBase + thumb;
+             }
+             
+             const div = document.createElement('a'); // Using 'a' tag as card
+             div.className = "card hover-lift";
+             div.href = `/course/${c._id}`;
+             div.innerHTML = `
+                <div class="card__media">
+                  <img src="${thumb}" alt="${(c.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:auto; display:block;" />
+                </div>
+                <div class="card__body">
+                  <h3 class="card__title">${c.title || 'Untitled'}</h3>
+                  <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
+                  <div class="card__footer">
+                    <span class="price">${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(c.price || 0)}</span>
+                    <span class="cta">View</span>
+                  </div>
+                </div>
+             `;
+             wrap.appendChild(div);
+        });
+        empty.classList.add("hidden");
+    }
 }
 
 async function logout() {

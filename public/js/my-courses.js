@@ -35,8 +35,8 @@ function renderPage(user) {
 
     // Header UI
     authUI.innerHTML = `
-        <div style="display:flex; align-items:center; gap:15px;">
-            <a href="index.html" class="btn btn--ghost">Browse Courses</a>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <a href="index.html" class="btn btn--ghost">Browse</a>
             <button onclick="logout()" class="btn btn--outline">Logout</button>
         </div>
     `;
@@ -57,7 +57,8 @@ function renderPage(user) {
             // Handle if course is just ID (should not happen if populated)
             if (typeof course !== 'object') return ''; 
 
-            const thumb = course.thumbnail?.startsWith('http') || course.thumbnail?.startsWith('//') 
+            // Fix thumbnail safety
+            const thumb = course.thumbnail && (course.thumbnail.startsWith('http') || course.thumbnail.startsWith('//'))
                 ? course.thumbnail 
                 : (API_BASE + (course.thumbnail || '/images/placeholder-course.png'));
 
@@ -92,3 +93,5 @@ async function logout() {
     }
 }
 window.logout = logout;
+
+

@@ -452,11 +452,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                         📖 Read Confirmation
                       </a>
                       
-                      <br>
-
+                      </a>
+                      
                       <a href="/my-courses.html" class="btn-home">Go to My Courses</a>
                       
-                      <div style="margin-top:30px; border-top:1px solid #f1f5f9; padding-top:20px;">
+                      <div style="margin-top:20px; border-top:1px solid #f1f5f9; padding-top:10px;">
                         <a href="#" onclick="window.print()" style="color:#94a3b8; font-size:0.8rem;">Print Receipt</a>
                       </div>
 

@@ -194,4 +194,81 @@ router.get('/messages', async (req, res) => {
     }
 });
 
+// ===============================
+// Refund Logic
+// ===============================
+import User from "../models/User.js";
+import Razorpay from "razorpay";
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// 1. GET /api/admin/user-orders-by-email?email=...
+// Retrieves all completed courses for a specific email
+router.get("/user-orders-by-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const orders = await Order.find({ 
+      buyerEmail: new RegExp(email, 'i'), 
+      status: "completed" 
+    }).populate("courseId", "title price");
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
+});
+
+// 2. POST /api/admin/process-refund
+router.post("/process-refund", async (req, res) => {
+  try {
+    const { orderId } = req.body; // The Mongo ID
+    const order = await Order.findById(orderId);
+
+    if (!order || order.status !== "completed") {
+      return res.status(404).json({ success: false, message: "Valid order not found" });
+    }
+
+    if (order.refundStatus === "processed") {
+        return res.status(400).json({ success: false, message: "Order already refunded" });
+    }
+
+    // Revoke course access from User model
+    if (order.buyerEmail) {
+        await User.findOneAndUpdate(
+            { email: order.buyerEmail },
+            { $pull: { purchasedCourses: order.courseId } }
+        );
+    }
+
+    // Process refund via Razorpay (Paise)
+    const refundAmount = Math.round((order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)) * 100);
+    
+    const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
+      amount: refundAmount,
+      notes: { reason: "Refund requested by student via email" }
+    });
+
+    // Update order status
+    order.refundStatus = "processed";
+    order.refundId = refund.id;
+    order.refundedAt = new Date();
+    // order.status = "failed"; // Optional: Mark strictly as failed, or keep as completed but refunded. User code suggested 'failed'.
+    // Sticking to "completed" but with refundStatus="processed" is safer for analytics usually, but let's follow user guidance if specific.
+    // User code said: order.status = "failed"; 
+    order.status = "failed"; // Using "failed" as it is a valid enum value.
+
+    await order.save();
+
+    res.json({ success: true, message: "Refund processed and access revoked", refundId: refund.id });
+  } catch (err) {
+    console.error("Refund error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 export default router;
