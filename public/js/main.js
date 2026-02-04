@@ -118,21 +118,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const reviews = data.reviews;
 
             // Generate Cards
-            const cardsHtml = reviews.map(r => `
-            <div class="review-card">
-                <div class="review-header">
-                    <div>
-                        <div class="review-user">${r.userName || 'Student'}</div>
-                        <div class="review-course">${r.courseId?.title || 'Verified Course'}</div>
+            const cardsHtml = reviews.map(r => {
+                const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+                return `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div>
+                            <div class="review-user">${r.userName || 'Student'}</div>
+                            <div class="review-course">${r.courseId?.title || 'Verified Course'}</div>
+                        </div>
+                        <div class="review-stars" style="color:#fbbf24; letter-spacing:2px;">${stars}</div>
                     </div>
-                    <div class="review-stars">★★★★★</div>
+                    <p class="review-text">"${r.comment}"</p>
                 </div>
-                <p class="review-text">"${r.comment}"</p>
-            </div>
-        `).join('');
+            `}).join('');
 
-            // Inject and Duplicate for endless scroll
-            marquee.innerHTML = cardsHtml + cardsHtml;
+            // Inject (No duplication for regular scroll)
+            marquee.innerHTML = cardsHtml;
 
         } catch (e) {
             console.error("Failed to load reviews:", e);

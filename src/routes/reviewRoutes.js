@@ -7,13 +7,19 @@ import protectUser from "../middleware/authUser.js";
 const router = express.Router();
 
 // GET Top 5-Star Reviews (Across all courses)
+// GET Top 4-5 Star Reviews (Across all courses)
 router.get("/top", async (req, res) => {
     try {
-        const reviews = await Review.find({ rating: 5 })
+        // Fetch more initially, then filter
+        const reviews = await Review.find({ rating: { $gte: 4 } })
             .sort({ createdAt: -1 })
-            .limit(20)
-            .populate("courseId", "title"); // Only get title
-        res.json({ success: true, reviews });
+            .limit(50) 
+            .populate("courseId", "title"); 
+
+        // Filter out reviews where course was deleted (courseId is null)
+        const activeReviews = reviews.filter(r => r.courseId != null);
+
+        res.json({ success: true, reviews: activeReviews.slice(0, 20) }); // Return top 20 valid ones
     } catch (err) {
         console.error("Error fetching top reviews:", err);
         res.status(500).json({ success: false, message: "Error fetching top reviews" });
