@@ -282,9 +282,12 @@ function renderMyCourses() {
             <div class="card__body">
                 <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
                 <h3 class="card__title">${course.title}</h3>
-                <div class="card__actions" style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div class="card__actions" style="margin-top:12px; display:grid; grid-template-columns: ${(currentUser.reviewedCourses && currentUser.reviewedCourses.includes(course._id.toString())) ? '1fr' : '1fr 1fr'}; gap:8px;">
                     <a href="/read?id=${course._id}" class="btn btn--primary" style="text-align:center; justify-content:center; padding: 8px 4px; font-size: 0.8rem; background-color: #0f172a; white-space:nowrap;">📖 Read</a>
-                    <button onclick="openReviewModal('${course._id}', this.getAttribute('data-course-title'))" data-course-title="${(course.title || '').replace(/"/g, '&quot;')}" class="btn" style="padding: 8px 4px; font-size: 0.8rem; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space:nowrap;">⭐ Review</button>
+                    ${(currentUser.reviewedCourses && currentUser.reviewedCourses.includes(course._id.toString())) 
+                        ? '' // Hide button if reviewed
+                        : `<button onclick="openReviewModal('${course._id}', this.getAttribute('data-course-title'))" data-course-title="${(course.title || '').replace(/"/g, '&quot;')}" class="btn" style="padding: 8px 4px; font-size: 0.8rem; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space:nowrap;">⭐ Review</button>`
+                    }
                 </div>
             </div>
         </div>
@@ -619,6 +622,7 @@ if (reviewForm) {
                 alert("Review submitted successfully!");
                 toggleReviewModal();
                 reviewForm.reset();
+                window.location.reload(); // Refresh to hide button
             } else {
                 alert(data.message || "Failed to submit review");
             }

@@ -3,6 +3,7 @@ import passport from 'passport';
 
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Review from '../models/Review.js'; // Import Review Model
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
@@ -273,16 +274,22 @@ router.get('/me', async (req, res) => {
         const user = await User.findById(userId).populate('purchasedCourses');
         if (!user) return res.status(401).json({ success: false });
 
+        // Fetch user reviews
+        const reviews = await Review.find({ userId: user._id }).select('courseId');
+        const reviewedIds = reviews.map(r => r.courseId.toString());
+
         res.json({ 
             success: true, 
             user: { 
                 id: user._id, 
                 email: user.email, 
                 name: user.name, 
-                purchasedCourses: user.purchasedCourses 
+                purchasedCourses: user.purchasedCourses,
+                reviewedCourses: reviewedIds // Send list of reviewed course IDs
             } 
         });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ success: false });
     }
 });
