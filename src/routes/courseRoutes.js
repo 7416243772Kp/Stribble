@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import Course from "../models/course.js";
+import User from "../models/User.js"; // Import User Model
 import adminAuth from "../middleware/authAdmin.js";
 import protectUser from "../middleware/authUser.js"; // Import Auth Middleware
 import Order from "../models/order.js";
@@ -175,25 +176,26 @@ router.get("/access/:courseId", protectUser, async (req, res) => {
       buyerEmail: req.user.email,
       courseId: req.params.courseId,
       status: "completed"
-    }).select("buyerEmail razorpayOrderId");
+    }).select("buyerEmail razorpayOrderId createdAt");
 
     if (!order) {
-        // Fallback: Check if they have the course in their profile (e.g. manually added by admin)
-        // In this case, we might not have an Order ID, so we fallback to Email/User ID
+        // Fallback: Check if they have the course in their profile
         const user = await User.findById(req.user._id);
         if (user && user.purchasedCourses.includes(req.params.courseId)) {
              return res.json({
                 success: true,
-                // watermarkText: ...
+                userEmail: req.user.email,
+                purchaseDate: new Date() // Fallback since we don't have exact date for manual adds
             });
         }
         return res.status(403).json({ success: false, message: "You have not purchased this course." });
     }
 
-    // 3. Return success (Watermark removed)
+    // 3. Return success with Watermark Data
     res.json({
       success: true,
-      // watermarkText: `Order: ${order ? order.razorpayOrderId : req.user.email}` // Deprecated
+      userEmail: req.user.email,
+      purchaseDate: order.createdAt
     });
 
   } catch (err) {

@@ -300,15 +300,16 @@
                     // Rotate the watermark for better security coverage
                     const angle = -45 * Math.PI / 180;
                     
-                    // Define grid spacing (Scaled up for high-res)
-                    const stepX = 1000; 
-                    const stepY = 1000;
+                    // Define grid spacing (Dynamic based on size to ensure ~4 watermarks)
+                    const stepX = canvas.width / 1.5; 
+                    const stepY = canvas.height / 2.5;
 
-                    // Draw repeating grid across the high-res canvas
-                    for (let x = -canvas.width; x < canvas.width * 2; x += stepX) {
-                        for (let y = -canvas.height; y < canvas.height * 2; y += stepY) {
+                    // Draw repeating grid across the high-res canvas (Reduced range)
+                    for (let x = 0; x < canvas.width; x += stepX) {
+                        for (let y = 0; y < canvas.height; y += stepY) {
                             ctx.save();
-                            ctx.translate(x, y);
+                            // Center in the zone
+                            ctx.translate(x + stepX/2, y + stepY/2);
                             ctx.rotate(angle);
                             ctx.fillText(watermarkText, 0, 0);
                             ctx.restore();
