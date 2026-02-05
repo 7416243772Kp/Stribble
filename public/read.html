@@ -166,10 +166,9 @@
                     return;
                 }
 
-                // Set the unique watermark text
-                // watermarkText = data.watermarkText; 
-                
-                // CSS Watermark Grid (Extra Layer) - REMOVED
+                // Generate the watermark text using user email and purchase date
+                const purchaseDate = data.purchaseDate ? new Date(data.purchaseDate).toLocaleDateString() : 'N/A';
+                watermarkText = `${data.userEmail} | Purchased: ${purchaseDate}`; 
 
                 // Now Load the PDF
                 loadPdf();
@@ -289,9 +288,35 @@
                 renderTask.promise.then(function() {
                     pageRendering = false;
                     
-                    // 🛑 CANVAS WATERMARK REMOVED
-                    // ctx.save();
-                    // ctx.restore();
+                    // --- START WATERMARK LOGIC ---
+                    ctx.save();
+                    
+                    // Set style: Semi-transparent grey
+                    ctx.fillStyle = "rgba(128, 128, 128, 0.15)"; // 15% opacity grey
+                    ctx.font = "bold 60px Arial"; // Larger font for higher res
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+
+                    // Rotate the watermark for better security coverage
+                    const angle = -45 * Math.PI / 180;
+                    
+                    // Define grid spacing (Scaled up for high-res)
+                    const stepX = 1000; 
+                    const stepY = 1000;
+
+                    // Draw repeating grid across the high-res canvas
+                    for (let x = -canvas.width; x < canvas.width * 2; x += stepX) {
+                        for (let y = -canvas.height; y < canvas.height * 2; y += stepY) {
+                            ctx.save();
+                            ctx.translate(x, y);
+                            ctx.rotate(angle);
+                            ctx.fillText(watermarkText, 0, 0);
+                            ctx.restore();
+                        }
+                    }
+                    
+                    ctx.restore();
+                    // --- END WATERMARK LOGIC ---
 
                     if (pageNumPending !== null) {
                         renderPage(pageNumPending);
