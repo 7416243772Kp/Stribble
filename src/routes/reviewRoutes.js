@@ -35,7 +35,9 @@ router.get("/:courseId", async (req, res) => {
              return res.status(400).json({ success: false, message: "Invalid Course ID" });
         }
 
-        const reviews = await Review.find({ courseId }).sort({ createdAt: -1 });
+        const reviews = await Review.find({ courseId })
+            .sort({ createdAt: -1 })
+            .populate('userId', 'name');
         res.json({ success: true, reviews });
     } catch (err) {
         console.error(err);

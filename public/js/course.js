@@ -247,8 +247,8 @@ function initReviews(courseId) {
       const data = await res.json();
       
       if (data.success) {
-        allReviews = []; // FORCED EMPTY FOR DEBUGGING
-        // allReviews = data.reviews || [];
+        // allReviews = data.reviews || []; // FIXED: Removed debug line that forced empty array
+        allReviews = data.reviews || [];
         
         if (allReviews.length > 0) {
           renderStats(allReviews);
@@ -342,7 +342,8 @@ function initReviews(courseId) {
   function renderReviewHTML(review) {
     const date = new Date(review.createdAt).toLocaleDateString();
     const stars = generateStars(review.rating);
-    const displayName = review.userName || "Anonymous User";
+    // Use populated user name if available, fallback to stored name, then anonymous
+    const displayName = (review.userId && review.userId.name) ? review.userId.name : (review.userName || "Anonymous User");
     
     const repliesHTML = (review.replies || []).map(r => `
       <div style="margin-top:10px; padding:10px; background:#f1f5f9; border-left:3px solid #cbd5e1; border-radius:0 4px 4px 0; margin-left:20px;">
