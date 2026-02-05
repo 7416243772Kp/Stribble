@@ -410,50 +410,55 @@ window.toggleLoginModal = function() {
   const modal = document.getElementById('student-login-overlay');
   if (modal.style.display === 'none' || !modal.style.display) {
     modal.style.display = 'flex';
+    // Reset to Signup by default when opening
+    switchAuthMode('signup');
   } else {
     modal.style.display = 'none';
   }
 }
 
 window.showForgotForm = function() {
-    document.getElementById('login-form').style.display = 'none';
-    document.getElementById('forgot-form').style.display = 'block';
-    
-    // Hide tabs visual
-    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+   // Hide all main forms
+   document.getElementById('login-form').style.display = 'none';
+   document.getElementById('signup-form').style.display = 'none';
+   document.getElementById('forgot-form').style.display = 'block';
+   
+   // Hide Footer specific elements if needed
+   document.getElementById('auth-title').innerText = "Reset Password";
 }
 
-window.switchAuthTab = function(tab) {
+window.switchAuthMode = function(mode) {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
     const forgotForm = document.getElementById('forgot-form');
     const resetForm = document.getElementById('reset-form');
     const otpForm = document.getElementById('otp-form');
-    const tabLogin = document.getElementById('tab-login');
-    const tabSignup = document.getElementById('tab-signup');
     
-    // Reset all
+    // Footers
+    const signupFooter = document.getElementById('signup-footer');
+    const loginFooter = document.getElementById('login-footer');
+    const title = document.getElementById('auth-title');
+
+    // Reset visibility
     [loginForm, signupForm, forgotForm, resetForm, otpForm].forEach(f => {
         if(f) f.style.display = 'none';
     });
-    
-    // Restore tabs visual
-    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'block');
 
-    if (tab === 'login') {
+    if (mode === 'login') {
         loginForm.style.display = 'block';
-        tabLogin.classList.add('active-tab');
-        tabSignup.classList.remove('active-tab');
-    } else {
+        if(title) title.innerText = "Log In";
+        if(loginFooter) loginFooter.style.display = 'flex';
+        if(signupFooter) signupFooter.style.display = 'none';
+    } else if (mode === 'signup') {
         signupForm.style.display = 'block';
-        tabLogin.classList.remove('active-tab');
-        tabSignup.classList.add('active-tab');
+        if(title) title.innerText = "Create Account";
+        if(loginFooter) loginFooter.style.display = 'none';
+        if(signupFooter) signupFooter.style.display = 'block';
     }
 }
 
 // === FORM HANDLERS === //
 document.addEventListener('DOMContentLoaded', () => {
-    // ... existing checkSession etc ...
     checkSession();
 
     const loginForm = document.getElementById('login-form');
@@ -509,13 +514,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 
-                if (data.success) {
+                if (data.success && data.step === 'otp') {
+                    // Show OTP Form
                     pendingEmail = payload.email;
                     document.getElementById('otp-email').textContent = pendingEmail;
                     
                     signupForm.style.display = 'none';
                     otpForm.style.display = 'block';
-                    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+                    
+                    // Update Title
+                    const title = document.getElementById('auth-title');
+                    if(title) title.innerText = "Verify Email";
+                    
+                    // Hide Footer
+                    const footer = document.getElementById('auth-footer');
+                    if(footer) footer.style.display = 'none';
+                    
                 } else {
                     showToast(data.message || 'Signup failed', "error");
                 }
@@ -606,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (data.success) {
                     showToast("Password reset! Please login.", "success");
-                    switchAuthTab('login');
+                    switchAuthMode('login');
                 } else {
                     showToast(data.message || "Reset failed", "error");
                 }

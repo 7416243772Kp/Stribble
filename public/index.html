@@ -233,42 +233,11 @@
     <div class="login-box">
       <button class="close-btn" onclick="toggleLoginModal()">×</button>
       
-      <!-- TABS -->
-      <div style="display:flex; border-bottom:1px solid #eee; margin-bottom:20px;">
-          <div id="tab-login" class="auth-tab active-tab" onclick="switchAuthTab('login')">Login</div>
-          <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
-      </div>
+      <!-- DYNAMIC TITLE -->
+      <h3 id="auth-title" style="text-align: center; margin-bottom: 20px; color: #1e293b;">Create Account</h3>
 
-      <!-- GOOGLE AUTH (Common) -->
-      <a href="/auth/google" class="btn btn--block" style="background:white; color:#333; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:15px; text-decoration: none;">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="G">
-        Continue with Google
-      </a>
-
-      <div style="display:flex; align-items:center; margin:15px 0; color:#aaa;">
-        <span style="flex:1; border-bottom:1px solid #eee;"></span>
-        <span style="padding:0 10px; font-size:12px;">OR</span>
-        <span style="flex:1; border-bottom:1px solid #eee;"></span>
-      </div>
-
-      <!-- LOGIN FORM -->
-      <form id="login-form">
-        <div class="field">
-          <label>Email Address</label>
-          <input type="email" name="email" placeholder="you@example.com" required>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="••••••" required>
-        </div>
-        <div style="text-align:right; margin-bottom:15px;">
-            <a href="#" onclick="showForgotForm(); return false;" style="font-size:0.85rem; color:#3b82f6; text-decoration:none;">Forgot Password?</a>
-        </div>
-        <button type="submit" class="btn btn--primary btn--block">Log In</button>
-      </form>
-
-      <!-- SIGNUP FORM (Hidden) -->
-      <form id="signup-form" style="display:none;">
+      <!-- SIGNUP FORM (Default) -->
+      <form id="signup-form">
         <div class="field">
           <label>Full Name</label>
           <input type="text" name="name" placeholder="John Doe" required>
@@ -284,6 +253,48 @@
         <button type="submit" class="btn btn--primary btn--block">Sign Up</button>
       </form>
 
+      <!-- LOGIN FORM (Hidden) -->
+      <form id="login-form" style="display:none;">
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" placeholder="you@example.com" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="••••••" required>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Log In</button>
+      </form>
+
+      <!-- SEPARATOR -->
+      <div style="display:flex; align-items:center; margin:20px 0; color:#aaa;">
+        <span style="flex:1; border-bottom:1px solid #eee;"></span>
+        <span style="padding:0 10px; font-size:12px;">OR</span>
+        <span style="flex:1; border-bottom:1px solid #eee;"></span>
+      </div>
+
+      <!-- GOOGLE AUTH (Common) -->
+      <a href="/auth/google" class="btn btn--block" style="background:white; color:#333; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:20px; text-decoration: none;">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="G">
+        Continue with Google
+      </a>
+
+      <!-- AUTH FOOTER LINKS -->
+      <div id="auth-footer" style="text-align: center; font-size: 0.9rem;">
+          <!-- Signup Footer (Default) -->
+          <div id="signup-footer">
+              Already have an account? <a href="#" onclick="switchAuthMode('login'); return false;" style="color: #3b82f6; font-weight: 500;">Log In</a>
+          </div>
+          
+          <!-- Login Footer (Hidden) -->
+          <div id="login-footer" style="display:none; display: flex; flex-direction: column; gap: 8px;">
+               <a href="#" onclick="showForgotForm(); return false;" style="color: #64748b; font-size: 0.85rem;">Forgot Password?</a>
+               <div>
+                   Don't have an account? <a href="#" onclick="switchAuthMode('signup'); return false;" style="color: #3b82f6; font-weight: 500;">Sign Up</a>
+               </div>
+          </div>
+      </div>
+
       <!-- OTP FORM (Hidden) -->
       <form id="otp-form" style="display:none;">
         <div style="text-align:center; margin-bottom:15px;">
@@ -295,7 +306,7 @@
             <input type="text" name="otp" placeholder="123456" maxlength="6" style="text-align:center; letter-spacing:5px; font-size:1.2rem;" required>
         </div>
         <button type="submit" class="btn btn--primary btn--block">Verify & Login</button>
-        <button type="button" onclick="switchAuthTab('signup')" style="margin-top:10px; background:none; border:none; width:100%; color:#666; font-size:0.85rem; cursor:pointer;">Back</button>
+        <button type="button" onclick="switchAuthMode('signup')" style="margin-top:10px; background:none; border:none; width:100%; color:#666; font-size:0.85rem; cursor:pointer;">Back</button>
       </form>
 
       <!-- FORGOT PASSWORD FORM (Hidden) -->
@@ -307,7 +318,7 @@
               <input type="email" name="email" placeholder="you@example.com" required>
           </div>
           <button type="submit" class="btn btn--primary btn--block">Send Reset Code</button>
-          <button type="button" onclick="switchAuthTab('login')" style="margin-top:10px; background:none; border:none; width:100%; color:#666; font-size:0.85rem; cursor:pointer;">Back to Login</button>
+          <button type="button" onclick="switchAuthMode('login')" style="margin-top:10px; background:none; border:none; width:100%; color:#666; font-size:0.85rem; cursor:pointer;">Back to Login</button>
       </form>
 
       <!-- RESET PASSWORD FORM (Hidden) -->

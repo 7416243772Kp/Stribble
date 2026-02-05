@@ -247,7 +247,8 @@ function initReviews(courseId) {
       const data = await res.json();
       
       if (data.success) {
-        allReviews = data.reviews || [];
+        allReviews = []; // FORCED EMPTY FOR DEBUGGING
+        // allReviews = data.reviews || [];
         
         if (allReviews.length > 0) {
           renderStats(allReviews);
@@ -341,10 +342,11 @@ function initReviews(courseId) {
   function renderReviewHTML(review) {
     const date = new Date(review.createdAt).toLocaleDateString();
     const stars = generateStars(review.rating);
+    const displayName = review.userName || "Anonymous User";
     
     const repliesHTML = (review.replies || []).map(r => `
       <div style="margin-top:10px; padding:10px; background:#f1f5f9; border-left:3px solid #cbd5e1; border-radius:0 4px 4px 0; margin-left:20px;">
-        <div style="font-size:0.85rem; font-weight:600; color:#334155;">${escapeHtml(r.name)} <span style="font-weight:400; color:#94a3b8;">• Reply</span></div>
+        <div style="font-size:0.85rem; font-weight:600; color:#334155;">${escapeHtml(r.name || "Admin")} <span style="font-weight:400; color:#94a3b8;">• Reply</span></div>
         <div style="font-size:0.9rem; color:#475569;">${escapeHtml(r.content)}</div>
       </div>
     `).join("");
@@ -353,7 +355,7 @@ function initReviews(courseId) {
       <div class="review-card" style="background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <div>
-            <strong style="font-size:1rem; color:#0f172a;">${escapeHtml(review.userName)}</strong>
+            <strong style="font-size:1rem; color:#0f172a;">${escapeHtml(displayName)}</strong>
             <span style="color:#10b981; font-size:0.75rem; font-weight:600; margin-left:6px; background:#ecfdf5; padding:2px 6px; border-radius:4px; border:1px solid #bbf7d0;">✓ Verified</span>
           </div>
           <span style="color:#64748b; font-size:0.85rem;">${date}</span>
@@ -426,7 +428,7 @@ function initReviews(courseId) {
   }
 
   function escapeHtml(str) {
-    if (!str) return "";
+    if (str === null || str === undefined) return "";
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
