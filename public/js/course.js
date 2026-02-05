@@ -247,24 +247,28 @@ function initReviews(courseId) {
       const data = await res.json();
       
       if (data.success) {
-        // allReviews = data.reviews || []; // FIXED: Removed debug line that forced empty array
         allReviews = data.reviews || [];
         
-        if (allReviews.length > 0) {
-          renderStats(allReviews);
-          renderList(allReviews);
-          summaryContainer.classList.remove("hidden");
-        } else {
-          listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
-          summaryContainer.classList.add("hidden");
+        try {
+            if (allReviews.length > 0) {
+              renderStats(allReviews);
+              renderList(allReviews);
+              if (summaryContainer) summaryContainer.classList.remove("hidden");
+            } else {
+              if (listContainer) listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
+              if (summaryContainer) summaryContainer.classList.add("hidden");
+            }
+        } catch (renderError) {
+            console.error("Critical Render Error:", renderError);
+            if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">Display Error: ${renderError.message}</p>`;
         }
+
       } else {
-         // Handle explicit failure from API
-         listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">${data.message || "Could not load reviews."}</p>`;
+         if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">${data.message || "Could not load reviews."}</p>`;
       }
     } catch (err) {
       console.error("Failed to load reviews", err);
-      listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">Failed to load reviews.</p>`;
+      if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">Failed to load reviews: ${err.message}</p>`;
     }
   }
 
