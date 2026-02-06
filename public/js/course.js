@@ -90,16 +90,15 @@ async function loadCourseDetails(courseId) {
             
             <!-- LEFT COLUMN (Content) -->
             <div class="course-content" id="course-content-area">
-                <div class="course-tabs">
-                    <div class="course-tab active" onclick="switchTab('about')">About Course</div>
-                    <div class="course-tab" onclick="switchTab('reviews')">Reviews</div>
-                </div>
+                <h2 style="font-size:1.5rem; font-weight:600; color:var(--text-main); margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid var(--primary);">About Course</h2>
                 
-                <div id="tab-about" class="tab-content" style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:40px;">
+                <div style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:40px;">
                     <p>${course.description.replace(/\n/g, '<br>')}</p>
                 </div>
 
-                <div id="tab-reviews" class="tab-content hidden">
+                <!-- Reviews Section (displayed directly below About Course) -->
+                <div style="margin-top:40px;">
+                    <h2 style="font-size:1.5rem; font-weight:600; color:var(--text-main); margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid var(--primary);">Course Reviews</h2>
                     <div id="reviews-container">
                         <p style="text-align:center; padding:40px; color:#64748b;">Loading reviews...</p>
                     </div>
@@ -121,18 +120,6 @@ async function loadCourseDetails(courseId) {
                     <img src="${thumb}" alt="${course.title}">
                     
                     <div class="pricing-price">₹${course.price}</div>
-                    
-                    <div class="pricing-features">
-                        <div class="pricing-feature-item">
-                            <span style="color:#10b981;">✔</span> <span>Lifetime Access</span>
-                        </div>
-                        <div class="pricing-feature-item">
-                            <span style="color:#10b981;">✔</span> <span>Certificate of Completion</span>
-                        </div>
-                        <div class="pricing-feature-item">
-                             <span style="color:#10b981;">✔</span> <span>Premium Support</span>
-                        </div>
-                    </div>
 
                     ${isOwned 
                         ? `<a href="/read?id=${course._id}" class="btn btn--primary btn--block" style="padding:1rem; font-size:1rem; background-color:#10b981;">📖 Read Now</a>`
@@ -169,21 +156,7 @@ async function loadCourseDetails(courseId) {
   }
 }
 
-// Tab Switcher
-window.switchTab = function(tabName) {
-    document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    
-    // Find index to set active class
-    const tabs = document.querySelectorAll('.course-tab');
-    if(tabName === 'about') {
-        tabs[0].classList.add('active');
-        document.getElementById('tab-about').classList.remove('hidden');
-    } else {
-        tabs[1].classList.add('active');
-        document.getElementById('tab-reviews').classList.remove('hidden');
-    }
-}
+
 
 // Fetch and Render Reviews
 async function loadCourseReviews(courseId) {

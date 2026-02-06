@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String },
   // 🔒 SECURITY FIELDS
   purchasedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  reviewedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
   activeSessionToken: { type: String } // Stores the ONLY valid login token
 }, { timestamps: true });
 

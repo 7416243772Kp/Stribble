@@ -254,22 +254,13 @@ function renderMyCourses() {
         if (typeof course !== 'object') return ''; 
 
         return `
-        <div class="card course-card" style="border-left: 4px solid #10b981;">
-            <div class="card__media">
-                <img src="${course.thumbnail}" alt="${course.title}" loading="lazy" />
+        <a href="/my-courses" class="purchased-course-item" style="display: flex; align-items: flex-start; gap: 16px; text-decoration: none; color: inherit; padding: 16px; border-radius: 12px; transition: background 0.2s; cursor: pointer;">
+            <img src="${course.thumbnail}" alt="${course.title}" style="width: auto; max-width: 120px; height: auto; border-radius: 8px; display: block;" />
+            <div>
+                <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; display:block; margin-bottom:6px;">Owned</span>
+                <h3 style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0; line-height: 1.4;">${course.title}</h3>
             </div>
-            <div class="card__body">
-                <span style="font-size:0.7rem; text-transform:uppercase; color:#10b981; font-weight:700; letter-spacing:0.5px; margin-bottom:6px; display:inline-block;">Owned</span>
-                <h3 class="card__title">${course.title}</h3>
-                <div class="card__actions" style="margin-top:12px; display:grid; grid-template-columns: ${(currentUser.reviewedCourses && currentUser.reviewedCourses.includes(course._id.toString())) ? '1fr' : '1fr 1fr'}; gap:8px;">
-                    <a href="/read?id=${course._id}" class="btn btn--primary" style="text-align:center; justify-content:center; padding: 8px 4px; font-size: 0.8rem; background-color: #0f172a; white-space:nowrap;">📖 Read</a>
-                    ${(currentUser.reviewedCourses && currentUser.reviewedCourses.includes(course._id.toString())) 
-                        ? '' // Hide button if reviewed
-                        : `<button onclick="openReviewModal('${course._id}', this.getAttribute('data-course-title'))" data-course-title="${(course.title || '').replace(/"/g, '&quot;')}" class="btn" style="padding: 8px 4px; font-size: 0.8rem; border: 1px solid #cbd5e1; color: #475569; background: white; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space:nowrap;">⭐ Review</button>`
-                    }
-                </div>
-            </div>
-        </div>
+        </a>
         `;
     }).join('');
 }
@@ -434,13 +425,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(loginForm);
             const payload = Object.fromEntries(formData);
             
+            // DEBUG: Log what we're sending
+            console.log("📧 [Login] Form data:", formData);
+            console.log("📧 [Login] Payload being sent:", payload);
+            console.log("📧 [Login] Email:", payload.email, "Password length:", payload.password?.length);
+            
             try {
                 const res = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
+                
+                // DEBUG: Log response
+                console.log("📧 [Login] Server response status:", res.status);
+                console.log("📧 [Login] Server response data:", data);
                 
                 if (data.success) {
                     showToast("Login successful!", "success");
@@ -448,7 +449,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     showToast(data.message || 'Login failed', "error");
                 }
-            } catch (err) { showToast('Server error', "error"); }
+            } catch (err) { 
+                console.error("📧 [Login] Error:", err);
+                showToast('Server error', "error"); 
+            }
         });
     }
 
@@ -628,19 +632,35 @@ window.showToast = function(message, type = 'info') {
 // REVIEW SYSTEM & HOMEPAGE MARQUEE
 // ==========================================
 
-// 1. Review Modal Logic
-window.toggleReviewModal = function() {
+// 1. Ensure the function is globally accessible (Fixes "is not defined" error)
+window.toggleReviewModal = function(courseId = null) {
+    console.log("👉 [Frontend] Review button clicked or toggled. Course ID:", courseId);
+
     const modal = document.getElementById('review-modal-overlay');
-    if (modal) {
-        if (modal.style.display === 'flex') {
-             modal.style.display = 'none';
+    // Also try checking for just 'review-modal' if the overlay logic differs per page
+    const modalAlt = document.getElementById('review-modal');
+    
+    // Determine which modal element we found
+    const targetModal = modal || modalAlt;
+    const isActive = targetModal && targetModal.classList.contains('active');
+
+    if (targetModal) {
+        if (isActive && !courseId) {
+             console.log("👉 [Frontend] Closing modal");
+             targetModal.classList.remove('active');
         } else {
-             modal.style.display = 'flex';
+             // Only open if we have a modal to show
+             console.log("👉 [Frontend] Opening modal");
+             targetModal.classList.add('active');
         }
+    } else {
+        console.error("❌ [Frontend] Modal overlay element not found!");
     }
 };
 
 window.openReviewModal = function(courseId, courseTitle) {
+    console.log("👉 [Frontend] openReviewModal called with:", courseId, courseTitle);
+    
     const modal = document.getElementById('review-modal-overlay');
     const titleEl = document.getElementById('modal-course-title');
     const idInput = document.getElementById('modal-course-id');
@@ -649,11 +669,14 @@ window.openReviewModal = function(courseId, courseTitle) {
     if (modal && titleEl && idInput) {
         titleEl.textContent = `Reviewing: ${courseTitle}`;
         idInput.value = courseId;
-        modal.style.display = 'flex';
+        modal.classList.add('active'); // Use active class for CSS transitions
         
         // Reset form
         if(form) form.reset();
         resetStars();
+    } else {
+        console.error("❌ [Frontend] One or more modal elements missing in openReviewModal");
+        console.log("modal:", modal, "titleEl:", titleEl, "idInput:", idInput);
     }
 };
 
@@ -707,8 +730,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reviewForm) {
         reviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("👉 [Frontend] Submitting review...");
+            
             const formData = new FormData(reviewForm);
             const data = Object.fromEntries(formData.entries());
+            console.log("👉 [Frontend] Payload:", data);
             
             if(!data.rating || data.rating == "0") {
                 showToast("Please select a star rating", "error");
@@ -719,9 +745,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch('/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // CRITICAL: Send session cookies for authentication
                     body: JSON.stringify(data)
                 });
                 const json = await res.json();
+                console.log("👉 [Frontend] Server Response:", json);
                 
                 if (json.success) {
                     showToast("Review submitted successfully!", "success");
@@ -734,8 +762,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(json.message || "Failed to submit review", "error");
                 }
             } catch (err) {
-                console.error(err);
+                console.error("❌ [Frontend] Network/Script Error:", err);
                 showToast("An error occurred", "error");
+            }
+        });
+    } else {
+        console.warn("⚠️ [Frontend] Review form not found in DOM");
+    }
+    
+    // CSP FIX: Attach event listener for close button instead of inline onclick
+    const closeReviewBtn = document.getElementById('btn-close-review-modal');
+    if (closeReviewBtn) {
+        closeReviewBtn.addEventListener('click', () => {
+            toggleReviewModal();
+        });
+    }
+    
+    // Click outside modal to close
+    const reviewOverlay = document.getElementById('review-modal-overlay');
+    if (reviewOverlay) {
+        reviewOverlay.addEventListener('click', (e) => {
+            if (e.target === reviewOverlay) {
+                toggleReviewModal();
             }
         });
     }

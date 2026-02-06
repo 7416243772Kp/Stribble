@@ -75,30 +75,32 @@ app.use(
     },
 
     // 4. Content Security Policy (Allows Razorpay & Inline Scripts)
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "https://checkout.razorpay.com",
-          "https://*.razorpay.com",
-          "https://cdn.jsdelivr.net",
-          "'unsafe-inline'",
-          "'unsafe-eval'" // Required by some Razorpay builds
-        ],
-        scriptSrcAttr: ["'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: [
-          "'self'",
-          "https://lumberjack.razorpay.com",
-          "https://*.razorpay.com",
-          "https://cdn.jsdelivr.net"
-        ]
-      },
-    },
+    contentSecurityPolicy: false, // TEMPORARY DEBUG: Disabled CSP to rule it out
+
+    // contentSecurityPolicy: {
+    //   directives: {
+    //     defaultSrc: ["'self'"],
+    //     scriptSrc: [
+    //       "'self'",
+    //       "https://checkout.razorpay.com",
+    //       "https://*.razorpay.com",
+    //       "https://cdn.jsdelivr.net",
+    //       "'unsafe-inline'",
+    //       "'unsafe-eval'" // Required by some Razorpay builds
+    //     ],
+    //     scriptSrcAttr: ["'unsafe-inline'"],
+    //     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    //     fontSrc: ["'self'", "https://fonts.gstatic.com"],
+    //     frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
+    //     imgSrc: ["'self'", "data:", "https:"],
+    //     connectSrc: [
+    //       "'self'",
+    //       "https://lumberjack.razorpay.com",
+    //       "https://*.razorpay.com",
+    //       "https://cdn.jsdelivr.net"
+    //     ]
+    //   },
+    // },
   })
 );
 
