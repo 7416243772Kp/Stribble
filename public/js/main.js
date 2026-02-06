@@ -623,4 +623,160 @@ window.showToast = function(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 };
 
+// ==========================================
+// REVIEW SYSTEM & HOMEPAGE MARQUEE
+// ==========================================
+
+// 1. Review Modal Logic
+window.toggleReviewModal = function() {
+    const modal = document.getElementById('review-modal-overlay');
+    if (modal) {
+        if (modal.style.display === 'flex') {
+             modal.style.display = 'none';
+        } else {
+             modal.style.display = 'flex';
+        }
+    }
+};
+
+window.openReviewModal = function(courseId, courseTitle) {
+    const modal = document.getElementById('review-modal-overlay');
+    const titleEl = document.getElementById('modal-course-title');
+    const idInput = document.getElementById('modal-course-id');
+    const form = document.getElementById('review-form');
+
+    if (modal && titleEl && idInput) {
+        titleEl.textContent = `Reviewing: ${courseTitle}`;
+        idInput.value = courseId;
+        modal.style.display = 'flex';
+        
+        // Reset form
+        if(form) form.reset();
+        resetStars();
+    }
+};
+
+function resetStars() {
+    const stars = document.querySelectorAll('.star-rating-widget .star');
+    stars.forEach(s => s.classList.remove('active'));
+    const ratingInput = document.getElementById('review-rating');
+    const ratingLabel = document.getElementById('rating-label');
+    if(ratingInput) ratingInput.value = 0;
+    if(ratingLabel) ratingLabel.textContent = 'Select a rating';
+    
+    // Reset star colors visually
+    stars.forEach(s => {
+        s.style.color = '#e2e8f0'; 
+        s.classList.remove('active');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Star Hover and Click
+    const stars = document.querySelectorAll('.star-rating-widget .star');
+    const ratingInput = document.getElementById('review-rating');
+    const ratingLabel = document.getElementById('rating-label');
+
+    if(stars.length > 0 && ratingInput) {
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const val = parseInt(star.getAttribute('data-value'));
+                ratingInput.value = val;
+                
+                // Highlight stars
+                stars.forEach(s => {
+                    const sVal = parseInt(s.getAttribute('data-value'));
+                    if (sVal <= val) {
+                        s.classList.add('active');
+                        s.style.color = '#fbbf24'; // Force color
+                    } else {
+                        s.classList.remove('active');
+                        s.style.color = '#e2e8f0'; // Force empty
+                    }
+                });
+                
+                const labels = ["Poor", "Fair", "Good", "Very Good", "Excellent"];
+                if(ratingLabel) ratingLabel.textContent = labels[val - 1] || "Select a rating";
+            });
+        });
+    }
+
+    // Form Submission
+    const reviewForm = document.getElementById('review-form');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(reviewForm);
+            const data = Object.fromEntries(formData.entries());
+            
+            if(!data.rating || data.rating == "0") {
+                showToast("Please select a star rating", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+                
+                if (json.success) {
+                    showToast("Review submitted successfully!", "success");
+                    toggleReviewModal();
+                    // Update homepage reviews if marquee exists
+                    loadHomepageReviews(); 
+                     // Update currentUser.reviewedCourses to hide button immediately if possible
+                    if(typeof checkSession === 'function') checkSession();
+                } else {
+                    showToast(json.message || "Failed to submit review", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("An error occurred", "error");
+            }
+        });
+    }
+    
+    // Load Homepage Marquee
+    loadHomepageReviews();
+});
+
+// 2. Homepage Reviews Marquee
+async function loadHomepageReviews() {
+    const track = document.getElementById('reviews-track');
+    if(!track) return; // Not on homepage
+
+    try {
+        const res = await fetch('/api/reviews/top');
+        const data = await res.json();
+
+        if(data.success && data.reviews.length > 0) {
+            const reviews = data.reviews;
+            // Duplicate for infinite scroll smoothness
+            const allReviews = [...reviews, ...reviews]; 
+            
+            track.innerHTML = allReviews.map(r => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="review-avatar">${r.userName.charAt(0)}</div>
+                        <div>
+                            <div class="review-author">${r.userName}</div>
+                            <div class="review-course">${r.courseId ? r.courseId.title : 'Course'}</div>
+                        </div>
+                    </div>
+                    <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+                    <p class="review-text">"${r.comment}"</p>
+                </div>
+            `).join('');
+        } else {
+             const section = document.querySelector('.reviews-section');
+             if(section) section.style.display = 'none';
+        }
+    } catch(e) {
+        console.error("Failed to load reviews", e);
+    }
+}
+
 
