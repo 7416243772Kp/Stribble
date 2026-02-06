@@ -34,7 +34,7 @@ import couponRoutes from "./src/routes/couponRoutes.js";
 import courseRoutes from "./src/routes/courseRoutes.js";
 import authAdmin from "./src/middleware/authAdmin.js";
 import promoterAdminRoutes from "./src/routes/adminPromoterRoutes.js";
-import reviewRoutes from "./src/routes/reviewRoutes.js";
+import reviewRoutes from "./src/routes/reviewRoutes.js"; // Added this line
 
 import helmet from "helmet";
 // ==== Utilities ====
@@ -266,6 +266,7 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactLimiter, contactRoutes);

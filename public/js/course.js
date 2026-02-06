@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Initialize Page
   if (courseId) {
     loadCourseDetails(courseId);
-    initReviews(courseId); // Initialize reviews
+
   } else {
     const container = document.getElementById("course-details");
     if (container) {
@@ -91,15 +91,28 @@ async function loadCourseDetails(courseId) {
             <!-- LEFT COLUMN (Content) -->
             <div class="course-content" id="course-content-area">
                 <div class="course-tabs">
-                    <div class="course-tab active">About Course</div>
-                    <div class="course-tab">Reviews</div>
+                    <div class="course-tab active" onclick="switchTab('about')">About Course</div>
+                    <div class="course-tab" onclick="switchTab('reviews')">Reviews</div>
                 </div>
                 
-                <div style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:40px;">
+                <div id="tab-about" class="tab-content" style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:40px;">
                     <p>${course.description.replace(/\n/g, '<br>')}</p>
                 </div>
 
-                <!-- Reviews and Share will be moved here -->
+                <div id="tab-reviews" class="tab-content hidden">
+                    <div id="reviews-container">
+                        <p style="text-align:center; padding:40px; color:#64748b;">Loading reviews...</p>
+                    </div>
+                </div>
+
+                <div id="share-bar" style="margin-top: 40px; margin-bottom: 40px;">
+                  <h4 style="display:inline-block; margin-right:10px;">Share this course:</h4>
+                  <button id="copy-link">Copy Link</button>
+                  <a id="whatsapp-link" target="_blank" rel="noopener" href="#">WhatsApp</a>
+                  <a id="facebook-link" target="_blank" rel="noopener" href="#">Facebook</a>
+                  <a id="x-link" target="_blank" rel="noopener" href="#">X</a>
+                  <a id="linkedin-link" target="_blank" rel="noopener" href="#">LinkedIn</a>
+                </div>
             </div>
 
             <!-- RIGHT COLUMN (Sidebar) -->
@@ -132,15 +145,8 @@ async function loadCourseDetails(courseId) {
       </div>
     `;
 
-    // 2. Move Reviews & Share into Left Column
-    const contentArea = document.getElementById("course-content-area");
-    const reviewsSection = document.getElementById("reviews-section");
-    const shareBar = document.getElementById("share-bar");
-
-    if (contentArea) {
-        if (reviewsSection) contentArea.appendChild(reviewsSection); // Reviews first
-        if (shareBar) contentArea.appendChild(shareBar); // Share below reviews
-    }
+    // Initialize Reviews Logic immediately
+    loadCourseReviews(courseId);
 
     // Update Share Links
     updateShareLinks(course, window.location.href);
@@ -163,287 +169,106 @@ async function loadCourseDetails(courseId) {
   }
 }
 
-// ==========================================
-// REVIEWS SYSTEM LOGIC
-// ==========================================
-function initReviews(courseId) {
-  const listContainer = document.getElementById("reviews-list");
-  const summaryContainer = document.getElementById("rating-summary");
-  const form = document.getElementById("reviewForm");
-  const msgDiv = document.getElementById("rev-msg");
-  const listHeader = document.getElementById("reviews-list-header");
-  const filterMsg = document.getElementById("reviews-filter-msg");
-  const clearFilterBtn = document.getElementById("clear-filter-btn");
-
-  let allReviews = []; 
-
-  if (!listContainer || !form) return;
-
-  // 1. Handle Form Submission
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+// Tab Switcher
+window.switchTab = function(tabName) {
+    document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     
-    // Check if user is logged in (using global checkSession logic usually)
-    // Or just try to submit and handle 401
-    
-    const submitBtn = document.getElementById("btn-submit-review");
-    const originalBtnText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Posting...";
-    msgDiv.textContent = "";
-
-    // We don't need name/email inputs anymore if we trust the account
-    const payload = {
-      courseId: courseId,
-      rating: document.getElementById("rev-rating").value,
-      comment: document.getElementById("rev-comment").value.trim()
-    };
-
-    try {
-      const res = await fetch(`${API_BASE}/api/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
-      
-      if (res.status === 401) {
-          msgDiv.innerHTML = `You need to <a href="#" onclick="toggleLoginModal(); return false;">Login</a> to review.`;
-          msgDiv.style.color = "#ef4444";
-          return;
-      }
-      
-      if (res.status === 403) {
-          msgDiv.textContent = "You must purchase this course to review it.";
-          msgDiv.style.color = "#ef4444";
-          return;
-      }
-
-      if (data.success) {
-        msgDiv.textContent = "Review posted successfully!";
-        msgDiv.style.color = "#10b981";
-        form.reset();
-        fetchReviews(); // Reload list
-      } else {
-        msgDiv.textContent = data.message || "Failed to post review.";
-        msgDiv.style.color = "#ef4444";
-      }
-    } catch (err) {
-      console.error("Review submit error:", err);
-      msgDiv.textContent = "Server error. Please try again.";
-      msgDiv.style.color = "#ef4444";
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalBtnText;
+    // Find index to set active class
+    const tabs = document.querySelectorAll('.course-tab');
+    if(tabName === 'about') {
+        tabs[0].classList.add('active');
+        document.getElementById('tab-about').classList.remove('hidden');
+    } else {
+        tabs[1].classList.add('active');
+        document.getElementById('tab-reviews').classList.remove('hidden');
     }
-  });
-
-  // 2. Fetch Reviews
-  async function fetchReviews() {
-    try {
-      const res = await fetch(`${API_BASE}/api/reviews/${courseId}`);
-      const data = await res.json();
-      
-      if (data.success) {
-        allReviews = data.reviews || [];
-        
-        try {
-            if (allReviews.length > 0) {
-              renderStats(allReviews);
-              renderList(allReviews);
-              if (summaryContainer) summaryContainer.classList.remove("hidden");
-            } else {
-              if (listContainer) listContainer.innerHTML = `<p style="color:#64748b; text-align:center; padding:20px; background:#f8fafc; border-radius:8px;">No reviews yet. Be the first to review!</p>`;
-              if (summaryContainer) summaryContainer.classList.add("hidden");
-            }
-        } catch (renderError) {
-            console.error("Critical Render Error:", renderError);
-            if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">Display Error: ${renderError.message}</p>`;
-        }
-
-      } else {
-         if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">${data.message || "Could not load reviews."}</p>`;
-      }
-    } catch (err) {
-      console.error("Failed to load reviews", err);
-      if (listContainer) listContainer.innerHTML = `<p style="color:#ef4444; text-align:center;">Failed to load reviews: ${err.message}</p>`;
-    }
-  }
-
-  // 3. Render Stats (Bars Left, Stats Right)
-  function renderStats(reviews) {
-    const total = reviews.length;
-    const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };
-    let sum = 0;
-
-    reviews.forEach(r => {
-      counts[r.rating] = (counts[r.rating] || 0) + 1;
-      sum += r.rating;
-    });
-
-    const average = total ? (sum / total).toFixed(1) : "0.0";
-    const avgStars = generateStars(Math.round(total ? sum / total : 0));
-
-    // Generate Bars HTML
-    let barsHTML = '';
-    for (let i = 5; i >= 1; i--) {
-      const count = counts[i];
-      const percent = total ? Math.round((count / total) * 100) : 0;
-      
-      barsHTML += `
-        <div class="rating-row" onclick="filterReviews(${i})">
-          <div class="rating-label">${i} ★</div>
-          <div class="progress-bg">
-            <div class="progress-fill" style="width: ${percent}%"></div>
-          </div>
-          <div class="rating-percent">${percent}%</div>
-        </div>
-      `;
-    }
-
-    summaryContainer.innerHTML = `
-      <div class="summary-bars">
-        ${barsHTML}
-      </div>
-      
-      <div class="summary-stats">
-        <div class="summary-average">${average}</div>
-        <div class="summary-stars">${avgStars}</div>
-        <div class="summary-total">${total} global ratings</div>
-      </div>
-    `;
-    
-    // Make filter accessible
-    window.filterReviews = (star) => {
-      const filtered = allReviews.filter(r => r.rating === star);
-      renderList(filtered);
-      
-      if(listHeader) listHeader.style.display = "flex";
-      if(filterMsg) filterMsg.textContent = `Showing ${star} star reviews (${filtered.length})`;
-      if(clearFilterBtn) {
-          clearFilterBtn.style.display = "block";
-          clearFilterBtn.onclick = () => {
-            renderList(allReviews);
-            listHeader.style.display = "none";
-          };
-      }
-    };
-  }
-
-  // 4. Render List
-  function renderList(reviews) {
-    if (reviews.length === 0) {
-      listContainer.innerHTML = `<p style="text-align:center; padding:20px; color:#64748b;">No reviews found for this filter.</p>`;
-      return;
-    }
-    listContainer.innerHTML = reviews.map(renderReviewHTML).join("");
-    attachReplyListeners();
-  }
-
-  // Helper: Generate HTML for one review
-  function renderReviewHTML(review) {
-    const date = new Date(review.createdAt).toLocaleDateString();
-    const stars = generateStars(review.rating);
-    // Use populated user name if available, fallback to stored name, then anonymous
-    const displayName = (review.userId && review.userId.name) ? review.userId.name : (review.userName || "Anonymous User");
-    
-    const repliesHTML = (review.replies || []).map(r => `
-      <div style="margin-top:10px; padding:10px; background:#f1f5f9; border-left:3px solid #cbd5e1; border-radius:0 4px 4px 0; margin-left:20px;">
-        <div style="font-size:0.85rem; font-weight:600; color:#334155;">${escapeHtml(r.name || "Admin")} <span style="font-weight:400; color:#94a3b8;">• Reply</span></div>
-        <div style="font-size:0.9rem; color:#475569;">${escapeHtml(r.content)}</div>
-      </div>
-    `).join("");
-
-    return `
-      <div class="review-card" style="background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-          <div>
-            <strong style="font-size:1rem; color:#0f172a;">${escapeHtml(displayName)}</strong>
-            <span style="color:#10b981; font-size:0.75rem; font-weight:600; margin-left:6px; background:#ecfdf5; padding:2px 6px; border-radius:4px; border:1px solid #bbf7d0;">✓ Verified</span>
-          </div>
-          <span style="color:#64748b; font-size:0.85rem;">${date}</span>
-        </div>
-        <div style="margin-bottom:10px; color:#fbbf24; letter-spacing:2px;">${stars}</div>
-        <p style="color:#334155; line-height:1.5; margin-bottom:15px;">${escapeHtml(review.comment)}</p>
-        
-        <button class="btn-reply" data-id="${review._id}" style="background:none; border:none; color:#3b82f6; font-size:0.85rem; cursor:pointer; padding:0; text-decoration:underline;">Reply to this review</button>
-        
-        <div id="reply-form-${review._id}" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0;">
-          <input type="text" id="reply-name-${review._id}" placeholder="Your Name" style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9rem;">
-          <textarea id="reply-content-${review._id}" placeholder="Write a reply..." style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9rem;" rows="2"></textarea>
-          <button class="btn-submit-reply btn btn--primary" data-id="${review._id}" style="padding:6px 12px; font-size:0.85rem;">Post Reply</button>
-        </div>
-
-        <div class="replies-container">${repliesHTML}</div>
-      </div>
-    `;
-  }
-
-  function generateStars(count) {
-    return Array.from({length: 5}, (_, i) => i < count ? '★' : '☆').join('');
-  }
-
-  function attachReplyListeners() {
-    document.querySelectorAll(".btn-reply").forEach(btn => {
-      btn.onclick = (e) => {
-        e.preventDefault();
-        const id = btn.dataset.id;
-        const formDiv = document.getElementById(`reply-form-${id}`);
-        if (formDiv) formDiv.style.display = formDiv.style.display === "none" ? "block" : "none";
-      };
-    });
-
-    document.querySelectorAll(".btn-submit-reply").forEach(btn => {
-      btn.onclick = async (e) => {
-        e.preventDefault();
-        const id = btn.dataset.id;
-        const nameInput = document.getElementById(`reply-name-${id}`);
-        const contentInput = document.getElementById(`reply-content-${id}`);
-        const name = nameInput.value.trim();
-        const content = contentInput.value.trim();
-
-        if (!name || !content) return alert("Please fill name and content");
-
-        const originalText = btn.textContent;
-        btn.textContent = "Posting...";
-        btn.disabled = true;
-
-        try {
-          const res = await fetch(`${API_BASE}/api/reviews/${id}/reply`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, content })
-          });
-          const data = await res.json();
-          if (data.success) {
-            await fetchReviews(); // Reload list
-          } else {
-            alert(data.message || "Failed to reply");
-          }
-        } catch (err) {
-          alert("Error posting reply");
-        } finally {
-          btn.textContent = originalText;
-          btn.disabled = false;
-        }
-      };
-    });
-  }
-
-  function escapeHtml(str) {
-    if (str === null || str === undefined) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  fetchReviews();
 }
+
+// Fetch and Render Reviews
+async function loadCourseReviews(courseId) {
+    const container = document.getElementById('reviews-container');
+    if(!container) return;
+
+    try {
+        const res = await fetch(`/api/reviews/${courseId}`);
+        const data = await res.json();
+        
+        if(data.success) {
+            const reviews = data.reviews || [];
+            
+            if(reviews.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:60px 0;">
+                        <span style="font-size:3rem;">📝</span>
+                        <h3 style="margin-top:10px; color:#1e293b;">No reviews yet</h3>
+                        <p style="color:#64748b;">Be the first to share your thoughts on this course!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate Stats
+            let sum = 0;
+            const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };
+            reviews.forEach(r => {
+                sum += r.rating;
+                counts[r.rating] = (counts[r.rating] || 0) + 1;
+            });
+            const avg = (sum / reviews.length).toFixed(1);
+            
+            // Render Review List
+            const listHtml = reviews.map(r => `
+                <div class="review-list-item">
+                    <div class="reviewer-info">
+                        <div class="reviewer-avatar">${r.userId.name ? r.userId.name.charAt(0) : (r.userName.charAt(0) || 'U')}</div>
+                        <div class="reviewer-meta">
+                            <h4>${r.userId.name || r.userName || 'Learner'}</h4>
+                            <span>${new Date(r.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div style="color:#fbbf24; margin-bottom:10px; font-size:1.1rem;">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</div>
+                    <p style="color:#334155; line-height:1.6;">${r.comment}</p>
+                </div>
+            `).join('');
+
+            // Render Full UI
+            container.innerHTML = `
+                <div class="rating-snapshot">
+                    <div class="rating-big-score">
+                        <div class="big-rating">${avg}</div>
+                        <div class="big-stars">${"★".repeat(Math.round(avg))}${"☆".repeat(5-Math.round(avg))}</div>
+                        <div style="color:#64748b; font-weight:500;">${reviews.length} Ratings</div>
+                    </div>
+                    <div class="rating-bars">
+                        ${[5,4,3,2,1].map(star => {
+                            const percent = ((counts[star] / reviews.length) * 100).toFixed(0);
+                            return `
+                                <div class="bar-row">
+                                    <div class="bar-label">${star} ★</div>
+                                    <div class="bar-bg"><div class="bar-fill" style="width:${percent}%"></div></div>
+                                    <div class="bar-percent">${percent}%</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                
+                <h3 style="margin-bottom:20px;">Reviews</h3>
+                <div class="reviews-list">
+                    ${listHtml}
+                </div>
+            `;
+
+        } else {
+             container.innerHTML = "<p>Failed to load reviews.</p>";
+        }
+    } catch(err) {
+        console.error("Review fetch error", err);
+        container.innerHTML = "<p>Error loading reviews.</p>";
+    }
+}
+
 
 // ==========================================
 // SHARE LINKS UTILITY

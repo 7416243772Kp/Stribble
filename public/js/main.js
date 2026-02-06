@@ -119,52 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function loadReviews() {
-        try {
-            const marquee = document.getElementById("reviewsMarquee");
-            if (!marquee) return;
 
-            const apiBase = window.API_BASE || '';
-            const res = await fetch(`${apiBase}/api/reviews/top`);
-            const data = await res.json();
-
-            if (!data.success || !data.reviews || data.reviews.length === 0) {
-                const section = document.querySelector(".reviews-section");
-                if (section) section.style.display = "none";
-                return;
-            }
-
-            const reviews = data.reviews;
-
-            // Generate Cards
-            const cardsHtml = reviews.map(r => {
-                const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-                return `
-                <div class="review-card">
-                    <div class="review-header">
-                        <div>
-                            <div class="review-user">${r.userName || 'Student'}</div>
-                            <div class="review-course">${r.courseId?.title || 'Verified Course'}</div>
-                        </div>
-                        <div class="review-stars" style="color:#fbbf24; letter-spacing:2px;">${stars}</div>
-                    </div>
-                    <p class="review-text">"${r.comment}"</p>
-                </div>
-            `}).join('');
-
-            // Inject (No duplication for regular scroll)
-            marquee.innerHTML = cardsHtml;
-
-        } catch (e) {
-            console.error("Failed to load reviews:", e);
-            const section = document.querySelector(".reviews-section");
-            if (section) section.style.display = "none";
-        }
-    }
 
     // Mobile Nav Logic
     loadCourses();
-    loadReviews();
+
 
     const navToggle = document.getElementById('navToggle');
     const links = document.querySelector('.nav__links');
@@ -638,83 +597,12 @@ if(overlay) {
     });
 }
 
-// ===============================
-// REVIEW MODAL LOGIC
-// ===============================
-window.toggleReviewModal = function() {
-    const modal = document.getElementById('review-modal');
-    if (modal) {
-        const isHidden = modal.style.display === 'none';
-        modal.style.display = isHidden ? 'flex' : 'none';
-    }
-}
 
-window.openReviewModal = function(courseId, courseTitle) {
-    const modal = document.getElementById('review-modal');
-    const titleEl = document.getElementById('review-course-title');
-    const idInput = document.getElementById('review-course-id');
-    const ratingInput = document.getElementById('review-rating-value');
-    
-    // Reset State
-    if (ratingInput) ratingInput.value = "0";
-    if (modal) {
-        document.querySelectorAll('.star-rating-widget .star').forEach(s => {
-            s.classList.remove('active', 'hover');
-        });
-        document.getElementById('rating-text').textContent = "Select a rating";
-    
-        if (titleEl && idInput) {
-            titleEl.textContent = courseTitle;
-            idInput.value = courseId;
-            modal.style.display = 'flex';
-        }
-    }
-}
+// ===============================
+// REVIEW MODAL LOGIC REMOVED
+// ===============================
 
-// Star Interaction Logic
-document.addEventListener('DOMContentLoaded', () => {
-   const starContainer = document.getElementById('star-container');
-   const ratingText = document.getElementById('rating-text');
-   const ratingInput = document.getElementById('review-rating-value');
-   
-   if(starContainer && ratingInput) {
-       const stars = starContainer.querySelectorAll('.star');
-       const comments = ["Bad", "Poor", "Average", "Good", "Excellent"];
-       
-       stars.forEach(star => {
-           // Hover
-           star.addEventListener('mouseenter', () => {
-               const val = parseInt(star.dataset.value);
-               stars.forEach(s => {
-                   s.classList.toggle('hover', parseInt(s.dataset.value) <= val);
-               });
-               ratingText.textContent = comments[val-1];
-           });
-           
-           // Click
-           star.addEventListener('click', () => {
-               const val = parseInt(star.dataset.value);
-               ratingInput.value = val;
-               stars.forEach(s => {
-                   s.classList.toggle('active', parseInt(s.dataset.value) <= val);
-               });
-           });
-       });
-       
-       starContainer.addEventListener('mouseleave', () => {
-           const currentVal = parseInt(ratingInput.value);
-           stars.forEach(s => s.classList.remove('hover'));
-           
-           if(currentVal > 0) {
-              // Restore active state visual if moved out without click (though click persists active class)
-              // Actually active class should persist. Just reset text if needed?
-              ratingText.textContent = comments[currentVal-1];
-           } else {
-              ratingText.textContent = "Select a rating";
-           }
-       });
-   }
-});
+
 
 // Toast Notification Helper
 window.showToast = function(message, type = 'info') {
@@ -735,52 +623,4 @@ window.showToast = function(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 };
 
-// Handle Global Review Submission
-const reviewForm = document.getElementById('global-review-form');
-if (reviewForm) {
-    reviewForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Validate Rating
-        const rating = document.getElementById('review-rating-value').value;
-        if(!rating || rating === "0") {
-            alert("Please select a star rating!");
-            return;
-        }
 
-        const btn = reviewForm.querySelector('button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = "Submitting...";
-
-        const formData = new FormData(reviewForm);
-        const payload = Object.fromEntries(formData);
-        
-        // API_BASE Check
-        const apiBase = window.API_BASE || '';
-
-        try {
-            const res = await fetch(`${apiBase}/api/reviews`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                showToast("Review submitted successfully!", "success");
-                toggleReviewModal();
-                reviewForm.reset();
-                setTimeout(() => window.location.reload(), 1000); // Delay slightly to show toast
-            } else {
-                showToast(data.message || "Failed to submit review", "error");
-            }
-        } catch (err) {
-            console.error(err);
-            showToast("Error submitting review", "error");
-        } finally {
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
-    });
-}

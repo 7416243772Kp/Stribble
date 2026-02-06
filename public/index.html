@@ -152,19 +152,7 @@
     </div>
   </section>
 
-  <!-- REVIEWS SECTION -->
-  <section class="section reviews-section" style="padding: 4rem 0; background: #f8fafc; overflow: hidden;">
-    <div class="container" style="text-align: center; margin-bottom: 3rem;">
-        <h2 class="section__title" style="margin-bottom: 0.5rem;">Loved by Learners</h2>
-        <p style="color: var(--text-muted);">See what our students are saying.</p>
-    </div>
-    
-    <div class="reviews-scroll-container" style="overflow-x: auto; padding-bottom: 20px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-        <div class="reviews-content" id="reviewsMarquee" style="display: flex; gap: 20px; width: max-content; padding: 0 20px;">
-             <!-- Reviews injected here by JS -->
-        </div>
-    </div>
-  </section>
+
 
   <footer class="footer">
     <div class="container footer__inner">
@@ -339,45 +327,57 @@
     </div>
   </div>
 
-  <!-- REVIEW MODAL -->
-  <div id="review-modal" class="login-overlay" style="display: none;">
-    <div class="login-box" style="max-width: 480px; padding: 30px; text-align: center;">
-      <button class="close-btn" onclick="toggleReviewModal()">×</button>
-      
-      <h3 style="font-size: 1.4rem; color: #1e293b; margin-bottom: 8px;">How was the course?</h3>
-      <p id="review-course-title" style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;"></p>
-      
-      <form id="global-review-form">
-          <input type="hidden" id="review-course-id" name="courseId">
-          <input type="hidden" id="review-rating-value" name="rating" value="0">
-          
-          <!-- Star Widget -->
-          <div class="star-rating-widget" style="margin-bottom: 25px;">
-              <div class="stars" id="star-container">
-                  <span class="star" data-value="1">★</span>
-                  <span class="star" data-value="2">★</span>
-                  <span class="star" data-value="3">★</span>
-                  <span class="star" data-value="4">★</span>
-                  <span class="star" data-value="5">★</span>
-              </div>
-              <p id="rating-text" style="font-size: 0.9rem; color: #64748b; margin-top: 8px; height: 1.2em;">Select a rating</p>
-          </div>
 
-          <div class="field" style="text-align: left;">
-              <label style="font-weight: 500; color: #334155;">Your Review</label>
-              <textarea id="review-comment" name="comment" rows="4" 
-                placeholder="What did you learn? Did you like the examples?" 
-                style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; resize: vertical; margin-top: 6px;" 
-                required></textarea>
-          </div>
 
-          <button type="submit" class="btn btn--primary btn--block" style="padding: 12px; font-size: 1rem; margin-top: 10px;">Submit Review</button>
-      </form>
+
+  <!-- REVIEWS MARQUEE SECTION -->
+  <section class="reviews-section">
+    <div class="container" style="text-align: center; margin-bottom: 40px;">
+        <h2 class="section__title">See what others are saying</h2>
+        <p style="color: var(--text-muted);">Real reviews from our community of learners.</p>
     </div>
-  </div>
+    
+    <div class="reviews-scroll-container">
+        <div class="reviews-track" id="reviews-track">
+            <!-- Reviews injected by JS -->
+        </div>
+    </div>
+  </section>
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toast-container" style="position: fixed; bottom: 30px; right: 30px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
+  <!-- PREMIUM REVIEW MODAL -->
+  <div id="review-modal-overlay" class="review-modal-overlay">
+      <div class="review-modal">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+              <h3 style="margin:0;">Write a Review</h3>
+              <button onclick="toggleReviewModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+          </div>
+          
+          <p id="modal-course-title" style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Course Title</p>
+          
+          <form id="review-form">
+              <input type="hidden" name="courseId" id="modal-course-id">
+              <input type="hidden" name="rating" id="review-rating" value="0">
+              
+              <div class="star-rating-widget">
+                  <div class="stars" id="modal-stars">
+                      <span class="star" data-value="1">★</span>
+                      <span class="star" data-value="2">★</span>
+                      <span class="star" data-value="3">★</span>
+                      <span class="star" data-value="4">★</span>
+                      <span class="star" data-value="5">★</span>
+                  </div>
+                  <span id="rating-label" style="font-size:0.9rem; color:#64748b;">Select a rating</span>
+              </div>
+              
+              <div style="margin-bottom:20px;">
+                  <label>Your Review</label>
+                  <textarea name="comment" rows="4" class="input-field" placeholder="Share your experience with this course..." required></textarea>
+              </div>
+              
+              <button type="submit" class="btn btn--primary btn--block">Submit Review</button>
+          </form>
+      </div>
+  </div>
 
   <style>
   /* Toast Notification Styles */
