@@ -381,7 +381,7 @@ async function editCourse(id) {
     document.getElementById('edit-title').value = course.title || '';
     document.getElementById('edit-desc').value = course.description || '';
     document.getElementById('edit-price').value = course.price || '';
-    document.getElementById('edit-link').value = course.googleDriveLink || '';
+    // document.getElementById('edit-link').value = course.googleDriveLink || '';
 
   } catch (err) {
     console.error("Failed to fetch course details", err);
