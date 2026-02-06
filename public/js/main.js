@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Mobile Nav Logic
     loadCourses();
+    checkSession();
 
 
     const navToggle = document.getElementById('navToggle');
