@@ -163,7 +163,7 @@ function injectReviewModal() {
                 <input type="hidden" id="review-course-id">
                 
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:600; margin-bottom:5px;">Rating</label>
+                    <label style="display:block; font-weight:600; margin-bottom:5px;">Rate the Course</label>
                     <div class="star-rating">
                         <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
                         <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
@@ -174,8 +174,8 @@ function injectReviewModal() {
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="review-comment" style="display:block; font-weight:600; margin-bottom:5px;">Your Comment</label>
-                    <textarea id="review-comment" rows="4" placeholder="How was the course?" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                    <label for="review-comment" style="display:block; font-weight:600; margin-bottom:5px;">Your Review about this Course</label>
+                    <textarea id="review-comment" rows="4" placeholder="Share your experience with this course..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
                 </div>
 
                 <button type="submit" class="btn btn--primary" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Submit Review</button>

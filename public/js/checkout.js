@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                       </p>
 
                       <a href="/read.html?id=${selectedCourseId}" class="btn-read">
-                        📖 Read Confirmation
+                        📖 Read Course
                       </a>
                       
                       </a>
