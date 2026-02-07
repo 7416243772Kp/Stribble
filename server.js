@@ -541,6 +541,13 @@ app.get('/contact', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'contact.html'));
 });
 
+// Redirect .html to clean URLs
+app.get('/terms.html', (req, res) => res.redirect(301, '/terms'));
+app.get('/privacy.html', (req, res) => res.redirect(301, '/privacy'));
+app.get('/refund.html', (req, res) => res.redirect(301, '/refund'));
+app.get('/contact.html', (req, res) => res.redirect(301, '/contact'));
+app.get('/about.html', (req, res) => res.redirect(301, '/about'));
+
 app.get('/terms', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'terms.html'));
 });
