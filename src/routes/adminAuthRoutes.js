@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 import { encrypt, decrypt, isEncrypted } from "../utils/crypto.js";
 import AdminUser from "../models/AdminUser.js";
 import authAdmin from "../middleware/authAdmin.js";
-// Email import removed
+import { sendEmail } from "../utils/email.js";
 
 dotenv.config();
 const router = express.Router();
@@ -64,7 +64,7 @@ function setAdminCookie(req, res, token) {
   });
 }
 
-// Email sending removed
+
 
 // =============================
 // Check auth status
@@ -270,8 +270,6 @@ router.post("/forgot-password", async (_req, res) => {
   try {
     const admin = await AdminUser.findOne({ email: ADMIN_EMAIL });
     if (!admin) {
-      console.error("Admin record not found for email:", ADMIN_EMAIL);
-      // IMPORTANT: Return here
       return res.status(404).json({ success: false, message: "Admin account not found." });
     }
 
@@ -283,8 +281,26 @@ router.post("/forgot-password", async (_req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
 
-    // Email service disabled
-    return res.status(403).json({ success: false, message: "Password reset via email is disabled. Please contact support." });
+    // Send OTP via SMTP2GO
+    const emailSent = await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: "Stribble Admin — Password Reset Code",
+      text: `Your password reset code is: ${otp}. It expires in 10 minutes.`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8fafc; border-radius: 12px;">
+          <h2 style="margin: 0 0 8px; color: #0f172a; font-size: 20px;">Password Reset</h2>
+          <p style="color: #64748b; margin: 0 0 24px; font-size: 14px;">Use the code below to reset your admin password. It expires in 10 minutes.</p>
+          <div style="background: #0f172a; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: 6px; text-align: center; padding: 18px; border-radius: 10px; margin-bottom: 24px;">${otp}</div>
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">If you didn't request this, ignore this email.</p>
+        </div>
+      `,
+    });
+
+    if (!emailSent) {
+      return res.status(500).json({ success: false, message: "Failed to send reset email. Please try again." });
+    }
+
+    return res.json({ success: true, message: "Reset code sent to your admin email." });
   } catch (err) {
     console.error("Forgot password error:", err);
     return res.status(500).json({ success: false, message: "Internal Server Error" });
