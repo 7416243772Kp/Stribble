@@ -21,7 +21,7 @@ async function checkSession() {
         const data = await res.json();
         
         if (data.success && data.user) {
-            console.log("User loaded:", data.user);
+
             renderPage(data.user);
         } else {
              window.location.href = "/?login=true";
@@ -80,13 +80,39 @@ function renderPage(user) {
                     ? `<span class="reviewed-badge">✓ Reviewed</span>` 
                     : `<button class="btn-write-review js-open-review" data-id="${course._id}" data-title="${(course.title || '').replace(/"/g, '&quot;')}">⭐ Write Review</button>`;
 
+                // Progress from API totalPages + localStorage visited pages
+                const visitedRaw = localStorage.getItem(`stribble_visited_${course._id}`);
+                const total = course.totalPages || parseInt(localStorage.getItem(`stribble_total_pages_${course._id}`)) || 0;
+                const visited = visitedRaw ? JSON.parse(visitedRaw).length : 0;
+                let progressHtml = '';
+                if (total > 0) {
+                    const pct = Math.min(100, Math.round((visited / total) * 100));
+                    const statusText = pct === 100 ? 'Completed' : pct === 0 ? 'Not started' : 'In Progress';
+                    const statusClass = pct === 100 ? 'complete' : pct > 0 ? 'active' : 'idle';
+                    progressHtml = `
+                        <div class="course-progress">
+                            <div class="course-progress-top">
+                                <div class="course-progress-pct ${statusClass}">${pct}%</div>
+                                <div class="course-progress-meta">
+                                    <span class="course-progress-status ${statusClass}">${statusText}</span>
+                                    <span class="course-progress-pages">${visited} of ${total} pages read</span>
+                                </div>
+                            </div>
+                            <div class="course-progress-track">
+                                <div class="course-progress-fill ${statusClass}" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 return `
                 <div class="my-course-item">
                     <img src="${thumb}" alt="${course.title}" loading="lazy" />
                     <div class="my-course-content">
                         <h3>${course.title}</h3>
+                        ${progressHtml}
                         <div class="actions">
-                            <a href="/read?id=${course._id}" class="btn-read">📖 Start Reading</a>
+                            <a href="/read?id=${course._id}" class="btn-read">${visited > 0 ? '📖 Continue Reading' : '📖 Start Reading'}</a>
                             ${reviewBtn}
                         </div>
                     </div>
@@ -96,13 +122,13 @@ function renderPage(user) {
 
             // CSP FIX: Attach Event Listeners AFTER adding to DOM
             document.querySelectorAll('.js-open-review').forEach(btn => {
-                console.log('Attaching click listener to review button:', btn);
+
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     const courseId = e.currentTarget.getAttribute('data-id');
                     const courseTitle = e.currentTarget.getAttribute('data-title');
-                    console.log('Review button clicked for course:', courseId, courseTitle);
+
                     openReviewModal(courseId, courseTitle);
                 });
             });
@@ -178,6 +204,78 @@ function injectReviewModal() {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* Course Progress Bar — Premium Design */
+        .course-progress {
+            margin: 10px 0 6px;
+        }
+        .course-progress-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .course-progress-pct {
+            font-size: 13px;
+            font-weight: 800;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: -0.3px;
+        }
+        .course-progress-pct.idle {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+        .course-progress-pct.active {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            color: #4f46e5;
+        }
+        .course-progress-pct.complete {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            color: #059669;
+        }
+        .course-progress-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .course-progress-status {
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .course-progress-status.idle { color: #94a3b8; }
+        .course-progress-status.active { color: #4f46e5; }
+        .course-progress-status.complete { color: #059669; }
+        .course-progress-pages {
+            font-size: 11.5px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .course-progress-track {
+            width: 100%;
+            height: 4px;
+            background: #f1f5f9;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .course-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .course-progress-fill.idle {
+            background: #cbd5e1;
+        }
+        .course-progress-fill.active {
+            background: linear-gradient(90deg, #6366f1, #818cf8);
+        }
+        .course-progress-fill.complete {
+            background: linear-gradient(90deg, #059669, #34d399);
+        }
     `;
     document.head.appendChild(style);
 
@@ -232,18 +330,12 @@ function injectReviewModal() {
 }
 
 function openReviewModal(courseId) {
-    console.log("openReviewModal called with courseId:", courseId);
     const courseIdInput = document.getElementById('review-course-id');
     const modal = document.getElementById('review-modal');
-    console.log("review-course-id element:", courseIdInput);
-    console.log("review-modal element:", modal);
     
     if (courseIdInput && modal) {
         courseIdInput.value = courseId;
         modal.style.display = 'flex';
-        console.log("Modal opened successfully");
-    } else {
-        console.error("Modal elements not found!");
     }
 }
 

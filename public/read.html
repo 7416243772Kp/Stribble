@@ -528,6 +528,7 @@
             try {
                 localStorage.setItem(STORAGE_KEY_PAGE, pageNum.toString());
                 localStorage.setItem(STORAGE_KEY_VISITED, JSON.stringify([...visitedPages]));
+                localStorage.setItem(`stribble_total_pages_${courseId}`, totalPages.toString());
             } catch(e) {}
         }
 
