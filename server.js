@@ -345,20 +345,14 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
             referrer = null; // Invalid or inactive promoter
          }
       } catch (e) { 
-          console.log("Promoter lookup failed", e); 
+           // promoter lookup failed silently
           referrer = null;
       }
     }
 
     const amountPaise = Math.round(finalAmount * 100);
     
-    // DEBUG: Log Razorpay Config and Payload
-    console.log("DEBUG: Creating Razorpay Order...");
-    const kId = process.env.RAZORPAY_KEY_ID || "";
-    const kSec = process.env.RAZORPAY_KEY_SECRET || "";
-    console.log(`DEBUG: Key ID length: ${kId.length} (Trimmed: ${kId.trim().length})`);
-    console.log(`DEBUG: Key Secret length: ${kSec.length} (Trimmed: ${kSec.trim().length})`);
-    console.log("DEBUG: Payload:", { amount: amountPaise, currency: "INR", notes: { email, courseId } });
+
 
     const rzpOrder = await razorpay.orders.create({
       amount: amountPaise,
@@ -640,16 +634,15 @@ async function ensureDefaultAdmin() {
     const hash = await bcrypt.hash(defaultPassword, 12);
     admin = new AdminUser({ email, passwordHash: hash, totpEnabled: false, totpSecret: "" });
     await admin.save();
-    console.log(`✅ Default admin created for ${email}`);
-    console.log("👉 IMPORTANT: Change the default password after first login.");
+
   } else if (forceReset) {
     admin.passwordHash = await bcrypt.hash(defaultPassword, 12);
     admin.totpEnabled = false;
     admin.totpSecret = "";
     await admin.save();
-    console.log(`✅ Admin password reset for ${email}`);
+
   } else {
-    console.log(`ℹ️ Admin exists for ${email} (no reset).`);
+
   }
 }
 ensureDefaultAdmin().catch((err) => console.error("❌ Failed to ensure default admin:", err));

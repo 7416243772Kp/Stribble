@@ -9,6 +9,29 @@
   <script src="/js/settings.js" defer></script>
   <script src="/js/checkout.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var cb = document.getElementById('termsCheckbox');
+      var btn = document.getElementById('payment-btn');
+      if (cb && btn) {
+        cb.addEventListener('change', function() {
+          if (cb.checked) {
+            btn.disabled = false;
+            btn.style.background = '';
+            btn.style.boxShadow = '0 10px 20px -5px rgba(37, 99, 235, 0.4)';
+            btn.style.cursor = 'pointer';
+            btn.style.opacity = '1';
+          } else {
+            btn.disabled = true;
+            btn.style.background = '#94a3b8';
+            btn.style.boxShadow = 'none';
+            btn.style.cursor = 'not-allowed';
+            btn.style.opacity = '0.85';
+          }
+        });
+      }
+    });
+  </script>
   
   <style>
     /* LOCAL OVERRIDES FOR UNIFIED CHECKOUT DESIGN */
@@ -92,7 +115,7 @@
                 </div>
 
                 <!-- Main CTA -->
-                <button type="submit" id="payment-btn" class="btn btn--primary btn--block" style="padding: 16px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);">
+                <button type="submit" id="payment-btn" class="btn btn--primary btn--block" disabled style="padding: 16px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; background: #94a3b8; box-shadow: none; cursor: not-allowed; opacity: 0.85; transition: all 0.3s ease;">
                     Proceed to Pay
                 </button>
 

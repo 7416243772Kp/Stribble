@@ -131,9 +131,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (navToggle && links) {
         navToggle.addEventListener('click', () => {
-            const isFlex = links.style.display === 'flex';
-            links.style.display = isFlex ? 'none' : 'flex';
-            navToggle.setAttribute('aria-expanded', String(!isFlex));
+            links.classList.toggle('active');
+            navToggle.setAttribute('aria-expanded', String(links.classList.contains('active')));
+        });
+
+        // Close menu when a link inside is clicked
+        links.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('click', () => {
+                links.classList.remove('active');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
         });
     }
 });

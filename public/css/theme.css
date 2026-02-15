@@ -2190,3 +2190,597 @@ label {
     border-bottom: none;
 }
 
+/* =========================================
+   HERO GRID CLASSES (replaces inline styles)
+   ========================================= */
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero__image img {
+  width: 100%;
+  height: auto;
+  max-width: 550px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+/* =========================================
+   COMPREHENSIVE MOBILE RESPONSIVE
+   ========================================= */
+
+/* ---------- Tablet (≤768px) ---------- */
+@media (max-width: 768px) {
+
+  /* Hero: Stack to single column */
+  .hero__grid {
+    grid-template-columns: 1fr !important;
+    gap: 30px;
+    text-align: center;
+  }
+
+  .hero__content {
+    text-align: center !important;
+    max-width: 100% !important;
+  }
+
+  .hero__title {
+    font-size: 2.25rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .hero__subtitle {
+    font-size: 1rem !important;
+    max-width: 100% !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero__actions {
+    justify-content: center !important;
+    flex-wrap: wrap;
+  }
+
+  .hero__meta {
+    justify-content: center !important;
+    flex-wrap: wrap;
+    gap: 16px !important;
+  }
+
+  .hero__image img {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .hero__image {
+    order: -1;
+  }
+
+  /* Nav: Mobile hamburger menu */
+  .nav__toggle {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .nav__links {
+    display: none !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    padding: 1rem 24px;
+    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    z-index: 99;
+  }
+
+  .nav__links.active {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nav__links .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Course grid: full-width cards */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Section head stacking */
+  .section__head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  /* Search box full-width */
+  .tools {
+    width: 100%;
+  }
+
+  .tools .search {
+    width: 100%;
+  }
+
+  .tools .search input {
+    width: 100%;
+  }
+
+  /* Footer: single column */
+  .footer__inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  /* Reviews: smaller cards */
+  .review-card-premium {
+    width: 300px;
+    padding: 20px;
+  }
+
+  .review-card {
+    min-width: 280px;
+    max-width: 280px;
+  }
+
+  /* Rating snapshot: stack vertically */
+  .rating-snapshot {
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .rating-big-score {
+    border-right: none;
+    padding-right: 0;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
+    width: 100%;
+  }
+
+  .rating-bars {
+    min-width: 100%;
+  }
+
+  /* Login modal */
+  .login-box,
+  .reset-box {
+    padding: 2rem;
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* Review modal */
+  .review-modal {
+    padding: 24px;
+    width: 95%;
+  }
+
+  /* Notify cards: full width */
+  .notify-card {
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+
+  /* Purchased courses section */
+  #my-courses-section {
+    padding: 20px !important;
+    margin-bottom: 30px !important;
+  }
+
+  #my-courses-section h2 {
+    font-size: 1.4rem !important;
+  }
+
+  /* Course detail page */
+  .course-hero h1 {
+    font-size: 2rem;
+  }
+
+  .course-hero__desc {
+    font-size: 1rem;
+  }
+
+  /* Admin sidebar */
+  .sidebar {
+    width: 100%;
+    height: auto;
+    padding: 1rem;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+  }
+
+  .sidebar-nav a {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+  }
+
+  .admin-root {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 1.5rem;
+  }
+
+  /* Admin course list */
+  #course-list {
+    grid-template-columns: 1fr;
+  }
+
+  /* Inline footer grids (legal pages) */
+  .legal-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Features section on homepage */
+  .features-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- Small phone (≤480px) ---------- */
+@media (max-width: 480px) {
+
+  body {
+    font-size: 15px;
+  }
+
+  .container {
+    padding: 0 16px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+  }
+
+  /* Hero: tighter layout */
+  .hero {
+    padding: 2.5rem 0 !important;
+  }
+
+  .hero__title {
+    font-size: 1.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .hero__subtitle {
+    font-size: 0.95rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    gap: 10px !important;
+  }
+
+  .hero__actions .btn {
+    width: 100%;
+    text-align: center;
+    padding: 0.85rem 1.5rem !important;
+  }
+
+  .hero__meta {
+    flex-direction: column;
+    gap: 10px !important;
+    align-items: center;
+  }
+
+  .hero__image img {
+    max-width: 100%;
+    border-radius: 14px;
+  }
+
+  /* Nav */
+  .nav {
+    height: 60px;
+  }
+
+  .nav__inner {
+    padding: 0;
+  }
+
+  .brand {
+    font-size: 1.1rem;
+  }
+
+  .brand__dot {
+    width: 20px;
+    height: 20px;
+  }
+
+  .brand__dot::after {
+    top: 5px;
+    left: 5px;
+    width: 7px;
+    height: 7px;
+  }
+
+  /* Section */
+  .section {
+    padding: 2.5rem 0;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+
+  /* Cards */
+  .card {
+    border-radius: 12px;
+  }
+
+  .card__body {
+    padding: 16px;
+  }
+
+  .card__title {
+    font-size: 1rem;
+  }
+
+  .card__desc {
+    font-size: 0.85rem;
+  }
+
+  /* Course detail page */
+  .course-hero {
+    padding: 2rem 0 3rem !important;
+  }
+
+  .course-hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .course-hero__desc {
+    font-size: 0.9rem;
+  }
+
+  .pricing-card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .pricing-price {
+    font-size: 2rem;
+  }
+
+  .course-tabs {
+    gap: 16px;
+    overflow-x: auto;
+  }
+
+  .course-tab {
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  /* Checkout */
+  .checkout-form {
+    padding: 1.25rem;
+  }
+
+  .checkout-layout {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  .checkout-form-panel {
+    position: static;
+    padding: 20px;
+  }
+
+  .checkout-summary-panel {
+    padding: 16px;
+  }
+
+  .checkout-course-title {
+    font-size: 1.2rem;
+  }
+
+  .checkout-total-price {
+    font-size: 1.6rem;
+  }
+
+  .checkout-course-large-thumb {
+    width: 90px;
+  }
+
+  /* Price panel */
+  .price-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .price-current {
+    font-size: 1.3rem;
+  }
+
+  .course-mini-thumb {
+    width: 50px;
+  }
+
+  .mini-title {
+    font-size: 0.9rem;
+  }
+
+  /* My courses */
+  .my-course-card {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .my-course-media {
+    width: 100%;
+    min-width: 100%;
+    height: 180px;
+  }
+
+  .my-course-body {
+    padding: 16px;
+  }
+
+  .my-course-title {
+    font-size: 1.1rem;
+  }
+
+  .btn-start-reading {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Login / Reset modal */
+  .login-box,
+  .reset-box {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  /* Review modal */
+  .review-modal {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .star {
+    font-size: 2rem;
+  }
+
+  .stars {
+    gap: 8px;
+  }
+
+  /* Reviews section */
+  .reviews-section {
+    padding: 40px 0;
+  }
+
+  .review-card-premium {
+    width: 260px;
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .reviewer-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  /* Review snapshot */
+  .rating-snapshot {
+    padding: 18px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+  }
+
+  .big-rating {
+    font-size: 3rem;
+  }
+
+  /* Footer (index.html) */
+  .footer {
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .footer__inner {
+    gap: 24px;
+  }
+
+  /* Coupon cards */
+  .coupon-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Admin stats */
+  .admin-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* OTP inputs */
+  .otp-input-single {
+    width: 40px !important;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  /* Share bar */
+  #share-bar {
+    gap: 8px;
+  }
+
+  #share-bar a,
+  #share-bar button {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  /* Legal pages: body text container */
+  .legal-page {
+    padding: 20px !important;
+    margin: 20px auto !important;
+  }
+
+  /* Notify card */
+  .notify-card {
+    top: 12px;
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    padding: 12px 14px;
+  }
+}
+
+/* ---------- Ensure touch-friendly targets ---------- */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .nav__links a,
+  .sidebar-nav a,
+  .footer a,
+  #share-bar a,
+  #share-bar button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom */
+  }
+}

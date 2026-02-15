@@ -147,6 +147,37 @@ function injectReviewModal() {
         .star-rating input:checked ~ label,
         .star-rating label:hover,
         .star-rating label:hover ~ label { color: #fbbf24; }
+        .review-success-msg {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            color: #166534;
+            font-size: 14px;
+            font-weight: 500;
+            animation: fadeInMsg 0.3s ease;
+        }
+        .review-success-msg .success-check {
+            width: 24px;
+            height: 24px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        @keyframes fadeInMsg {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     `;
     document.head.appendChild(style);
 
@@ -179,6 +210,10 @@ function injectReviewModal() {
                 </div>
 
                 <button type="submit" class="btn btn--primary" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Submit Review</button>
+                <div class="review-success-msg" id="review-success-msg">
+                    <span class="success-check">✓</span>
+                    <span>Review submitted successfully! Thank you for your feedback.</span>
+                </div>
             </form>
         </div>
     `;
@@ -215,6 +250,19 @@ function openReviewModal(courseId) {
 function closeReviewModal() {
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('review-form').reset();
+    // Reset success message
+    const successMsg = document.getElementById('review-success-msg');
+    if (successMsg) {
+        successMsg.style.display = 'none';
+        successMsg.style.background = '#f0fdf4';
+        successMsg.style.borderColor = '#86efac';
+        successMsg.style.color = '#166534';
+        successMsg.querySelector('.success-check').style.background = '#22c55e';
+        successMsg.querySelector('.success-check').textContent = '✓';
+        successMsg.querySelector('span:last-child').textContent = 'Review submitted successfully! Thank you for your feedback.';
+    }
+    const submitBtn = document.querySelector('#review-form button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
 }
 
 async function submitReview(e) {
@@ -237,14 +285,38 @@ async function submitReview(e) {
         const data = await res.json();
         
         if (data.success) {
-            alert("Review submitted successfully!");
-            closeReviewModal();
-            location.reload(); // Reloads page to update the button to "Reviewed"
+            // Show inline success message
+            const successMsg = document.getElementById('review-success-msg');
+            if (successMsg) successMsg.style.display = 'flex';
+            // Disable the submit button
+            const submitBtn = document.querySelector('#review-form button[type="submit"]');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
+            // Reload after a short delay so user sees the message
+            setTimeout(() => { location.reload(); }, 2000);
         } else {
-            alert(data.message || "Failed to submit review");
+            // Show inline error instead of alert
+            const successMsg = document.getElementById('review-success-msg');
+            if (successMsg) {
+                successMsg.style.display = 'flex';
+                successMsg.style.background = '#fef2f2';
+                successMsg.style.borderColor = '#fca5a5';
+                successMsg.style.color = '#991b1b';
+                successMsg.querySelector('.success-check').style.background = '#ef4444';
+                successMsg.querySelector('.success-check').textContent = '✕';
+                successMsg.querySelector('span:last-child').textContent = data.message || 'Failed to submit review';
+            }
         }
     } catch (err) {
         console.error(err);
-        alert("Error submitting review");
+        const successMsg = document.getElementById('review-success-msg');
+        if (successMsg) {
+            successMsg.style.display = 'flex';
+            successMsg.style.background = '#fef2f2';
+            successMsg.style.borderColor = '#fca5a5';
+            successMsg.style.color = '#991b1b';
+            successMsg.querySelector('.success-check').style.background = '#ef4444';
+            successMsg.querySelector('.success-check').textContent = '✕';
+            successMsg.querySelector('span:last-child').textContent = 'Error submitting review';
+        }
     }
 }

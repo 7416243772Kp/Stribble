@@ -4,113 +4,483 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Reader | Stribble</title>
-    <!-- PDF.js Local -->
-    <script src="/js/lib/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             margin: 0;
-            background-color: #1a1a1a; /* Dark background */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            color: #1e293b;
+        }
+
+        /* ==================== PROGRESS BAR (Top) ==================== */
+        #progress-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            z-index: 2000;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6);
+            border-radius: 0 2px 2px 0;
+            transition: width 0.4s ease;
+        }
+
+        /* ==================== TOP BAR ==================== */
+        .top-bar {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1500;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .back-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .top-bar-center {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.5px;
+        }
+
+        .top-bar-center span {
+            color: #6366f1;
+        }
+
+        .menu-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            transition: all 0.15s ease;
+        }
+
+        .menu-toggle:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            transform: none;
+        }
+
+        /* ==================== MAIN LAYOUT ==================== */
+        .reader-layout {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            padding-top: 52px; /* top bar + progress bar */
+        }
+
+        /* ==================== VIEWER (Left / Main) ==================== */
+        .viewer-area {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            user-select: none; /* Disable text selection */
-            -webkit-user-select: none;
-            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 24px 20px 100px 20px;
+            position: relative;
         }
 
-        /* Viewer Container */
         #viewer-container {
             position: relative;
-            margin: 20px 0 80px 0; /* Space for fixed footer */
-            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
             background: #fff;
+            max-width: 95%;
+            border-radius: 8px;
+            overflow: visible;
+            display: inline-block;
+        }
+
+        #page-image {
+            display: block;
             max-width: 100%;
+            height: auto;
+            pointer-events: none;
+        }
+
+        /* Watermark Overlay */
+        .watermark-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .watermark-text {
+            position: absolute;
+            color: rgba(128, 128, 128, 0.12);
+            font-size: 18px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            white-space: nowrap;
+            transform: rotate(-45deg);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Loading Spinner */
+        .page-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .page-loading .spinner {
+            width: 28px; height: 28px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ==================== SIDEBAR (Right — White, inline) ==================== */
+        .page-sidebar {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+            background: #ffffff;
+            border-left: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .page-sidebar.open {
+            width: 270px;
+            min-width: 270px;
+            border-left-color: #e2e8f0;
+        }
+
+        .sidebar-header {
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-header .progress-summary {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .sidebar-header .progress-summary span {
+            color: #6366f1;
+            font-weight: 600;
+        }
+
+        /* Mini progress bar inside sidebar */
+        .sidebar-progress-track {
+            width: 100%;
+            height: 4px;
+            background: #f1f5f9;
+            border-radius: 2px;
+            margin-top: 10px;
             overflow: hidden;
         }
 
-        canvas {
-            display: block;
-            width: 100%; /* Responsive canvas */
-            height: auto;
+        .sidebar-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #6366f1);
+            border-radius: 2px;
+            transition: width 0.4s ease;
         }
 
-        /* 🔒 BLUR FILTER CLASS */
+        /* Page List */
+        .page-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+
+        .page-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .page-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .page-list::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .page-list::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+
+        .page-item {
+            display: flex;
+            align-items: center;
+            padding: 9px 18px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #94a3b8;
+            transition: all 0.15s ease;
+            gap: 12px;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .page-item:hover {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .page-item.active {
+            background: #eff6ff;
+            color: #2563eb;
+            border-left-color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .page-item.visited {
+            color: #475569;
+        }
+
+        .page-item .page-number {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f8fafc;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+            color: #94a3b8;
+            transition: all 0.15s ease;
+        }
+
+        .page-item.active .page-number {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .page-item.visited .page-number {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .page-item .page-label {
+            flex: 1;
+        }
+
+        .page-item .check-icon {
+            font-size: 12px;
+            color: #22c55e;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .page-item.visited .check-icon {
+            opacity: 1;
+        }
+
+        /* ==================== CONTROLS (Bottom) ==================== */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            backdrop-filter: blur(12px);
+        }
+
+        .controls button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .controls button:hover { background: #2563eb; transform: translateY(-1px); }
+        .controls button:active { transform: translateY(0); }
+        .controls button:disabled { background: #cbd5e1; cursor: not-allowed; opacity: 0.6; }
+
+        #page-info {
+            color: #475569;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* ==================== SECURITY ==================== */
         .blurred {
             filter: blur(15px);
             pointer-events: none;
         }
 
-        /* 🔒 SECURITY WARNING OVERLAY */
         #security-warning {
-            display:none; 
-            position:fixed; 
-            top:0; left:0; width:100%; height:100%; 
-            background:rgba(0,0,0,0.95); 
-            color:white; 
-            z-index:9999; 
-            text-align:center; 
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            z-index: 9999;
+            text-align: center;
             flex-direction: column;
             justify-content: center;
             align-items: center;
         }
 
-
-
-        /* Controls Footer */
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            background: rgba(30, 30, 30, 0.9);
-            padding: 12px 24px;
-            border-radius: 50px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            z-index: 1000;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            border: 1px solid #444;
-            backdrop-filter: blur(10px);
-        }
-
-        button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
-
-        button:hover { background: #2563eb; transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
-
-        #page-info {
-            color: #e2e8f0;
-            font-variant-numeric: tabular-nums;
-            font-weight: 500;
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .top-bar-center { display: none; }
         }
     </style>
 </head>
-<body oncontextmenu="return false;"> <!-- Disable Right Click -->
+<body oncontextmenu="return false;">
 
+    <!-- Progress Bar -->
+    <div id="progress-bar-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <a href="/my-courses" class="back-btn" title="Back to My Courses">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            My Courses
+        </a>
+        <div class="top-bar-center">
+            <span id="progress-label-inline">0%</span> complete
+        </div>
+        <button class="menu-toggle" id="sidebarToggle" title="Toggle page list">☰</button>
+    </div>
+
+    <!-- Security Warning -->
     <div id="security-warning">
         <h1 style="color: #ef4444; margin-bottom: 10px;">⚠️ Security Alert</h1>
         <p style="font-size: 1.2rem; color: #cbd5e1;">Content is hidden while the window is inactive.</p>
         <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 5px;">Please verify your identity if requested.</p>
     </div>
 
-    <div id="viewer-container">
-        <!-- Canvas injected here -->
+    <!-- Sidebar is part of the flex layout, no backdrop needed -->
+
+    <div class="reader-layout">
+        <!-- Main Viewer -->
+        <div class="viewer-area" id="viewerArea">
+            <div id="viewer-container">
+                <div id="page-loading" class="page-loading">
+                    <div class="spinner"></div>
+                    <span>Loading course...</span>
+                </div>
+                <img id="page-image" alt="Course Page" style="display:none;" />
+                <div id="watermark-overlay" class="watermark-overlay"></div>
+            </div>
+        </div>
+
+        <!-- Page Sidebar (White, starts closed) -->
+        <aside class="page-sidebar" id="pageSidebar">
+            <div class="sidebar-header">
+                <h3>📄 Pages</h3>
+                <div class="progress-summary">
+                    <span id="sidebar-progress-pct">0%</span> completed · <span id="sidebar-visited-count">0</span>/<span id="sidebar-total-count">0</span> pages
+                </div>
+                <div class="sidebar-progress-track">
+                    <div class="sidebar-progress-fill" id="sidebarProgressFill"></div>
+                </div>
+            </div>
+            <div class="page-list" id="pageList">
+                <!-- Page items injected dynamically -->
+            </div>
+        </aside>
     </div>
 
+    <!-- Bottom Controls -->
     <div class="controls">
-        <button id="prev">← Previous</button>
+        <button id="prev">← Prev</button>
         <span id="page-info">Loading...</span>
         <button id="next">Next →</button>
     </div>
@@ -118,17 +488,11 @@
     <script>
         // GLOBAL ERROR HANDLER
         window.onerror = function(msg, url, lineNo, columnNo, error) {
-            alert("Script Error: " + msg + "\nLine: " + lineNo);
+            console.error("Script Error:", msg, "Line:", lineNo);
             return false;
         };
 
-        if (typeof pdfjsLib === 'undefined') {
-            alert("Error: PDF Library could not be loaded. Please check your internet connection or try disabling ad blockers.");
-            document.getElementById('page-info').textContent = "Lib Error";
-            throw new Error("pdfjsLib missing");
-        }
-
-        // 1. Get Course ID
+        // ==================== STATE ====================
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get('id');
 
@@ -137,41 +501,253 @@
             window.location.href = "/";
         }
 
-        // 2. Setup PDF.js Worker (Local)
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/js/lib/pdf.worker.min.js';
-
-        let pdfDoc = null,
-            pageNum = 1,
-            pageRendering = false,
-            pageNumPending = null,
-            scale = 1.5,
-            canvas = document.createElement('canvas'),
-            ctx = canvas.getContext('2d'),
-            viewerContainer = document.getElementById('viewer-container');
-        
-        viewerContainer.appendChild(canvas);
-
-        // 3. User Info for Watermark
+        let pageNum = 1;
+        let totalPages = 0;
         let watermarkText = "Loading...";
+        let isLoadingPage = false;
+        let visitedPages = new Set();
+        let sidebarOpen = false;
 
-        // 🔒 INIT VIEWER: Check Access & Get Watermark
+        // DOM refs
+        const pageImage = document.getElementById('page-image');
+        const pageLoading = document.getElementById('page-loading');
+        const watermarkOverlay = document.getElementById('watermark-overlay');
+        const pageList = document.getElementById('pageList');
+        const progressBar = document.getElementById('progress-bar');
+        const progressLabelInline = document.getElementById('progress-label-inline');
+        const sidebarProgressFill = document.getElementById('sidebarProgressFill');
+        const sidebarProgressPct = document.getElementById('sidebar-progress-pct');
+        const sidebarVisitedCount = document.getElementById('sidebar-visited-count');
+        const sidebarTotalCount = document.getElementById('sidebar-total-count');
+
+        // ==================== LOCAL STORAGE HELPERS ====================
+        const STORAGE_KEY_PAGE = `stribble_last_page_${courseId}`;
+        const STORAGE_KEY_VISITED = `stribble_visited_${courseId}`;
+
+        function saveProgress() {
+            try {
+                localStorage.setItem(STORAGE_KEY_PAGE, pageNum.toString());
+                localStorage.setItem(STORAGE_KEY_VISITED, JSON.stringify([...visitedPages]));
+            } catch(e) {}
+        }
+
+        function loadSavedProgress() {
+            try {
+                const savedPage = localStorage.getItem(STORAGE_KEY_PAGE);
+                const savedVisited = localStorage.getItem(STORAGE_KEY_VISITED);
+                if (savedVisited) {
+                    const arr = JSON.parse(savedVisited);
+                    arr.forEach(p => visitedPages.add(p));
+                }
+                return savedPage ? parseInt(savedPage, 10) : 1;
+            } catch(e) {
+                return 1;
+            }
+        }
+
+        // ==================== WATERMARK ====================
+        function renderWatermark() {
+            watermarkOverlay.innerHTML = '';
+            const container = document.getElementById('viewer-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const stepX = Math.max(width / 2, 250);
+            const stepY = Math.max(height / 4, 200);
+            for (let x = -100; x < width + 100; x += stepX) {
+                for (let y = 0; y < height + 100; y += stepY) {
+                    const span = document.createElement('span');
+                    span.className = 'watermark-text';
+                    span.textContent = watermarkText;
+                    span.style.left = x + 'px';
+                    span.style.top = y + 'px';
+                    watermarkOverlay.appendChild(span);
+                }
+            }
+        }
+
+        // ==================== PROGRESS ====================
+        function updateProgress() {
+            const pct = totalPages > 0 ? Math.round((visitedPages.size / totalPages) * 100) : 0;
+            progressBar.style.width = pct + '%';
+            progressLabelInline.textContent = pct + '%';
+            sidebarProgressFill.style.width = pct + '%';
+            sidebarProgressPct.textContent = pct + '%';
+            sidebarVisitedCount.textContent = visitedPages.size;
+            sidebarTotalCount.textContent = totalPages;
+        }
+
+        // ==================== SIDEBAR ====================
+        const sidebar = document.getElementById('pageSidebar');
+
+        function openSidebar() {
+            sidebarOpen = true;
+            sidebar.classList.add('open');
+        }
+
+        function closeSidebar() {
+            sidebarOpen = false;
+            sidebar.classList.remove('open');
+        }
+
+        function toggleSidebar() {
+            sidebarOpen ? closeSidebar() : openSidebar();
+        }
+
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+        function buildPageList() {
+            pageList.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const item = document.createElement('div');
+                item.className = 'page-item';
+                item.dataset.page = i;
+                item.innerHTML = `
+                    <div class="page-number">${i}</div>
+                    <div class="page-label">Page ${i}</div>
+                    <span class="check-icon">✓</span>
+                `;
+                item.addEventListener('click', () => loadPage(i));
+                pageList.appendChild(item);
+            }
+            updateSidebarHighlight();
+        }
+
+        function updateSidebarHighlight() {
+            const items = pageList.querySelectorAll('.page-item');
+            items.forEach(item => {
+                const p = parseInt(item.dataset.page, 10);
+                item.classList.toggle('active', p === pageNum);
+                item.classList.toggle('visited', visitedPages.has(p) && p !== pageNum);
+            });
+
+            // Scroll active item into view
+            const activeItem = pageList.querySelector('.page-item.active');
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        // ==================== PAGE LOADING ====================
+        function showLoading() {
+            pageLoading.style.display = 'flex';
+            pageImage.style.display = 'none';
+        }
+
+        function hideLoading() {
+            pageLoading.style.display = 'none';
+            pageImage.style.display = 'block';
+        }
+
+        function loadPage(num) {
+            if (isLoadingPage || num < 1 || num > totalPages) return;
+            isLoadingPage = true;
+            showLoading();
+
+            const imgUrl = `/api/courses/page-image/${courseId}/${num}`;
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                pageImage.src = imgUrl;
+                hideLoading();
+                isLoadingPage = false;
+                pageNum = num;
+
+                // Mark as visited
+                visitedPages.add(num);
+                saveProgress();
+                updateProgress();
+
+                updateControls();
+                updateSidebarHighlight();
+
+                // Scroll viewer to top
+                document.getElementById('viewerArea').scrollTop = 0;
+
+                requestAnimationFrame(() => renderWatermark());
+            };
+            tempImg.onerror = function() {
+                hideLoading();
+                isLoadingPage = false;
+                fetch(imgUrl).then(res => {
+                    if (res.status === 401 || res.status === 403) {
+                        alert("Access Denied: Your session expired or you haven't purchased this course.");
+                        window.location.href = "/my-courses.html";
+                    } else {
+                        alert("Error loading page " + num + ". Please try again.");
+                    }
+                }).catch(() => {
+                    alert("Network error. Please check your connection.");
+                });
+            };
+            tempImg.src = imgUrl;
+        }
+
+        // ==================== CONTROLS ====================
+        function updateControls() {
+            document.getElementById('page-info').textContent = `${pageNum} / ${totalPages}`;
+            document.getElementById('prev').disabled = pageNum <= 1;
+            document.getElementById('next').disabled = pageNum >= totalPages;
+        }
+
+        function onPrevPage() { if (pageNum > 1) loadPage(pageNum - 1); }
+        function onNextPage() { if (pageNum < totalPages) loadPage(pageNum + 1); }
+
+        document.getElementById('prev').addEventListener('click', onPrevPage);
+        document.getElementById('next').addEventListener('click', onNextPage);
+
+        document.addEventListener('keydown', (e) => {
+            if (totalPages === 0) return;
+            if (e.key === 'ArrowLeft') onPrevPage();
+            if (e.key === 'ArrowRight') onNextPage();
+        });
+
+        // ==================== INIT ====================
         async function initViewer() {
             try {
-                const response = await fetch(`/api/courses/access/${courseId}`);
-                const data = await response.json();
+                document.getElementById('page-info').textContent = "Verifying...";
 
-                if (!data.success) {
-                    alert(data.message);
-                    window.location.href = "/my-courses"; 
+                // 1. Check access & get watermark data
+                const accessRes = await fetch(`/api/courses/access/${courseId}`);
+                const accessData = await accessRes.json();
+
+                if (!accessData.success) {
+                    alert(accessData.message);
+                    window.location.href = "/my-courses";
                     return;
                 }
 
-                // Generate the watermark text using user email and purchase date
-                const purchaseDate = data.purchaseDate ? new Date(data.purchaseDate).toLocaleDateString() : 'N/A';
-                watermarkText = `${data.userEmail} | Purchased: ${purchaseDate}`; 
+                const purchaseDate = accessData.purchaseDate ? new Date(accessData.purchaseDate).toLocaleDateString() : 'N/A';
+                watermarkText = `${accessData.userEmail} | Purchased: ${purchaseDate}`;
 
-                // Now Load the PDF
-                loadPdf();
+                // 2. Get total pages
+                const pagesRes = await fetch(`/api/courses/pages/${courseId}`);
+                const pagesData = await pagesRes.json();
+
+                if (!pagesData.success) {
+                    alert("Error loading course pages.");
+                    return;
+                }
+
+                totalPages = pagesData.totalPages;
+
+                if (totalPages === 0) {
+                    document.getElementById('page-info').textContent = "No pages";
+                    pageLoading.innerHTML = '<span style="color:#ef4444;">No pages available yet. Please contact support.</span>';
+                    return;
+                }
+
+                // 3. Build sidebar
+                buildPageList();
+                updateProgress();
+
+                // 4. Resume from last page or start at 1
+                const resumePage = loadSavedProgress();
+                const startPage = (resumePage >= 1 && resumePage <= totalPages) ? resumePage : 1;
+
+                // Update sidebar with loaded visited pages
+                updateSidebarHighlight();
+                updateProgress();
+
+                loadPage(startPage);
 
             } catch (err) {
                 console.error(err);
@@ -179,192 +755,7 @@
             }
         }
 
-        // 4. Load Document
-        // 4. Load Document (Robust Fetch Method)
-        const streamUrl = `/api/courses/stream/${courseId}`;
-
-        async function loadPdf() {
-            try {
-                // DEBUG ALERTS
-                // alert("Debug: Starting fetch for " + streamUrl);
-                document.getElementById('page-info').textContent = "Authenticating...";
-                
-                const res = await fetch(streamUrl);
-                
-                // alert("Debug: Server Status " + res.status);
-
-                if (res.status === 401 || res.status === 403) {
-                     document.getElementById('page-info').textContent = "Access Denied";
-                     alert("Access Denied: You have not purchased this course or your session expired.");
-                     window.location.href = "/my-courses.html";
-                     return;
-                }
-                
-                if (res.status === 404) {
-                     document.getElementById('page-info').textContent = "File Not Found";
-                     // Try to read the error message
-                     const text = await res.text(); 
-                     alert("File Not Found Error: " + text);
-                     return;
-                }
-
-                if (!res.ok) {
-                    throw new Error(`Server Error: ${res.status}`);
-                }
-
-                document.getElementById('page-info').textContent = "Downloading PDF...";
-                
-                // Use ArrayBuffer to pass data directly to worker
-                const buffer = await res.arrayBuffer();
-                console.log("PDF downloaded, bytes:", buffer.byteLength);
-
-                if (buffer.byteLength < 1000) {
-                     // Check if it's text error
-                     try {
-                        const dec = new TextDecoder();
-                        const text = dec.decode(buffer);
-                        console.warn("Small text response:", text);
-                        alert("Server error: " + text);
-                        return;
-                     } catch(e){}
-                }
-
-                // Load directly with data
-                const loadingTask = pdfjsLib.getDocument({ data: buffer });
-                
-                loadingTask.promise.then(function(pdfDoc_) {
-                    pdfDoc = pdfDoc_;
-                    document.getElementById('page-info').textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
-                    renderPage(pageNum);
-                    // alert("Debug: PDF Loaded!");
-                }).catch(function(error) {
-                    console.error("PDF Parsing Error:", error);
-                    alert("Error parsing PDF file. \nDetails: " + error.message);
-                    document.getElementById('page-info').textContent = "Pdf Error";
-                });
-
-            } catch (err) {
-                console.error("Load Error:", err);
-                alert("Failed to load course: " + err.message);
-                document.getElementById('page-info').textContent = "Error";
-            }
-        }
-
-        // loadPdf(); // Removed: Called by initViewer instead
-
-        // 5. Render Page
-        function renderPage(num) {
-            pageRendering = true;
-            
-            pdfDoc.getPage(num).then(function(page) {
-                const containerWidth = viewerContainer.clientWidth;
-                
-                // 1. Base Scale (Fit Width)
-                const unscaledViewport = page.getViewport({ scale: 1 });
-                const fitScale = containerWidth / unscaledViewport.width;
-
-                // 2. High-DPI Multiplier (Quality Boost)
-                // Force Ultra High Quality (4.0x) - Equivalent to ~300 DPI print quality
-                const outputScale = 4.0; 
-
-                // 3. Create High-Res Viewport
-                const viewport = page.getViewport({ scale: fitScale * outputScale });
-                
-                // 4. Set Canvas Dimensions (Physical Pixels)
-                canvas.width = Math.floor(viewport.width);
-                canvas.height = Math.floor(viewport.height);
-
-                // 5. Enhance Rendering Context
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                
-                const renderTask = page.render(renderContext);
-
-                renderTask.promise.then(function() {
-                    pageRendering = false;
-                    
-                    // --- START WATERMARK LOGIC ---
-                    ctx.save();
-                    
-                    // Set style: Semi-transparent grey
-                    ctx.fillStyle = "rgba(128, 128, 128, 0.15)"; // 15% opacity grey
-                    ctx.font = "bold 60px Arial"; // Larger font for higher res
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-
-                    // Rotate the watermark for better security coverage
-                    const angle = -45 * Math.PI / 180;
-                    
-                    // Define grid spacing (Dynamic based on size to ensure ~4 watermarks)
-                    const stepX = canvas.width / 1.5; 
-                    const stepY = canvas.height / 2.5;
-
-                    // Draw repeating grid across the high-res canvas (Reduced range)
-                    for (let x = 0; x < canvas.width; x += stepX) {
-                        for (let y = 0; y < canvas.height; y += stepY) {
-                            ctx.save();
-                            // Center in the zone
-                            ctx.translate(x + stepX/2, y + stepY/2);
-                            ctx.rotate(angle);
-                            ctx.fillText(watermarkText, 0, 0);
-                            ctx.restore();
-                        }
-                    }
-                    
-                    ctx.restore();
-                    // --- END WATERMARK LOGIC ---
-
-                    if (pageNumPending !== null) {
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                });
-            });
-
-            document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
-            document.getElementById('prev').disabled = num <= 1;
-            document.getElementById('next').disabled = num >= pdfDoc.numPages;
-        }
-
-        function queueRenderPage(num) {
-            if (pageRendering) {
-                pageNumPending = num;
-            } else {
-                renderPage(num);
-            }
-        }
-
-        function onPrevPage() {
-            if (!pdfDoc || pageNum <= 1) return;
-            pageNum--;
-            queueRenderPage(pageNum);
-        }
-
-        function onNextPage() {
-            if (!pdfDoc || pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            queueRenderPage(pageNum);
-        }
-
-        document.getElementById('prev').addEventListener('click', onPrevPage);
-        document.getElementById('next').addEventListener('click', onNextPage);
-
-        // Keyboard Navigation (Arrow Keys)
-        document.addEventListener('keydown', (e) => {
-            if (!pdfDoc) return;
-            if (e.key === 'ArrowLeft') onPrevPage();
-            if (e.key === 'ArrowRight') onNextPage();
-        });
-
-
-        // 🔒 6. SECURITY FEATURES
-
-        // Disable Copy Shortcuts
+        // ==================== SECURITY ====================
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'c' || e.key === 'u')) {
                 e.preventDefault();
@@ -372,7 +763,6 @@
             }
         });
 
-        // Blur on Tab Switch / Window Blur
         window.addEventListener('blur', () => {
             document.getElementById('viewer-container').classList.add('blurred');
             document.getElementById('security-warning').style.display = 'flex';
@@ -382,23 +772,24 @@
         window.addEventListener('focus', () => {
             document.getElementById('viewer-container').classList.remove('blurred');
             document.getElementById('security-warning').style.display = 'none';
-            document.title = "Secure Course Reader";
-        });
-        
-        // Disable Dragging images (if any)
-        document.addEventListener('dragstart', function(e) {
-            e.preventDefault();
+            document.title = "Course Reader | Stribble";
         });
 
-        initViewer(); // Start the process
+        document.addEventListener('dragstart', function(e) { e.preventDefault(); });
 
-        // Periodically check session (Optional heartbeat)
+        window.addEventListener('resize', () => {
+            if (totalPages > 0) renderWatermark();
+        });
+
+        initViewer();
+
+        // Session heartbeat
         setInterval(async () => {
              try {
-                const res = await fetch('/api/auth/me'); // Simple pings
-                if(res.status === 401) location.reload(); // Kick if session died
+                const res = await fetch('/api/auth/me');
+                if(res.status === 401) location.reload();
              } catch(e){}
-        }, 60000); // Check every minute
+        }, 60000);
 
     </script>
 </body>
