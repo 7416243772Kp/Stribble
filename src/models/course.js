@@ -27,11 +27,6 @@ const courseSchema = new mongoose.Schema(
       required: true, 
       select: false // Keeps it hidden from public API calls
     },
-    pageImages: {
-      type: [String], // Array of image filenames: ["page-1.png", "page-2.png", ...]
-      default: [],
-      select: false // Hidden from public API
-    },
     totalPages: {
       type: Number,
       default: 0

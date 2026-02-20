@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Reader | Stribble</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -14,8 +15,6 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             min-height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
             overflow: hidden;
             color: #1e293b;
         }
@@ -145,26 +144,86 @@
             display: inline-block;
         }
 
-        #page-image {
-            display: block;
-            max-width: 100%;
-            height: auto;
-            pointer-events: none;
+        /* PDF page wrapper — positions canvas, text layer, and annotation layer */
+        .pdf-page-wrapper {
+            position: relative;
+            display: inline-block;
         }
 
-        /* Watermark Overlay */
+        .pdf-page-wrapper canvas {
+            display: block;
+        }
+
+        /* ==================== TEXT LAYER (selectable text, no copy) ==================== */
+        .pdf-page-wrapper .textLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.3;
+            line-height: 1.0;
+            /* Allow text selection */
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        .pdf-page-wrapper .textLayer span,
+        .pdf-page-wrapper .textLayer br {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            transform-origin: 0% 0%;
+        }
+
+        /* Selection highlight color */
+        .pdf-page-wrapper .textLayer ::selection {
+            background: rgba(99, 102, 241, 0.3);
+            color: transparent;
+        }
+
+        .pdf-page-wrapper .textLayer ::-moz-selection {
+            background: rgba(99, 102, 241, 0.3);
+            color: transparent;
+        }
+
+        /* ==================== ANNOTATION LAYER (clickable links) ==================== */
+        .pdf-page-wrapper .annotationLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .pdf-page-wrapper .annotationLayer a {
+            position: absolute;
+            display: block;
+        }
+
+        .pdf-page-wrapper .annotationLayer a:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-radius: 2px;
+        }
+
+        /* Watermark Overlay — on top of everything but pointer-events: none */
         .watermark-overlay {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
             overflow: hidden;
-            z-index: 10;
+            z-index: 20;
         }
 
         .watermark-text {
             position: absolute;
-            color: rgba(128, 128, 128, 0.12);
+            color: rgba(128, 128, 128, 0.10);
             font-size: 18px;
             font-weight: bold;
             font-family: Arial, sans-serif;
@@ -172,6 +231,7 @@
             transform: rotate(-45deg);
             user-select: none;
             -webkit-user-select: none;
+            pointer-events: none;
         }
 
         /* Loading Spinner */
@@ -412,13 +472,37 @@
             align-items: center;
         }
 
+        /* ==================== COPY BLOCKED TOAST ==================== */
+        #copy-toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #0f172a;
+            color: #f1f5f9;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 3000;
+        }
+
+        #copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
         /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
             .top-bar-center { display: none; }
         }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
     <!-- Progress Bar -->
     <div id="progress-bar-container">
@@ -446,7 +530,8 @@
         <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 5px;">Please verify your identity if requested.</p>
     </div>
 
-    <!-- Sidebar is part of the flex layout, no backdrop needed -->
+    <!-- Copy blocked toast -->
+    <div id="copy-toast">🔒 Copying is disabled for this content</div>
 
     <div class="reader-layout">
         <!-- Main Viewer -->
@@ -456,7 +541,12 @@
                     <div class="spinner"></div>
                     <span>Loading course...</span>
                 </div>
-                <img id="page-image" alt="Course Page" style="display:none;" />
+                <!-- PDF page wrapper: canvas + text layer + annotation layer -->
+                <div class="pdf-page-wrapper" id="pageWrapper" style="display:none;">
+                    <canvas id="page-canvas"></canvas>
+                    <div id="text-layer" class="textLayer"></div>
+                    <div id="annotation-layer" class="annotationLayer"></div>
+                </div>
                 <div id="watermark-overlay" class="watermark-overlay"></div>
             </div>
         </div>
@@ -485,7 +575,12 @@
         <button id="next">Next →</button>
     </div>
 
-    <script>
+    <!-- PDF.js -->
+    <script type="module">
+        // Import PDF.js ESM build
+        const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.worker.min.mjs';
+
         // GLOBAL ERROR HANDLER
         window.onerror = function(msg, url, lineNo, columnNo, error) {
             console.error("Script Error:", msg, "Line:", lineNo);
@@ -507,10 +602,14 @@
         let isLoadingPage = false;
         let visitedPages = new Set();
         let sidebarOpen = false;
+        let pdfDoc = null; // PDF.js document instance
 
         // DOM refs
-        const pageImage = document.getElementById('page-image');
+        const pageCanvas = document.getElementById('page-canvas');
+        const pageWrapper = document.getElementById('pageWrapper');
         const pageLoading = document.getElementById('page-loading');
+        const textLayerDiv = document.getElementById('text-layer');
+        const annotationLayerDiv = document.getElementById('annotation-layer');
         const watermarkOverlay = document.getElementById('watermark-overlay');
         const pageList = document.getElementById('pageList');
         const progressBar = document.getElementById('progress-bar');
@@ -519,6 +618,62 @@
         const sidebarProgressPct = document.getElementById('sidebar-progress-pct');
         const sidebarVisitedCount = document.getElementById('sidebar-visited-count');
         const sidebarTotalCount = document.getElementById('sidebar-total-count');
+        const copyToast = document.getElementById('copy-toast');
+
+        // ==================== COPY PROTECTION (Termly-style) ====================
+        // Allow text selection but block ALL copy mechanisms
+        let copyToastTimer = null;
+        function showCopyToast() {
+            copyToast.classList.add('show');
+            clearTimeout(copyToastTimer);
+            copyToastTimer = setTimeout(() => copyToast.classList.remove('show'), 2500);
+        }
+
+        // Block copy/cut at the event level — wipe clipboard data
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            if (e.clipboardData) {
+                e.clipboardData.setData('text/plain', '');
+                e.clipboardData.setData('text/html', '');
+            }
+            showCopyToast();
+        });
+
+        document.addEventListener('cut', function(e) {
+            e.preventDefault();
+            if (e.clipboardData) {
+                e.clipboardData.setData('text/plain', '');
+                e.clipboardData.setData('text/html', '');
+            }
+            showCopyToast();
+        });
+
+        // Block keyboard shortcuts: Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, Ctrl+U
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                const key = e.key.toLowerCase();
+                if (key === 'c' || key === 'a' || key === 's' || key === 'p' || key === 'u') {
+                    e.preventDefault();
+                    if (key === 'c') {
+                        showCopyToast();
+                    } else if (key === 'p') {
+                        showCopyToast();
+                    }
+                }
+            }
+        });
+
+        // Block drag (prevent drag-to-drop text extraction)
+        document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+
+        // Also try to intercept the navigator.clipboard.writeText API
+        if (navigator.clipboard) {
+            const origWrite = navigator.clipboard.writeText?.bind(navigator.clipboard);
+            navigator.clipboard.writeText = async function() { return; };
+            if (navigator.clipboard.write) {
+                navigator.clipboard.write = async function() { return; };
+            }
+        }
 
         // ==================== LOCAL STORAGE HELPERS ====================
         const STORAGE_KEY_PAGE = `stribble_last_page_${courseId}`;
@@ -628,26 +783,130 @@
             }
         }
 
-        // ==================== PAGE LOADING ====================
+        // ==================== PAGE LOADING (PDF.js with TextLayer + AnnotationLayer) ====================
         function showLoading() {
             pageLoading.style.display = 'flex';
-            pageImage.style.display = 'none';
+            pageWrapper.style.display = 'none';
         }
 
         function hideLoading() {
             pageLoading.style.display = 'none';
-            pageImage.style.display = 'block';
+            pageWrapper.style.display = 'inline-block';
         }
 
-        function loadPage(num) {
-            if (isLoadingPage || num < 1 || num > totalPages) return;
+        async function loadPage(num) {
+            if (isLoadingPage || num < 1 || num > totalPages || !pdfDoc) return;
             isLoadingPage = true;
             showLoading();
 
-            const imgUrl = `/api/courses/page-image/${courseId}/${num}`;
-            const tempImg = new Image();
-            tempImg.onload = function() {
-                pageImage.src = imgUrl;
+            try {
+                // Get the page from the loaded PDF document
+                const page = await pdfDoc.getPage(num);
+
+                // Render at 2x scale for crisp display on retina screens
+                const CSS_UNITS = 1;
+                const scale = 2.0;
+                const viewport = page.getViewport({ scale });
+
+                // Size the canvas
+                pageCanvas.width = viewport.width;
+                pageCanvas.height = viewport.height;
+                // Set CSS size to make it display at 1x (sharp on retina)
+                pageCanvas.style.width = (viewport.width / scale) + 'px';
+                pageCanvas.style.height = (viewport.height / scale) + 'px';
+
+                // Set the wrapper size to match the CSS display size
+                const displayWidth = viewport.width / scale;
+                const displayHeight = viewport.height / scale;
+                pageWrapper.style.width = displayWidth + 'px';
+                pageWrapper.style.height = displayHeight + 'px';
+
+                // 1. Render canvas
+                const ctx = pageCanvas.getContext('2d');
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+
+                // 2. Render text layer (manual — selectable text, but copy is blocked)
+                textLayerDiv.innerHTML = '';
+                textLayerDiv.style.width = displayWidth + 'px';
+                textLayerDiv.style.height = displayHeight + 'px';
+
+                const textContent = await page.getTextContent();
+                const textViewport = page.getViewport({ scale: 1.0 });
+
+                // Manually position each text item as a span
+                for (const item of textContent.items) {
+                    if (!item.str || item.str.trim() === '') continue;
+
+                    const tx = item.transform;
+                    // tx = [scaleX, skewY, skewX, scaleY, translateX, translateY]
+                    const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+                    // Convert PDF coords (bottom-left origin) to CSS coords (top-left origin)
+                    const left = tx[4];
+                    const top = textViewport.height - tx[5];
+
+                    const span = document.createElement('span');
+                    span.textContent = item.str;
+                    span.style.position = 'absolute';
+                    span.style.left = left + 'px';
+                    span.style.top = (top - fontSize) + 'px';
+                    span.style.fontSize = fontSize + 'px';
+                    span.style.fontFamily = item.fontName ? item.fontName : 'sans-serif';
+                    span.style.color = 'transparent';
+                    span.style.whiteSpace = 'pre';
+                    span.style.transformOrigin = '0% 0%';
+
+                    // Apply width scaling if PDF specifies it
+                    if (item.width > 0 && item.str.length > 0) {
+                        const naturalWidth = item.str.length * fontSize * 0.55; // rough estimate
+                        if (naturalWidth > 0) {
+                            span.style.letterSpacing = ((item.width - naturalWidth) / item.str.length) + 'px';
+                        }
+                    }
+
+                    textLayerDiv.appendChild(span);
+                }
+
+                // 3. Render annotation layer (for clickable links)
+                annotationLayerDiv.innerHTML = '';
+                annotationLayerDiv.style.width = displayWidth + 'px';
+                annotationLayerDiv.style.height = displayHeight + 'px';
+
+                const annotations = await page.getAnnotations();
+
+                if (annotations.length > 0) {
+                    const annotViewport = page.getViewport({ scale: 1.0 });
+
+                    // Render link annotations manually for maximum control
+                    for (const annotation of annotations) {
+                        if (annotation.subtype === 'Link' && annotation.url) {
+                            const rect = annotation.rect;
+
+                            // Convert PDF coordinates to page coordinates
+                            const [x1, y1, x2, y2] = annotViewport.convertToViewportRectangle(rect);
+                            const left = Math.min(x1, x2);
+                            const top = Math.min(y1, y2);
+                            const width = Math.abs(x2 - x1);
+                            const height = Math.abs(y2 - y1);
+
+                            const link = document.createElement('a');
+                            link.href = annotation.url;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.style.position = 'absolute';
+                            link.style.left = left + 'px';
+                            link.style.top = top + 'px';
+                            link.style.width = width + 'px';
+                            link.style.height = height + 'px';
+                            link.style.cursor = 'pointer';
+                            link.title = annotation.url;
+                            annotationLayerDiv.appendChild(link);
+                        }
+                    }
+                }
+
                 hideLoading();
                 isLoadingPage = false;
                 pageNum = num;
@@ -664,22 +923,13 @@
                 document.getElementById('viewerArea').scrollTop = 0;
 
                 requestAnimationFrame(() => renderWatermark());
-            };
-            tempImg.onerror = function() {
+
+            } catch (err) {
                 hideLoading();
                 isLoadingPage = false;
-                fetch(imgUrl).then(res => {
-                    if (res.status === 401 || res.status === 403) {
-                        alert("Access Denied: Your session expired or you haven't purchased this course.");
-                        window.location.href = "/my-courses.html";
-                    } else {
-                        alert("Error loading page " + num + ". Please try again.");
-                    }
-                }).catch(() => {
-                    alert("Network error. Please check your connection.");
-                });
-            };
-            tempImg.src = imgUrl;
+                console.error("Page render error:", err);
+                alert("Error loading page " + num + ". Please try again.");
+            }
         }
 
         // ==================== CONTROLS ====================
@@ -719,16 +969,16 @@
                 const purchaseDate = accessData.purchaseDate ? new Date(accessData.purchaseDate).toLocaleDateString() : 'N/A';
                 watermarkText = `${accessData.userEmail} | Purchased: ${purchaseDate}`;
 
-                // 2. Get total pages
-                const pagesRes = await fetch(`/api/courses/pages/${courseId}`);
-                const pagesData = await pagesRes.json();
+                // 2. Get total pages from info endpoint
+                const infoRes = await fetch(`/api/courses/info/${courseId}`);
+                const infoData = await infoRes.json();
 
-                if (!pagesData.success) {
-                    alert("Error loading course pages.");
+                if (!infoData.success) {
+                    alert("Error loading course info.");
                     return;
                 }
 
-                totalPages = pagesData.totalPages;
+                totalPages = infoData.totalPages;
 
                 if (totalPages === 0) {
                     document.getElementById('page-info').textContent = "No pages";
@@ -736,11 +986,20 @@
                     return;
                 }
 
-                // 3. Build sidebar
+                // 3. Load the full PDF via the stream endpoint using PDF.js
+                document.getElementById('page-info').textContent = "Loading PDF...";
+
+                const loadingTask = pdfjsLib.getDocument(`/api/courses/stream/${courseId}`);
+                pdfDoc = await loadingTask.promise;
+
+                // Use the actual page count from the loaded PDF
+                totalPages = pdfDoc.numPages;
+
+                // 4. Build sidebar
                 buildPageList();
                 updateProgress();
 
-                // 4. Resume from last page or start at 1
+                // 5. Resume from last page or start at 1
                 const resumePage = loadSavedProgress();
                 const startPage = (resumePage >= 1 && resumePage <= totalPages) ? resumePage : 1;
 
@@ -756,14 +1015,7 @@
             }
         }
 
-        // ==================== SECURITY ====================
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'c' || e.key === 'u')) {
-                e.preventDefault();
-                alert('Printing and saving are disabled for security.');
-            }
-        });
-
+        // ==================== SECURITY (window blur) ====================
         window.addEventListener('blur', () => {
             document.getElementById('viewer-container').classList.add('blurred');
             document.getElementById('security-warning').style.display = 'flex';
@@ -776,12 +1028,12 @@
             document.title = "Course Reader | Stribble";
         });
 
-        document.addEventListener('dragstart', function(e) { e.preventDefault(); });
-
+        // Re-render watermark on resize
         window.addEventListener('resize', () => {
             if (totalPages > 0) renderWatermark();
         });
 
+        // Start the viewer
         initViewer();
 
         // Session heartbeat

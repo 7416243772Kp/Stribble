@@ -35,14 +35,25 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "praveenkunche975@gmail.com").to
 // =============================
 // In-memory stores
 // =============================
-const tempTokenStore = new Map(); // 2FA temp sessions
 const otpStore = new Map(); // password reset OTPs
+
+// TOTP temp tokens are now JWTs (survive server restarts)
+const TEMP_JWT_SECRET = JWT_SECRET + "_totp_temp"; // Derived secret for temp tokens
 
 // =============================
 // Helpers
 // =============================
-function generateTempToken() {
-  return crypto.randomBytes(32).toString("hex");
+function generateTempToken(payload, expiresIn = "10m") {
+  // Create a self-contained JWT temp token (survives server restarts)
+  return jwt.sign(payload, TEMP_JWT_SECRET, { expiresIn });
+}
+
+function verifyTempToken(tempToken) {
+  try {
+    return jwt.verify(tempToken, TEMP_JWT_SECRET);
+  } catch (err) {
+    return null; // expired or invalid
+  }
 }
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -119,10 +130,9 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     // If TOTP enabled and secret present -> require second step
     if (admin.totpEnabled && admin.totpSecret) {
-      const tempToken = generateTempToken();
-      tempTokenStore.set(tempToken, {
+      const tempToken = generateTempToken({
         adminId: admin._id.toString(),
-        expiresAt: Date.now() + 10 * 60 * 1000,
+        purpose: "totp-verify"
       });
       return res.json({ success: true, requireTotp: true, tempToken });
     }
@@ -134,11 +144,10 @@ router.post("/login", loginLimiter, async (req, res) => {
         issuer: "CourseHub Admin",
       });
       const qrCode = await QRCode.toDataURL(secret.otpauth_url);
-      const tempToken = generateTempToken();
-      tempTokenStore.set(tempToken, {
+      const tempToken = generateTempToken({
         adminId: admin._id.toString(),
         totpSecret: secret.base32,
-        expiresAt: Date.now() + 10 * 60 * 1000,
+        purpose: "totp-setup"
       });
       return res.json({ success: true, setupTotp: true, qrCode, secret: secret.base32, tempToken });
     }
@@ -161,16 +170,16 @@ router.post("/setup-totp", async (req, res) => {
     const { tempToken, token } = req.body;
     if (!tempToken || !token) return res.status(400).json({ success: false, message: "Missing required fields" });
 
-    const temp = tempTokenStore.get(tempToken);
-    if (!temp || Date.now() > temp.expiresAt || !temp.totpSecret) {
-      return res.status(401).json({ success: false, message: "Invalid or expired session" });
+    const temp = verifyTempToken(tempToken);
+    if (!temp || temp.purpose !== "totp-setup" || !temp.totpSecret) {
+      return res.status(401).json({ success: false, message: "Invalid or expired session. Please log in again." });
     }
 
     const verified = speakeasy.totp.verify({
       secret: temp.totpSecret,
       encoding: "base32",
       token,
-      window: 2,
+      window: 3,
     });
     if (!verified) return res.status(400).json({ success: false, message: "Invalid code. Please try again." });
 
@@ -180,8 +189,6 @@ router.post("/setup-totp", async (req, res) => {
       { new: true }
     );
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
-
-    tempTokenStore.delete(tempToken);
 
     const jwtToken = jwt.sign({ id: admin._id, email: admin.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     setAdminCookie(req, res, jwtToken);
@@ -207,9 +214,9 @@ router.post("/verify-totp", totpLimiter, async (req, res) => {
     const { tempToken, token } = req.body;
     if (!tempToken || !token) return res.status(400).json({ success: false, message: "Missing required fields" });
 
-    const temp = tempTokenStore.get(tempToken);
-    if (!temp || Date.now() > temp.expiresAt) {
-      return res.status(401).json({ success: false, message: "Invalid or expired session" });
+    const temp = verifyTempToken(tempToken);
+    if (!temp || temp.purpose !== "totp-verify") {
+      return res.status(401).json({ success: false, message: "Invalid or expired session. Please log in again." });
     }
 
     const admin = await AdminUser.findById(temp.adminId);
@@ -220,11 +227,9 @@ router.post("/verify-totp", totpLimiter, async (req, res) => {
       secret: decryptedSecret,
       encoding: "base32",
       token,
-      window: 2,
+      window: 3,
     });
     if (!ok) return res.status(400).json({ success: false, message: "Invalid code. Please try again." });
-
-    tempTokenStore.delete(tempToken);
 
     const jwtToken = jwt.sign({ id: admin._id, email: admin.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     setAdminCookie(req, res, jwtToken);
@@ -365,9 +370,9 @@ router.post("/logout", (req, res) => {
 });
 
 // Cleanup expired temp sessions/OTPs
+// Cleanup expired password reset OTPs (temp tokens are now JWTs, self-expiring)
 setInterval(() => {
   const now = Date.now();
-  for (const [key, v] of tempTokenStore.entries()) if (now > v.expiresAt) tempTokenStore.delete(key);
   for (const [key, v] of otpStore.entries()) if (now > v.expiresAt) otpStore.delete(key);
 }, 5 * 60 * 1000);
 
