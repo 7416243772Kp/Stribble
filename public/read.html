@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Reader | Stribble</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <!-- PDF.js v3 text & annotation layer CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <!-- PDF.js v3 library (classic script, not ESM) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -15,6 +18,11 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             min-height: 100vh;
+            /* Prevent selection everywhere EXCEPT the text layer */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             overflow: hidden;
             color: #1e293b;
         }
@@ -140,73 +148,47 @@
             background: #fff;
             max-width: 95%;
             border-radius: 8px;
-            overflow: visible;
+            overflow: hidden;
             display: inline-block;
         }
 
         /* PDF page wrapper — positions canvas, text layer, and annotation layer */
-        .pdf-page-wrapper {
+        #pdf-wrapper {
             position: relative;
             display: inline-block;
         }
 
-        .pdf-page-wrapper canvas {
+        #pdf-wrapper canvas {
             display: block;
         }
 
         /* ==================== TEXT LAYER (selectable text, no copy) ==================== */
-        .pdf-page-wrapper .textLayer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 0.3;
-            line-height: 1.0;
-            /* Allow text selection */
-            user-select: text;
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-        }
-
-        .pdf-page-wrapper .textLayer span,
-        .pdf-page-wrapper .textLayer br {
-            color: transparent;
-            position: absolute;
-            white-space: pre;
-            transform-origin: 0% 0%;
+        /* Allow text selection ONLY inside the text layer */
+        .textLayer {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            cursor: text;
+            opacity: 0.25;
         }
 
         /* Selection highlight color */
-        .pdf-page-wrapper .textLayer ::selection {
+        .textLayer ::selection {
             background: rgba(99, 102, 241, 0.3);
             color: transparent;
         }
 
-        .pdf-page-wrapper .textLayer ::-moz-selection {
+        .textLayer ::-moz-selection {
             background: rgba(99, 102, 241, 0.3);
             color: transparent;
         }
 
         /* ==================== ANNOTATION LAYER (clickable links) ==================== */
-        .pdf-page-wrapper .annotationLayer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            z-index: 5;
+        .annotationLayer a {
+            cursor: pointer !important;
         }
 
-        .pdf-page-wrapper .annotationLayer a {
-            position: absolute;
-            display: block;
-        }
-
-        .pdf-page-wrapper .annotationLayer a:hover {
+        .annotationLayer a:hover {
             background: rgba(99, 102, 241, 0.08);
             border-radius: 2px;
         }
@@ -218,7 +200,7 @@
             width: 100%; height: 100%;
             pointer-events: none;
             overflow: hidden;
-            z-index: 20;
+            z-index: 50;
         }
 
         .watermark-text {
@@ -444,7 +426,7 @@
 
         .controls button:hover { background: #2563eb; transform: translateY(-1px); }
         .controls button:active { transform: translateY(0); }
-        .controls button:disabled { background: #cbd5e1; cursor: not-allowed; opacity: 0.6; }
+        .controls button:disabled { background: #cbd5e1; cursor: not-allowed; opacity: 0.6; transform: none; }
 
         #page-info {
             color: #475569;
@@ -502,7 +484,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <!-- Progress Bar -->
     <div id="progress-bar-container">
@@ -541,12 +523,14 @@
                     <div class="spinner"></div>
                     <span>Loading course...</span>
                 </div>
+
                 <!-- PDF page wrapper: canvas + text layer + annotation layer -->
-                <div class="pdf-page-wrapper" id="pageWrapper" style="display:none;">
-                    <canvas id="page-canvas"></canvas>
-                    <div id="text-layer" class="textLayer"></div>
-                    <div id="annotation-layer" class="annotationLayer"></div>
+                <div id="pdf-wrapper" style="display: none; position: relative;">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="text-layer" class="textLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden;"></div>
+                    <div id="annotation-layer" class="annotationLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;"></div>
                 </div>
+
                 <div id="watermark-overlay" class="watermark-overlay"></div>
             </div>
         </div>
@@ -575,19 +559,10 @@
         <button id="next">Next →</button>
     </div>
 
-    <!-- PDF.js -->
-    <script type="module">
-        // Import PDF.js ESM build
-        const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.worker.min.mjs';
+    <script>
+        // ==================== PDF.js v3 Setup ====================
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // GLOBAL ERROR HANDLER
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            console.error("Script Error:", msg, "Line:", lineNo);
-            return false;
-        };
-
-        // ==================== STATE ====================
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get('id');
 
@@ -596,20 +571,18 @@
             window.location.href = "/";
         }
 
+        // ==================== STATE ====================
+        let pdfDoc = null;
         let pageNum = 1;
         let totalPages = 0;
         let watermarkText = "Loading...";
         let isLoadingPage = false;
         let visitedPages = new Set();
         let sidebarOpen = false;
-        let pdfDoc = null; // PDF.js document instance
 
         // DOM refs
-        const pageCanvas = document.getElementById('page-canvas');
-        const pageWrapper = document.getElementById('pageWrapper');
         const pageLoading = document.getElementById('page-loading');
-        const textLayerDiv = document.getElementById('text-layer');
-        const annotationLayerDiv = document.getElementById('annotation-layer');
+        const pdfWrapper = document.getElementById('pdf-wrapper');
         const watermarkOverlay = document.getElementById('watermark-overlay');
         const pageList = document.getElementById('pageList');
         const progressBar = document.getElementById('progress-bar');
@@ -621,7 +594,6 @@
         const copyToast = document.getElementById('copy-toast');
 
         // ==================== COPY PROTECTION (Termly-style) ====================
-        // Allow text selection but block ALL copy mechanisms
         let copyToastTimer = null;
         function showCopyToast() {
             copyToast.classList.add('show');
@@ -629,7 +601,7 @@
             copyToastTimer = setTimeout(() => copyToast.classList.remove('show'), 2500);
         }
 
-        // Block copy/cut at the event level — wipe clipboard data
+        // Block copy/cut — wipe clipboard data
         document.addEventListener('copy', function(e) {
             e.preventDefault();
             if (e.clipboardData) {
@@ -654,11 +626,7 @@
                 const key = e.key.toLowerCase();
                 if (key === 'c' || key === 'a' || key === 's' || key === 'p' || key === 'u') {
                     e.preventDefault();
-                    if (key === 'c') {
-                        showCopyToast();
-                    } else if (key === 'p') {
-                        showCopyToast();
-                    }
+                    if (key === 'c' || key === 'a') showCopyToast();
                 }
             }
         });
@@ -666,13 +634,12 @@
         // Block drag (prevent drag-to-drop text extraction)
         document.addEventListener('dragstart', function(e) { e.preventDefault(); });
 
-        // Also try to intercept the navigator.clipboard.writeText API
+        // Override clipboard API
         if (navigator.clipboard) {
-            const origWrite = navigator.clipboard.writeText?.bind(navigator.clipboard);
-            navigator.clipboard.writeText = async function() { return; };
-            if (navigator.clipboard.write) {
-                navigator.clipboard.write = async function() { return; };
-            }
+            try {
+                navigator.clipboard.writeText = async function() { return; };
+                if (navigator.clipboard.write) navigator.clipboard.write = async function() { return; };
+            } catch(e) {}
         }
 
         // ==================== LOCAL STORAGE HELPERS ====================
@@ -735,18 +702,9 @@
         // ==================== SIDEBAR ====================
         const sidebar = document.getElementById('pageSidebar');
 
-        function openSidebar() {
-            sidebarOpen = true;
-            sidebar.classList.add('open');
-        }
-
-        function closeSidebar() {
-            sidebarOpen = false;
-            sidebar.classList.remove('open');
-        }
-
         function toggleSidebar() {
-            sidebarOpen ? closeSidebar() : openSidebar();
+            sidebarOpen = !sidebarOpen;
+            sidebar.classList.toggle('open', sidebarOpen);
         }
 
         document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
@@ -776,180 +734,113 @@
                 item.classList.toggle('visited', visitedPages.has(p) && p !== pageNum);
             });
 
-            // Scroll active item into view
             const activeItem = pageList.querySelector('.page-item.active');
             if (activeItem) {
                 activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             }
         }
 
-        // ==================== PAGE LOADING (PDF.js with TextLayer + AnnotationLayer) ====================
-        function showLoading() {
-            pageLoading.style.display = 'flex';
-            pageWrapper.style.display = 'none';
-        }
-
-        function hideLoading() {
-            pageLoading.style.display = 'none';
-            pageWrapper.style.display = 'inline-block';
-        }
-
+        // ==================== PAGE LOADING (PDF.js v3 — High-DPI + renderTextLayer + AnnotationLayer) ====================
         async function loadPage(num) {
             if (isLoadingPage || num < 1 || num > totalPages || !pdfDoc) return;
             isLoadingPage = true;
-            showLoading();
+            pdfWrapper.style.display = 'none';
+            pageLoading.style.display = 'flex';
 
             try {
-                // Get the page from the loaded PDF document
                 const page = await pdfDoc.getPage(num);
 
-                // Render at 2x scale for crisp display on retina screens
-                const CSS_UNITS = 1;
-                const scale = 2.0;
-                const viewport = page.getViewport({ scale });
+                // --- 1. DYNAMIC RESPONSIVE SCALE ---
+                const viewerArea = document.getElementById('viewerArea');
+                // Calculate width accounting for padding (40px)
+                const availableWidth = viewerArea.clientWidth > 0 ? (viewerArea.clientWidth - 40) : window.innerWidth;
+                const unscaledViewport = page.getViewport({ scale: 1.0 });
 
-                // Size the canvas
-                pageCanvas.width = viewport.width;
-                pageCanvas.height = viewport.height;
-                // Set CSS size to make it display at 1x (sharp on retina)
-                pageCanvas.style.width = (viewport.width / scale) + 'px';
-                pageCanvas.style.height = (viewport.height / scale) + 'px';
+                // Calculate scale to fit width. Capped at 2.5 to prevent massive sizing on ultra-wide screens.
+                const scale = Math.min((availableWidth / unscaledViewport.width), 2.5);
+                const viewport = page.getViewport({ scale: scale });
 
-                // Set the wrapper size to match the CSS display size
-                const displayWidth = viewport.width / scale;
-                const displayHeight = viewport.height / scale;
-                pageWrapper.style.width = displayWidth + 'px';
-                pageWrapper.style.height = displayHeight + 'px';
+                // --- 2. HIGH-RESOLUTION CANVAS RENDER (Retina/High-DPI Fix) ---
+                const outputScale = window.devicePixelRatio || 1;
+                const canvas = document.getElementById('pdf-canvas');
+                const context = canvas.getContext('2d');
 
-                // 1. Render canvas
-                const ctx = pageCanvas.getContext('2d');
-                await page.render({
-                    canvasContext: ctx,
+                // Internal hardware resolution (actual pixels)
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+
+                // Visual resolution (CSS pixels)
+                canvas.style.width = Math.floor(viewport.width) + "px";
+                canvas.style.height = Math.floor(viewport.height) + "px";
+
+                // Match wrapper size so absolute layers align perfectly
+                pdfWrapper.style.width = Math.floor(viewport.width) + "px";
+                pdfWrapper.style.height = Math.floor(viewport.height) + "px";
+
+                const renderContext = {
+                    canvasContext: context,
+                    transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
                     viewport: viewport
-                }).promise;
+                };
 
-                // 2. Render text layer (manual — selectable text, but copy is blocked)
+                await page.render(renderContext).promise;
+
+                // --- 3. Render Text Layer (for selection — copy is blocked) ---
+                const textLayerDiv = document.getElementById('text-layer');
                 textLayerDiv.innerHTML = '';
-                textLayerDiv.style.width = displayWidth + 'px';
-                textLayerDiv.style.height = displayHeight + 'px';
+                textLayerDiv.style.height = Math.floor(viewport.height) + 'px';
+                textLayerDiv.style.width = Math.floor(viewport.width) + 'px';
+                textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
 
                 const textContent = await page.getTextContent();
-                const textViewport = page.getViewport({ scale: 1.0 });
+                await pdfjsLib.renderTextLayer({
+                    textContentSource: textContent,
+                    container: textLayerDiv,
+                    viewport: viewport,
+                    textDivs: []
+                });
 
-                // Manually position each text item as a span
-                for (const item of textContent.items) {
-                    if (!item.str || item.str.trim() === '') continue;
-
-                    const tx = item.transform;
-                    // tx = [scaleX, skewY, skewX, scaleY, translateX, translateY]
-                    const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
-                    // Convert PDF coords (bottom-left origin) to CSS coords (top-left origin)
-                    const left = tx[4];
-                    const top = textViewport.height - tx[5];
-
-                    const span = document.createElement('span');
-                    span.textContent = item.str;
-                    span.style.position = 'absolute';
-                    span.style.left = left + 'px';
-                    span.style.top = (top - fontSize) + 'px';
-                    span.style.fontSize = fontSize + 'px';
-                    span.style.fontFamily = item.fontName ? item.fontName : 'sans-serif';
-                    span.style.color = 'transparent';
-                    span.style.whiteSpace = 'pre';
-                    span.style.transformOrigin = '0% 0%';
-
-                    // Apply width scaling if PDF specifies it
-                    if (item.width > 0 && item.str.length > 0) {
-                        const naturalWidth = item.str.length * fontSize * 0.55; // rough estimate
-                        if (naturalWidth > 0) {
-                            span.style.letterSpacing = ((item.width - naturalWidth) / item.str.length) + 'px';
-                        }
-                    }
-
-                    textLayerDiv.appendChild(span);
-                }
-
-                // 3. Render annotation layer (for clickable links)
+                // --- 4. Render Annotation Layer (for clickable links) ---
+                const annotationLayerDiv = document.getElementById('annotation-layer');
                 annotationLayerDiv.innerHTML = '';
-                annotationLayerDiv.style.width = displayWidth + 'px';
-                annotationLayerDiv.style.height = displayHeight + 'px';
+                annotationLayerDiv.style.height = Math.floor(viewport.height) + 'px';
+                annotationLayerDiv.style.width = Math.floor(viewport.width) + 'px';
 
-                const annotations = await page.getAnnotations();
-
-                if (annotations.length > 0) {
-                    const annotViewport = page.getViewport({ scale: 1.0 });
-
-                    // Render link annotations manually for maximum control
-                    for (const annotation of annotations) {
-                        if (annotation.subtype === 'Link' && annotation.url) {
-                            const rect = annotation.rect;
-
-                            // Convert PDF coordinates to page coordinates
-                            const [x1, y1, x2, y2] = annotViewport.convertToViewportRectangle(rect);
-                            const left = Math.min(x1, x2);
-                            const top = Math.min(y1, y2);
-                            const width = Math.abs(x2 - x1);
-                            const height = Math.abs(y2 - y1);
-
-                            const link = document.createElement('a');
-                            link.href = annotation.url;
-                            link.target = '_blank';
-                            link.rel = 'noopener noreferrer';
-                            link.style.position = 'absolute';
-                            link.style.left = left + 'px';
-                            link.style.top = top + 'px';
-                            link.style.width = width + 'px';
-                            link.style.height = height + 'px';
-                            link.style.cursor = 'pointer';
-                            link.title = annotation.url;
-                            annotationLayerDiv.appendChild(link);
-                        }
-                    }
+                const annotationsData = await page.getAnnotations();
+                if (annotationsData && annotationsData.length > 0) {
+                    pdfjsLib.AnnotationLayer.render({
+                        viewport: viewport.clone({ dontFlip: true }),
+                        div: annotationLayerDiv,
+                        annotations: annotationsData,
+                        page: page,
+                        renderInteractiveForms: false
+                    });
                 }
 
-                hideLoading();
-                isLoadingPage = false;
+                // --- 5. Finish & Update UI ---
                 pageNum = num;
-
-                // Mark as visited
                 visitedPages.add(num);
                 saveProgress();
                 updateProgress();
-
-                updateControls();
                 updateSidebarHighlight();
 
-                // Scroll viewer to top
+                document.getElementById('page-info').textContent = `${pageNum} / ${totalPages}`;
+                document.getElementById('prev').disabled = pageNum <= 1;
+                document.getElementById('next').disabled = pageNum >= totalPages;
+
+                pageLoading.style.display = 'none';
+                pdfWrapper.style.display = 'block';
                 document.getElementById('viewerArea').scrollTop = 0;
 
                 requestAnimationFrame(() => renderWatermark());
 
-            } catch (err) {
-                hideLoading();
-                isLoadingPage = false;
-                console.error("Page render error:", err);
-                alert("Error loading page " + num + ". Please try again.");
+            } catch (error) {
+                console.error("Error rendering page:", error);
+                pageLoading.innerHTML = '<span style="color:#ef4444;">Error rendering page. Please try reloading.</span>';
             }
+            isLoadingPage = false;
         }
 
-        // ==================== CONTROLS ====================
-        function updateControls() {
-            document.getElementById('page-info').textContent = `${pageNum} / ${totalPages}`;
-            document.getElementById('prev').disabled = pageNum <= 1;
-            document.getElementById('next').disabled = pageNum >= totalPages;
-        }
-
-        function onPrevPage() { if (pageNum > 1) loadPage(pageNum - 1); }
-        function onNextPage() { if (pageNum < totalPages) loadPage(pageNum + 1); }
-
-        document.getElementById('prev').addEventListener('click', onPrevPage);
-        document.getElementById('next').addEventListener('click', onNextPage);
-
-        document.addEventListener('keydown', (e) => {
-            if (totalPages === 0) return;
-            if (e.key === 'ArrowLeft') onPrevPage();
-            if (e.key === 'ArrowRight') onNextPage();
-        });
 
         // ==================== INIT ====================
         async function initViewer() {
@@ -969,16 +860,15 @@
                 const purchaseDate = accessData.purchaseDate ? new Date(accessData.purchaseDate).toLocaleDateString() : 'N/A';
                 watermarkText = `${accessData.userEmail} | Purchased: ${purchaseDate}`;
 
-                // 2. Get total pages from info endpoint
-                const infoRes = await fetch(`/api/courses/info/${courseId}`);
-                const infoData = await infoRes.json();
+                // 2. Load the full PDF via the stream endpoint using PDF.js
+                document.getElementById('page-info').textContent = "Loading PDF...";
 
-                if (!infoData.success) {
-                    alert("Error loading course info.");
-                    return;
-                }
-
-                totalPages = infoData.totalPages;
+                const loadingTask = pdfjsLib.getDocument({
+                    url: `/api/courses/stream/${courseId}`,
+                    withCredentials: true
+                });
+                pdfDoc = await loadingTask.promise;
+                totalPages = pdfDoc.numPages;
 
                 if (totalPages === 0) {
                     document.getElementById('page-info').textContent = "No pages";
@@ -986,34 +876,35 @@
                     return;
                 }
 
-                // 3. Load the full PDF via the stream endpoint using PDF.js
-                document.getElementById('page-info').textContent = "Loading PDF...";
-
-                const loadingTask = pdfjsLib.getDocument(`/api/courses/stream/${courseId}`);
-                pdfDoc = await loadingTask.promise;
-
-                // Use the actual page count from the loaded PDF
-                totalPages = pdfDoc.numPages;
+                // 3. Load saved progress
+                const resumePage = loadSavedProgress();
 
                 // 4. Build sidebar
                 buildPageList();
                 updateProgress();
 
                 // 5. Resume from last page or start at 1
-                const resumePage = loadSavedProgress();
                 const startPage = (resumePage >= 1 && resumePage <= totalPages) ? resumePage : 1;
-
-                // Update sidebar with loaded visited pages
                 updateSidebarHighlight();
                 updateProgress();
 
                 loadPage(startPage);
 
             } catch (err) {
-                console.error(err);
+                console.error("Init error:", err);
                 alert("Error verifying access.");
             }
         }
+
+        // ==================== CONTROLS ====================
+        document.getElementById('prev').addEventListener('click', () => { if (pageNum > 1) loadPage(pageNum - 1); });
+        document.getElementById('next').addEventListener('click', () => { if (pageNum < totalPages) loadPage(pageNum + 1); });
+
+        document.addEventListener('keydown', (e) => {
+            if (totalPages === 0) return;
+            if (e.key === 'ArrowLeft' && pageNum > 1) loadPage(pageNum - 1);
+            if (e.key === 'ArrowRight' && pageNum < totalPages) loadPage(pageNum + 1);
+        });
 
         // ==================== SECURITY (window blur) ====================
         window.addEventListener('blur', () => {
@@ -1038,12 +929,11 @@
 
         // Session heartbeat
         setInterval(async () => {
-             try {
+            try {
                 const res = await fetch('/api/auth/me');
-                if(res.status === 401) location.reload();
-             } catch(e){}
+                if (res.status === 401) location.reload();
+            } catch(e) {}
         }, 60000);
-
     </script>
 </body>
 </html>
