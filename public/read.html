@@ -148,7 +148,7 @@
             background: #fff;
             max-width: 95%;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             display: inline-block;
         }
 
@@ -162,26 +162,7 @@
             display: block;
         }
 
-        /* ==================== TEXT LAYER (selectable text, no copy) ==================== */
-        /* Allow text selection ONLY inside the text layer */
-        .textLayer {
-            user-select: text !important;
-            -webkit-user-select: text !important;
-            -moz-user-select: text !important;
-            cursor: text;
-            opacity: 0.25;
-        }
 
-        /* Selection highlight color */
-        .textLayer ::selection {
-            background: rgba(99, 102, 241, 0.3);
-            color: transparent;
-        }
-
-        .textLayer ::-moz-selection {
-            background: rgba(99, 102, 241, 0.3);
-            color: transparent;
-        }
 
         /* ==================== ANNOTATION LAYER (clickable links) ==================== */
         .annotationLayer a {
@@ -454,29 +435,6 @@
             align-items: center;
         }
 
-        /* ==================== COPY BLOCKED TOAST ==================== */
-        #copy-toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: #0f172a;
-            color: #f1f5f9;
-            padding: 10px 24px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 3000;
-        }
-
-        #copy-toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
 
         /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
@@ -512,8 +470,7 @@
         <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 5px;">Please verify your identity if requested.</p>
     </div>
 
-    <!-- Copy blocked toast -->
-    <div id="copy-toast">🔒 Copying is disabled for this content</div>
+
 
     <div class="reader-layout">
         <!-- Main Viewer -->
@@ -524,10 +481,9 @@
                     <span>Loading course...</span>
                 </div>
 
-                <!-- PDF page wrapper: canvas + text layer + annotation layer -->
+                <!-- PDF page wrapper: canvas + annotation layer -->
                 <div id="pdf-wrapper" style="display: none; position: relative;">
                     <canvas id="pdf-canvas"></canvas>
-                    <div id="text-layer" class="textLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden;"></div>
                     <div id="annotation-layer" class="annotationLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;"></div>
                 </div>
 
@@ -591,15 +547,7 @@
         const sidebarProgressPct = document.getElementById('sidebar-progress-pct');
         const sidebarVisitedCount = document.getElementById('sidebar-visited-count');
         const sidebarTotalCount = document.getElementById('sidebar-total-count');
-        const copyToast = document.getElementById('copy-toast');
 
-        // ==================== COPY PROTECTION (Termly-style) ====================
-        let copyToastTimer = null;
-        function showCopyToast() {
-            copyToast.classList.add('show');
-            clearTimeout(copyToastTimer);
-            copyToastTimer = setTimeout(() => copyToast.classList.remove('show'), 2500);
-        }
 
         // Block copy/cut — wipe clipboard data
         document.addEventListener('copy', function(e) {
@@ -608,7 +556,7 @@
                 e.clipboardData.setData('text/plain', '');
                 e.clipboardData.setData('text/html', '');
             }
-            showCopyToast();
+
         });
 
         document.addEventListener('cut', function(e) {
@@ -617,7 +565,7 @@
                 e.clipboardData.setData('text/plain', '');
                 e.clipboardData.setData('text/html', '');
             }
-            showCopyToast();
+
         });
 
         // Block keyboard shortcuts: Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, Ctrl+U
@@ -785,37 +733,53 @@
 
                 await page.render(renderContext).promise;
 
-                // --- 3. Render Text Layer (for selection — copy is blocked) ---
-                const textLayerDiv = document.getElementById('text-layer');
-                textLayerDiv.innerHTML = '';
-                textLayerDiv.style.height = Math.floor(viewport.height) + 'px';
-                textLayerDiv.style.width = Math.floor(viewport.width) + 'px';
-                textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
 
-                const textContent = await page.getTextContent();
-                await pdfjsLib.renderTextLayer({
-                    textContentSource: textContent,
-                    container: textLayerDiv,
-                    viewport: viewport,
-                    textDivs: []
-                });
-
-                // --- 4. Render Annotation Layer (for clickable links) ---
+                // --- 4. Render Clickable Links Manually ---
                 const annotationLayerDiv = document.getElementById('annotation-layer');
                 annotationLayerDiv.innerHTML = '';
                 annotationLayerDiv.style.height = Math.floor(viewport.height) + 'px';
                 annotationLayerDiv.style.width = Math.floor(viewport.width) + 'px';
 
+                // Force the link layer to the very front so it doesn't get blocked
+                annotationLayerDiv.style.zIndex = '100';
+                annotationLayerDiv.style.pointerEvents = 'auto';
+
                 const annotationsData = await page.getAnnotations();
-                if (annotationsData && annotationsData.length > 0) {
-                    pdfjsLib.AnnotationLayer.render({
-                        viewport: viewport.clone({ dontFlip: true }),
-                        div: annotationLayerDiv,
-                        annotations: annotationsData,
-                        page: page,
-                        renderInteractiveForms: false
-                    });
-                }
+
+                annotationsData.forEach(anno => {
+                    if (anno.subtype === 'Link') {
+                        const url = anno.url || (anno.action && anno.action.url);
+
+                        if (url) {
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+
+                            const [llx, lly, urx, ury] = anno.rect;
+                            const pt1 = viewport.convertToViewportPoint(llx, lly);
+                            const pt2 = viewport.convertToViewportPoint(urx, ury);
+
+                            const minX = Math.min(pt1[0], pt2[0]);
+                            const maxX = Math.max(pt1[0], pt2[0]);
+                            const minY = Math.min(pt1[1], pt2[1]);
+                            const maxY = Math.max(pt1[1], pt2[1]);
+
+                            link.style.position = 'absolute';
+                            link.style.display = 'block';
+                            link.style.left = minX + 'px';
+                            link.style.top = minY + 'px';
+                            link.style.width = (maxX - minX) + 'px';
+                            link.style.height = (maxY - minY) + 'px';
+                            link.style.cursor = 'pointer';
+
+                            // DEBUG: Temporary red box — remove this line once links are confirmed working
+                            link.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+
+                            annotationLayerDiv.appendChild(link);
+                        }
+                    }
+                });
 
                 // --- 5. Finish & Update UI ---
                 pageNum = num;
