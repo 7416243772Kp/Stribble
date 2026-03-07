@@ -156,10 +156,14 @@
         #pdf-wrapper {
             position: relative;
             display: inline-block;
+            max-width: 100%;
+            height: auto;
         }
 
         #pdf-wrapper canvas {
             display: block;
+            max-width: 100%;
+            height: auto;
         }
 
 
@@ -719,11 +723,13 @@
 
                 // Visual resolution (CSS pixels)
                 canvas.style.width = Math.floor(viewport.width) + "px";
-                canvas.style.height = Math.floor(viewport.height) + "px";
+                canvas.style.height = "auto";
+                canvas.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
 
                 // Match wrapper size so absolute layers align perfectly
                 pdfWrapper.style.width = Math.floor(viewport.width) + "px";
-                pdfWrapper.style.height = Math.floor(viewport.height) + "px";
+                pdfWrapper.style.height = "auto";
+                pdfWrapper.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
 
                 const renderContext = {
                     canvasContext: context,
@@ -737,8 +743,8 @@
                 // --- 4. Render Clickable Links Manually ---
                 const annotationLayerDiv = document.getElementById('annotation-layer');
                 annotationLayerDiv.innerHTML = '';
-                annotationLayerDiv.style.height = Math.floor(viewport.height) + 'px';
-                annotationLayerDiv.style.width = Math.floor(viewport.width) + 'px';
+                annotationLayerDiv.style.height = '100%';
+                annotationLayerDiv.style.width = '100%';
 
                 // Force the link layer to the very front so it doesn't get blocked
                 annotationLayerDiv.style.zIndex = '100';
@@ -765,12 +771,18 @@
                             const minY = Math.min(pt1[1], pt2[1]);
                             const maxY = Math.max(pt1[1], pt2[1]);
 
+                            // Convert explicit pixels into percentages for perfect responsiveness
+                            const pctLeft = (minX / viewport.width) * 100;
+                            const pctTop = (minY / viewport.height) * 100;
+                            const pctWidth = ((maxX - minX) / viewport.width) * 100;
+                            const pctHeight = ((maxY - minY) / viewport.height) * 100;
+
                             link.style.position = 'absolute';
                             link.style.display = 'block';
-                            link.style.left = minX + 'px';
-                            link.style.top = minY + 'px';
-                            link.style.width = (maxX - minX) + 'px';
-                            link.style.height = (maxY - minY) + 'px';
+                            link.style.left = pctLeft + '%';
+                            link.style.top = pctTop + '%';
+                            link.style.width = pctWidth + '%';
+                            link.style.height = pctHeight + '%';
                             link.style.cursor = 'pointer';
 
 
