@@ -561,41 +561,134 @@ label {
 /* =========================================
    ADMIN LAYOUT (SIDEBAR & MAIN)
    ========================================= */
+.admin-global-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-header-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
 .admin-root {
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
+  padding-top: 60px; /* Space for global header */
 }
 
 /* Sidebar: White Background like Coupon Cards */
 .sidebar {
   width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
   background: #ffffff;
-  /* Changed from Dark Navy to White */
   color: #1e293b;
-  /* Changed from White text to Dark */
   padding: 2rem;
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 60px;
+  height: calc(100vh - 60px);
   overflow-y: auto;
-  transition: width 0.3s ease;
+  overflow-x: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
   border-right: 1px solid #e2e8f0;
-  /* Added Border */
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
-  /* Soft shadow */
+  z-index: 1000;
 }
 
-/* Sidebar Title: Styled like the "FREECOURSE" Badge */
+/* On Desktop, keep it natively inline. Hide by shrinking width. */
+@media (min-width: 1025px) {
+  .sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right: none;
+  }
+}
+
+/* On Mobile/Tablet, hide by default by pushing it off-screen */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    height: calc(100vh - 60px);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Sidebar Overlay (Darken background when open on mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: 60px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+@media (min-width: 1025px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Hamburger Menu Button */
+.hamburger-btn {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+}
+.hamburger-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+.hamburger-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Sidebar Title */
 .sidebar h2 {
   color: #1b0134;
-  /* Green Text */
   background: #f0fdf4;
-  /* Mint Background */
   border: 1px dashed #86efac;
-  /* Dashed Border */
   font-size: 1.2rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -612,7 +705,6 @@ label {
   gap: 14px;
   padding: 14px 16px;
   color: #64748b;
-  /* Dark Gray */
   border-radius: 8px;
   margin-bottom: 6px;
   font-weight: 600;
@@ -627,15 +719,12 @@ label {
   border-color: #e2e8f0;
 }
 
-/* Active Link: Styled like Coupon Badges (Green/Mint) */
+/* Active Link */
 .sidebar-nav a.active {
   background: var(--primary);
-  /* Uses the dark navy color #0f172a */
   color: #ffffff;
-  /* White text for contrast */
   border: 1px solid transparent;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  /* Adds a subtle shadow for depth */
 }
 
 .sidebar-collapse {
@@ -647,11 +736,19 @@ label {
   align-self: flex-end;
   margin-bottom: 1rem;
 }
+/* Hide the old collapse arrow on mobile if we have the hamburger */
+@media (max-width: 1024px) {
+  .sidebar-collapse { display: none; }
+}
 
 .content {
   flex: 1;
   padding: 3rem;
   overflow-x: hidden;
+  width: 100%;
+}
+@media (max-width: 1024px) {
+  .content { padding: 1.5rem; }
 }
 
 .topbar {
@@ -659,8 +756,9 @@ label {
   padding-bottom: 1.5rem;
   margin-bottom: 2.5rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 16px;
 }
 
 /* Stats Cards */

@@ -85,6 +85,7 @@ function renderPage(user) {
                 const total = course.totalPages || parseInt(localStorage.getItem(`stribble_total_pages_${course._id}`)) || 0;
                 const visited = visitedRaw ? JSON.parse(visitedRaw).length : 0;
                 let progressHtml = '';
+                let certificateHtml = '';
                 if (total > 0) {
                     const pct = Math.min(100, Math.round((visited / total) * 100));
                     const statusText = pct === 100 ? 'Completed' : pct === 0 ? 'Not started' : 'In Progress';
@@ -103,6 +104,16 @@ function renderPage(user) {
                             </div>
                         </div>
                     `;
+
+                    if (pct === 100) {
+                        certificateHtml = `
+                            <div class="certificate-container" style="margin-top: 15px; padding: 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #166534; font-size: 14px;"> Congratulations!</h4>
+                                <p style="margin: 0 0 12px 0; color: #15803d; font-size: 13px;">You have successfully completed this course. Here is your certificate of completion.</p>
+                                <a href="${API_BASE}/api/courses/${course._id}/certificate" target="_blank" class="btn btn--primary" style="display: inline-block; text-decoration: none; padding: 8px 16px; font-size: 13px; background: #16a34a; border-radius: 6px;"> Get Certificate</a>
+                            </div>
+                        `;
+                    }
                 }
 
                 return `
@@ -111,7 +122,8 @@ function renderPage(user) {
                     <div class="my-course-content">
                         <h3>${course.title}</h3>
                         ${progressHtml}
-                        <div class="actions">
+                        ${certificateHtml}
+                        <div class="actions" style="margin-top: 15px;">
                             <a href="/read?id=${course._id}" class="btn-read">${visited > 0 ? '📖 Continue Reading' : '📖 Start Reading'}</a>
                             ${reviewBtn}
                         </div>

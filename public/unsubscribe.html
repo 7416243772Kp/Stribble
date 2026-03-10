@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsubscribe | Stribble</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .unsubscribe-card {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            max-width: 450px;
+            width: 100%;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            background-color: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .icon-container svg {
+            width: 40px;
+            height: 40px;
+            color: #ef4444;
+        }
+
+        h1 {
+            color: #0f172a;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #64748b;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .email-display {
+            display: inline-block;
+            background-color: #f1f5f9;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #334155;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background-color: #ecfdf5;
+            color: #059669;
+            border: 1px solid #10b981;
+        }
+
+        .status-message.error {
+            display: block;
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="unsubscribe-card">
+        <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13l3 3 3-3" />
+            </svg>
+        </div>
+        
+        <h1>Unsubscribe</h1>
+        <p>You are about to unsubscribe from all future course announcements and updates.</p>
+        
+        <div class="email-display" id="user-email">Loading...</div>
+
+        <button id="btn-unsubscribe" class="btn btn--primary" style="background-color: #ef4444; border-color: #ef4444; width: 100%;">Confirm Unsubscribe</button>
+        
+        <div id="status-container" class="status-message"></div>
+
+        <a href="/" style="display: block; margin-top: 20px; color: #3b82f6; text-decoration: none; font-size: 0.9rem;">Back to Home</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get('email');
+            const emailDisplay = document.getElementById('user-email');
+            const btn = document.getElementById('btn-unsubscribe');
+            const statusContainer = document.getElementById('status-container');
+
+            if (!email) {
+                emailDisplay.textContent = "Unknown Email";
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                statusContainer.className = 'status-message error';
+                statusContainer.textContent = "Invalid or missing email address.";
+                return;
+            }
+
+            emailDisplay.textContent = email;
+
+            btn.addEventListener('click', async () => {
+                const originalText = btn.textContent;
+                btn.textContent = "Processing...";
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/public/unsubscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        statusContainer.className = 'status-message success';
+                        statusContainer.innerHTML = '<strong>Successfully Unsubscribed!</strong><br>You will no longer receive course announcements.';
+                        btn.style.display = 'none'; // Hide button after success
+                    } else {
+                        statusContainer.className = 'status-message error';
+                        statusContainer.textContent = data.message || "Failed to unsubscribe.";
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (err) {
+                    statusContainer.className = 'status-message error';
+                    statusContainer.textContent = "Network error occurred. Please try again.";
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

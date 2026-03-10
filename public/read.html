@@ -440,9 +440,482 @@
         }
 
 
+        /* ==================== SEARCH ==================== */
+        .search-container {
+            position: relative;
+            z-index: 1500;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .pdf-search-input {
+            width: 200px;
+            padding: 8px 32px 8px 36px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #1e293b;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+
+        .pdf-search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            width: 240px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-search-btn:hover {
+            color: #1e293b;
+        }
+
+        .search-results-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            display: none;
+            overscroll-behavior: contain;
+        }
+
+        .search-results-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .search-results-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .search-results-dropdown::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: #f8fafc;
+        }
+
+        .result-page {
+            font-size: 12px;
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 4px;
+        }
+
+        .result-snippet {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .result-snippet mark {
+            background: rgba(251, 191, 36, 0.4);
+            color: #0f172a;
+            padding: 0 2px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .search-loading, .search-empty {
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        /* ==================== BOOKMARKS & NOTES ==================== */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+            margin-right: 12px;
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .icon-btn.active {
+            background: #eff6ff;
+            color: #2563eb;
+            border-color: #bfdbfe;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .sidebar-tab:hover {
+            color: #475569;
+        }
+
+        .sidebar-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .sidebar-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+
+        .sidebar-content.active {
+            display: block;
+        }
+
+        .note-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2500; /* Above top bar */
+        }
+
+        .note-modal {
+            background: #fff;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .note-modal h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: #0f172a;
+        }
+
+        .note-textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            color: #1e293b;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .note-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .note-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn-cancel:hover { background: #e2e8f0; }
+
+        .btn-save {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-save:hover { background: #2563eb; }
+
+        .empty-state {
+            padding: 30px 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .note-card {
+            margin: 8px 16px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .note-card:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        .note-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .note-card-page {
+            font-size: 12px;
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .note-card-preview {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            white-space: pre-wrap;
+        }
+
+        /* ==================== ONBOARDING TOUR ==================== */
+        .tour-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .tour-highlight {
+            position: absolute;
+            background: transparent;
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.7);
+            z-index: 9001;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+        }
+
+        .tour-tooltip {
+            position: absolute;
+            background: #fff;
+            width: 300px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            z-index: 9002;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .tour-tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tour-tooltip::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            transform: rotate(45deg);
+        }
+
+        /* Tooltip Arrow Placements */
+        .tour-tooltip[data-placement="bottom"]::before { top: -8px; left: 50%; margin-left: -8px; }
+        .tour-tooltip[data-placement="bottom-right"]::before { top: -8px; right: 24px; }
+        .tour-tooltip[data-placement="left"]::before { top: 50%; right: -8px; margin-top: -8px; }
+        .tour-tooltip[data-placement="top"]::before { bottom: -8px; left: 50%; margin-left: -8px; }
+
+        .tour-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+
+        .tour-icon {
+            width: 32px;
+            height: 32px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tour-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .tour-text {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.5;
+            margin: 0 0 20px 0;
+        }
+
+        .tour-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tour-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tour-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            transition: background 0.2s;
+        }
+
+        .tour-dot.active {
+            background: #3b82f6;
+            width: 16px;
+            border-radius: 4px;
+        }
+
+        .tour-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tour-btn-skip {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 6px 10px;
+        }
+
+        .tour-btn-skip:hover { color: #475569; }
+
+        .tour-btn-next {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tour-btn-next:hover { background: #2563eb; }
+
         /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
             .top-bar-center { display: none; }
+            .pdf-search-input { width: 140px; }
+            .pdf-search-input:focus { width: 180px; }
+            .search-results-dropdown { width: 280px; }
         }
     </style>
 </head>
@@ -464,7 +937,28 @@
         <div class="top-bar-center">
             <span id="progress-label-inline">0%</span> complete
         </div>
-        <button class="menu-toggle" id="sidebarToggle" title="Toggle page list">☰</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="action-btns">
+                <button id="btn-bookmark" class="icon-btn" title="Toggle Bookmark">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="bookmark-icon"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                </button>
+                <button id="btn-note" class="icon-btn" title="Add Note">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+            </div>
+            
+            <div class="search-container" id="searchContainer">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="pdfSearchInput" class="pdf-search-input" placeholder="Search course..." autocomplete="off">
+                    <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">&times;</button>
+                </div>
+                <div id="searchResults" class="search-results-dropdown">
+                    <!-- Results injected here -->
+                </div>
+            </div>
+            <button class="menu-toggle" id="sidebarToggle" title="Toggle sidebar">☰</button>
+        </div>
     </div>
 
     <!-- Security Warning -->
@@ -497,19 +991,52 @@
 
         <!-- Page Sidebar (White, starts closed) -->
         <aside class="page-sidebar" id="pageSidebar">
-            <div class="sidebar-header">
-                <h3>📄 Pages</h3>
-                <div class="progress-summary">
-                    <span id="sidebar-progress-pct">0%</span> completed · <span id="sidebar-visited-count">0</span>/<span id="sidebar-total-count">0</span> pages
-                </div>
-                <div class="sidebar-progress-track">
-                    <div class="sidebar-progress-fill" id="sidebarProgressFill"></div>
+            <div class="sidebar-header" style="padding-bottom: 0;">
+                <h3 style="margin-bottom: 8px;">Course Content</h3>
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" data-target="pageList">Pages</div>
+                    <div class="sidebar-tab" data-target="bookmarkList">Bookmarks</div>
+                    <div class="sidebar-tab" data-target="noteList">Notes</div>
                 </div>
             </div>
-            <div class="page-list" id="pageList">
-                <!-- Page items injected dynamically -->
+            
+            <!-- Pages Tab Content -->
+            <div class="sidebar-content active" id="pageList">
+                <div style="padding: 12px 18px 0;">
+                    <div class="progress-summary">
+                        <span id="sidebar-progress-pct">0%</span> completed · <span id="sidebar-visited-count">0</span>/<span id="sidebar-total-count">0</span> pages
+                    </div>
+                    <div class="sidebar-progress-track">
+                        <div class="sidebar-progress-fill" id="sidebarProgressFill"></div>
+                    </div>
+                </div>
+                <div id="pageListContainer" style="margin-top: 10px;">
+                    <!-- Page items injected dynamically -->
+                </div>
+            </div>
+            
+            <!-- Bookmarks Tab Content -->
+            <div class="sidebar-content" id="bookmarkList">
+                <!-- Bookmark items injected dynamically -->
+            </div>
+            
+            <!-- Notes Tab Content -->
+            <div class="sidebar-content" id="noteList">
+                <!-- Note items injected dynamically -->
             </div>
         </aside>
+    </div>
+
+    <!-- Notes Modal -->
+    <div id="noteModalOverlay" class="note-modal-overlay">
+        <div class="note-modal">
+            <h3 id="noteModalTitle">Notes - Page X</h3>
+            <textarea id="noteModalTextarea" class="note-textarea" placeholder="Type your notes for this page here..."></textarea>
+            <div class="note-actions">
+                <button class="btn-cancel" id="btnCancelNote">Cancel</button>
+                <button class="btn-save" id="btnSaveNote">Save Note</button>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Controls -->
@@ -517,6 +1044,29 @@
         <button id="prev">← Prev</button>
         <span id="page-info">Loading...</span>
         <button id="next">Next →</button>
+    </div>
+
+    <!-- Interactive Tour Overlay -->
+    <div id="tourOverlay" class="tour-overlay">
+        <div id="tourHighlight" class="tour-highlight"></div>
+        <div id="tourTooltip" class="tour-tooltip" data-placement="bottom-right">
+            <div class="tour-header">
+                <div class="tour-icon" id="tourIcon">
+                    <!-- Icon injected here -->
+                </div>
+                <h3 class="tour-title" id="tourTitle">Tour Title</h3>
+            </div>
+            <p class="tour-text" id="tourText">Tour description goes here.</p>
+            <div class="tour-footer">
+                <div class="tour-dots" id="tourDots">
+                    <!-- Dots injected here -->
+                </div>
+                <div class="tour-btns">
+                    <button class="tour-btn-skip" id="btnTourSkip">Skip</button>
+                    <button class="tour-btn-next" id="btnTourNext">Next</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -539,6 +1089,15 @@
         let isLoadingPage = false;
         let visitedPages = new Set();
         let sidebarOpen = false;
+
+        // --- Data State ---
+        let bookmarkedPages = new Set();
+        let pageNotes = {};
+
+        // --- Search State ---
+        let pdfTextCache = [];
+        let isExtractingText = false;
+        let hasExtractedAllText = false;
 
         // DOM refs
         const pageLoading = document.getElementById('page-loading');
@@ -597,12 +1156,25 @@
         // ==================== LOCAL STORAGE HELPERS ====================
         const STORAGE_KEY_PAGE = `stribble_last_page_${courseId}`;
         const STORAGE_KEY_VISITED = `stribble_visited_${courseId}`;
+        const STORAGE_KEY_BOOKMARKS = `stribble_bkmks_${courseId}`;
+        const STORAGE_KEY_NOTES = `stribble_notes_${courseId}`;
 
         function saveProgress() {
             try {
                 localStorage.setItem(STORAGE_KEY_PAGE, pageNum.toString());
                 localStorage.setItem(STORAGE_KEY_VISITED, JSON.stringify([...visitedPages]));
                 localStorage.setItem(`stribble_total_pages_${courseId}`, totalPages.toString());
+                localStorage.setItem(STORAGE_KEY_BOOKMARKS, JSON.stringify([...bookmarkedPages]));
+                localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(pageNotes));
+
+                // Calculate the max continuous read page or total unique pages visited
+                // Since users can skip, relying solely on visitedPages.size is better 
+                // than the literal page they jumped to without reading the middle.
+                fetch(`/api/courses/progress/${courseId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitedPagesArray: Array.from(visitedPages) }) 
+                }).catch(() => {}); // ignore errors, it's just analytics
             } catch(e) {}
         }
 
@@ -610,10 +1182,23 @@
             try {
                 const savedPage = localStorage.getItem(STORAGE_KEY_PAGE);
                 const savedVisited = localStorage.getItem(STORAGE_KEY_VISITED);
+                const savedBookmarks = localStorage.getItem(STORAGE_KEY_BOOKMARKS);
+                const savedNotes = localStorage.getItem(STORAGE_KEY_NOTES);
+                
                 if (savedVisited) {
                     const arr = JSON.parse(savedVisited);
                     arr.forEach(p => visitedPages.add(p));
                 }
+                
+                if (savedBookmarks) {
+                    const arr = JSON.parse(savedBookmarks);
+                    arr.forEach(p => bookmarkedPages.add(parseInt(p, 10)));
+                }
+                
+                if (savedNotes) {
+                    pageNotes = JSON.parse(savedNotes);
+                }
+                
                 return savedPage ? parseInt(savedPage, 10) : 1;
             } catch(e) {
                 return 1;
@@ -653,6 +1238,9 @@
 
         // ==================== SIDEBAR ====================
         const sidebar = document.getElementById('pageSidebar');
+        const pageListContainer = document.getElementById('pageListContainer');
+        const bookmarkListContainer = document.getElementById('bookmarkList');
+        const noteListContainer = document.getElementById('noteList');
 
         function toggleSidebar() {
             sidebarOpen = !sidebarOpen;
@@ -661,8 +1249,21 @@
 
         document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
 
+        // Sidebar Tabs Logic
+        document.querySelectorAll('.sidebar-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active classes
+                document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active classes
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.target).classList.add('active');
+            });
+        });
+
         function buildPageList() {
-            pageList.innerHTML = '';
+            pageListContainer.innerHTML = '';
             for (let i = 1; i <= totalPages; i++) {
                 const item = document.createElement('div');
                 item.className = 'page-item';
@@ -673,23 +1274,73 @@
                     <span class="check-icon">✓</span>
                 `;
                 item.addEventListener('click', () => loadPage(i));
-                pageList.appendChild(item);
+                pageListContainer.appendChild(item);
             }
             updateSidebarHighlight();
         }
 
         function updateSidebarHighlight() {
-            const items = pageList.querySelectorAll('.page-item');
+            const items = pageListContainer.querySelectorAll('.page-item');
             items.forEach(item => {
                 const p = parseInt(item.dataset.page, 10);
                 item.classList.toggle('active', p === pageNum);
                 item.classList.toggle('visited', visitedPages.has(p) && p !== pageNum);
             });
 
-            const activeItem = pageList.querySelector('.page-item.active');
-            if (activeItem) {
+            const activeItem = pageListContainer.querySelector('.page-item.active');
+            if (activeItem && document.getElementById('pageList').classList.contains('active')) {
+                // Only scroll if the pages tab is active
                 activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             }
+        }
+
+        function buildBookmarksList() {
+            bookmarkListContainer.innerHTML = '';
+            
+            if (bookmarkedPages.size === 0) {
+                bookmarkListContainer.innerHTML = '<div class="empty-state">No bookmarks added yet.<br>Click the ribbon icon to save pages.</div>';
+                return;
+            }
+            
+            // Sort bookmarks
+            const sortedBookmarks = Array.from(bookmarkedPages).sort((a, b) => a - b);
+            
+            sortedBookmarks.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'page-item';
+                item.innerHTML = `
+                    <div class="page-number" style="background: #eff6ff; color: #2563eb;">${p}</div>
+                    <div class="page-label">Page ${p}</div>
+                    <span style="color: #cbd5e1; font-size: 16px;"> ribbon</span>
+                `;
+                item.addEventListener('click', () => loadPage(p));
+                bookmarkListContainer.appendChild(item);
+            });
+        }
+
+        function buildNotesList() {
+            noteListContainer.innerHTML = '';
+            
+            const pagesWithNotes = Object.keys(pageNotes).map(p => parseInt(p, 10)).sort((a, b) => a - b);
+            
+            if (pagesWithNotes.length === 0) {
+                noteListContainer.innerHTML = '<div class="empty-state">No notes added yet.<br>Click the note icon to add your thoughts.</div>';
+                return;
+            }
+            
+            pagesWithNotes.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'note-card';
+                item.innerHTML = `
+                    <div class="note-card-header">
+                        <span class="note-card-page">Page ${p}</span>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </div>
+                    <div class="note-card-preview">${pageNotes[p]}</div>
+                `;
+                item.addEventListener('click', () => loadPage(p));
+                noteListContainer.appendChild(item);
+            });
         }
 
         // ==================== PAGE LOADING (PDF.js v3 — High-DPI + renderTextLayer + AnnotationLayer) ====================
@@ -797,6 +1448,7 @@
                 saveProgress();
                 updateProgress();
                 updateSidebarHighlight();
+                updateBookmarkStateUI();
 
                 document.getElementById('page-info').textContent = `${pageNum} / ${totalPages}`;
                 document.getElementById('prev').disabled = pageNum <= 1;
@@ -855,6 +1507,8 @@
 
                 // 4. Build sidebar
                 buildPageList();
+                buildBookmarksList();
+                buildNotesList();
                 updateProgress();
 
                 // 5. Resume from last page or start at 1
@@ -863,6 +1517,9 @@
                 updateProgress();
 
                 loadPage(startPage);
+
+                // 6. Preemptively start text extraction for search
+                extractAllText();
 
             } catch (err) {
                 console.error("Init error:", err);
@@ -874,11 +1531,267 @@
         document.getElementById('prev').addEventListener('click', () => { if (pageNum > 1) loadPage(pageNum - 1); });
         document.getElementById('next').addEventListener('click', () => { if (pageNum < totalPages) loadPage(pageNum + 1); });
 
+        // ==================== BOOKMARKS LOGIC ====================
+        const btnBookmark = document.getElementById('btn-bookmark');
+        const bookmarkIcon = btnBookmark.querySelector('svg');
+
+        function updateBookmarkStateUI() {
+            if (bookmarkedPages.has(pageNum)) {
+                btnBookmark.classList.add('active');
+                bookmarkIcon.setAttribute('fill', 'currentColor');
+            } else {
+                btnBookmark.classList.remove('active');
+                bookmarkIcon.setAttribute('fill', 'none');
+            }
+        }
+
+        btnBookmark.addEventListener('click', () => {
+            if (bookmarkedPages.has(pageNum)) {
+                bookmarkedPages.delete(pageNum);
+            } else {
+                bookmarkedPages.add(pageNum);
+            }
+            updateBookmarkStateUI();
+            saveProgress();
+            buildBookmarksList(); // Refresh sidebar tab
+        });
+
+        // ==================== NOTES LOGIC ====================
+        const btnNote = document.getElementById('btn-note');
+        const noteModalOverlay = document.getElementById('noteModalOverlay');
+        const noteModalTextarea = document.getElementById('noteModalTextarea');
+        const noteModalTitle = document.getElementById('noteModalTitle');
+        const btnCancelNote = document.getElementById('btnCancelNote');
+        const btnSaveNote = document.getElementById('btnSaveNote');
+
+        btnNote.addEventListener('click', () => {
+            noteModalTitle.textContent = `Notes - Page ${pageNum}`;
+            noteModalTextarea.value = pageNotes[pageNum] || '';
+            noteModalOverlay.style.display = 'flex';
+            setTimeout(() => noteModalTextarea.focus(), 50);
+        });
+
+        function closeNoteModal() {
+            noteModalOverlay.style.display = 'none';
+        }
+
+        btnCancelNote.addEventListener('click', closeNoteModal);
+        noteModalOverlay.addEventListener('click', (e) => {
+            if (e.target === noteModalOverlay) closeNoteModal();
+        });
+
+        btnSaveNote.addEventListener('click', () => {
+            const val = noteModalTextarea.value.trim();
+            if (val) {
+                pageNotes[pageNum] = val;
+                btnNote.classList.add('active'); // Indicate note exists
+            } else {
+                delete pageNotes[pageNum];
+                btnNote.classList.remove('active');
+            }
+            saveProgress();
+            buildNotesList(); // Refresh sidebar tab
+            closeNoteModal();
+        });
+
+        // Ensure icon reflects state on loadPage
+        const originalUpdateBookmarkUI = updateBookmarkStateUI;
+        updateBookmarkStateUI = function() {
+            originalUpdateBookmarkUI();
+            if (pageNotes[pageNum] && pageNotes[pageNum].trim() !== '') {
+                btnNote.classList.add('active');
+            } else {
+                btnNote.classList.remove('active');
+            }
+        };
+
         document.addEventListener('keydown', (e) => {
             if (totalPages === 0) return;
             if (e.key === 'ArrowLeft' && pageNum > 1) loadPage(pageNum - 1);
             if (e.key === 'ArrowRight' && pageNum < totalPages) loadPage(pageNum + 1);
         });
+
+        // ==================== ONBOARDING TOUR LOGIC ====================
+        const tourSteps = [
+            {
+                target: 'searchContainer',
+                title: 'Search the Course',
+                text: 'Find specific keywords or chapters instantly. Searching is fast and highlights your exact match.',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+                placement: 'bottom-right'
+            },
+            {
+                target: 'btn-bookmark',
+                title: 'Bookmark Pages',
+                text: 'Drop a pin on important pages so you can quickly jump back to them later.',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>',
+                placement: 'bottom-right'
+            },
+            {
+                target: 'btn-note',
+                title: 'Add Personal Notes',
+                text: 'Jot down your thoughts, summaries, or action items directly linked to the current page.',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
+                placement: 'bottom-right'
+            },
+            {
+                target: 'sidebarToggle',
+                title: 'Sidebar & Progress',
+                text: 'Open the sidebar to see your pages, bookmarks, and notes. We automatically save your progress so you never lose your spot!',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>',
+                placement: 'bottom-right'
+            },
+            {
+                target: 'prev',
+                title: 'Previous Page',
+                text: 'Go back to re-read earlier content. You can also use the left arrow key.',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+                placement: 'top'
+            },
+            {
+                target: 'next',
+                title: 'Next Page',
+                text: 'Move forward when you are ready. You can also use the right arrow key.',
+                icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
+                placement: 'top'
+            }
+        ];
+
+        let currentTourStep = 0;
+        const tourOverlay = document.getElementById('tourOverlay');
+        const tourHighlight = document.getElementById('tourHighlight');
+        const tourTooltip = document.getElementById('tourTooltip');
+        const btnTourNext = document.getElementById('btnTourNext');
+        const btnTourSkip = document.getElementById('btnTourSkip');
+
+        function startTour() {
+            // Check if already taken
+            if (localStorage.getItem('stribble_tour_completed') === 'true') return;
+            
+            // For mobile, we might just skip the tour or adjust it
+            if (window.innerWidth < 768) {
+                localStorage.setItem('stribble_tour_completed', 'true');
+                return;
+            }
+
+            currentTourStep = 0;
+            tourOverlay.style.display = 'block';
+            
+            // Slight delay to allow display:block to apply before fading in
+            setTimeout(() => {
+                tourOverlay.style.opacity = '1';
+                renderTourStep();
+            }, 50);
+        }
+
+        function endTour() {
+            tourOverlay.style.opacity = '0';
+            tourTooltip.classList.remove('show');
+            setTimeout(() => {
+                tourOverlay.style.display = 'none';
+            }, 300);
+            localStorage.setItem('stribble_tour_completed', 'true');
+        }
+
+        function renderTourStep() {
+            const step = tourSteps[currentTourStep];
+            const targetEl = document.getElementById(step.target);
+            
+            if (!targetEl) { endTour(); return; }
+
+            // Hide tooltip briefly during transition
+            tourTooltip.classList.remove('show');
+
+            setTimeout(() => {
+                // Position Highlight
+                const rect = targetEl.getBoundingClientRect();
+                const padding = 6;
+                
+                tourHighlight.style.top = `${rect.top - padding}px`;
+                tourHighlight.style.left = `${rect.left - padding}px`;
+                tourHighlight.style.width = `${rect.width + (padding * 2)}px`;
+                tourHighlight.style.height = `${rect.height + (padding * 2)}px`;
+
+                // Update Tooltip Content
+                document.getElementById('tourTitle').textContent = step.title;
+                document.getElementById('tourText').textContent = step.text;
+                document.getElementById('tourIcon').innerHTML = step.icon;
+                
+                // Update Dots
+                document.getElementById('tourDots').innerHTML = tourSteps.map((_, i) => 
+                    `<div class="tour-dot ${i === currentTourStep ? 'active' : ''}"></div>`
+                ).join('');
+
+                // Update Button Text
+                btnTourNext.textContent = currentTourStep === tourSteps.length - 1 ? 'Got it!' : 'Next';
+
+                // Position Tooltip
+                tourTooltip.setAttribute('data-placement', step.placement);
+                
+                // Reset Tooltip transform/position
+                tourTooltip.style.top = 'auto';
+                tourTooltip.style.bottom = 'auto';
+                tourTooltip.style.left = 'auto';
+                tourTooltip.style.right = 'auto';
+                tourTooltip.style.transform = 'translateY(10px) translateX(0)'; // Reset translation
+
+                if (step.placement === 'bottom-right') {
+                    tourTooltip.style.top = `${rect.bottom + padding + 12}px`;
+                    // Align right edge of tooltip roughly with target
+                    let tooltipLeft = rect.right - 300 + 16; 
+                    if (tooltipLeft < 10) tooltipLeft = 10;
+                    tourTooltip.style.left = `${tooltipLeft}px`;
+                    
+                    // Delay adding the 'show' class so the translation reset takes effect
+                    setTimeout(() => {
+                        tourTooltip.style.transform = ''; // Clear inline transform to let CSS class handle translateY(0)
+                        tourTooltip.classList.add('show');
+                    }, 50);
+
+                } else if (step.placement === 'top') {
+                    // Center the tooltip above
+                    tourTooltip.style.top = 'auto'; // Will get calculated via bottom or by height later
+                    
+                    // We need to render it first without opacity to calculate height
+                    tourTooltip.style.visibility = 'hidden';
+                    tourTooltip.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        const tipRect = tourTooltip.getBoundingClientRect();
+                        tourTooltip.style.top = `${rect.top - padding - tipRect.height - 12}px`;
+                        tourTooltip.style.left = '50%';
+                        tourTooltip.style.transform = 'translateY(-10px) translateX(-50%)'; 
+                        
+                        tourTooltip.style.visibility = 'visible';
+                        
+                        setTimeout(() => {
+                            tourTooltip.style.transform = 'translateY(0) translateX(-50%)';
+                            tourTooltip.classList.add('show');
+                        }, 50);
+                    }, 10);
+                }
+
+            }, 300); // Wait for highlight to move
+        }
+
+        btnTourNext.addEventListener('click', () => {
+            if (currentTourStep < tourSteps.length - 1) {
+                currentTourStep++;
+                renderTourStep();
+            } else {
+                endTour();
+            }
+        });
+
+        btnTourSkip.addEventListener('click', endTour);
+
+        // Resize handling for tour
+        window.addEventListener('resize', () => {
+            if (tourOverlay.style.display === 'block') {
+                renderTourStep(); // Reposition highlight
+            }
+        });
+
 
         // ==================== SECURITY (window blur) ====================
         window.addEventListener('blur', () => {
@@ -898,8 +1811,158 @@
             if (totalPages > 0) renderWatermark();
         });
 
+        // ==================== SEARCH LOGIC ====================
+        const searchInput = document.getElementById('pdfSearchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const searchResults = document.getElementById('searchResults');
+        
+        let searchTimeout = null;
+
+        async function extractAllText() {
+            if (isExtractingText || hasExtractedAllText || !pdfDoc) return;
+            isExtractingText = true;
+            pdfTextCache = new Array(totalPages);
+            
+            try {
+                // Extract text in chunks to prevent UI blocking
+                for (let i = 1; i <= totalPages; i++) {
+                    try {
+                        const page = await pdfDoc.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        pdfTextCache[i - 1] = pageText;
+                    } catch (err) {
+                        pdfTextCache[i - 1] = "";
+                    }
+                    
+                    // Yield to browser to prevent freezing
+                    if (i % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                }
+                hasExtractedAllText = true;
+            } catch (err) {
+                console.error("Text extraction failed:", err);
+            } finally {
+                isExtractingText = false;
+            }
+        }
+
+        function performSearch(query) {
+            query = query.toLowerCase().trim();
+            if (!query) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchResults.style.display = 'block';
+            
+            if (!hasExtractedAllText) {
+                searchResults.innerHTML = '<div class="search-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 10px;"></div>Extracting document text... Please wait.</div>';
+                // Extraction should already be running from initViewer, if not, it will run here
+                if (!isExtractingText && pdfDoc) {
+                    extractAllText().then(() => performSearch(query));
+                } else if (isExtractingText) {
+                    // Check again periodically until done
+                    const checkInterval = setInterval(() => {
+                        if (hasExtractedAllText) {
+                            clearInterval(checkInterval);
+                            performSearch(query);
+                        }
+                    }, 500);
+                }
+                return;
+            }
+
+            const results = [];
+            for (let i = 0; i < totalPages; i++) {
+                const text = pdfTextCache[i];
+                if (!text) continue;
+                
+                const lowerText = text.toLowerCase();
+                const index = lowerText.indexOf(query);
+                
+                if (index !== -1) {
+                    const start = Math.max(0, index - 40);
+                    const end = Math.min(text.length, index + query.length + 40);
+                    let snippet = text.substring(start, end);
+                    if (start > 0) snippet = '...' + snippet;
+                    if (end < text.length) snippet = snippet + '...';
+                    
+                    // Highlight query string (safely escaping regex chars)
+                    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
+                    snippet = snippet.replace(regex, '<mark>$1</mark>');
+                    
+                    results.push({ page: i + 1, snippet });
+                }
+                
+                if (results.length >= 30) break; // Limit UI results
+            }
+
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-empty">No results found for "' + query + '"</div>';
+            } else {
+                searchResults.innerHTML = results.map(r => `
+                    <div class="search-result-item" onclick="goToSearchResult(${r.page})">
+                        <div class="result-page">Page ${r.page}</div>
+                        <div class="result-snippet">${r.snippet}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Must be attached to window since onclick is used in string literal
+        window.goToSearchResult = function(page) {
+            loadPage(page);
+            searchResults.style.display = 'none';
+            searchInput.blur();
+        };
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value;
+                clearSearchBtn.style.display = query.length > 0 ? 'block' : 'none';
+                
+                if (query.length < 3) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 400);
+            });
+
+            searchInput.addEventListener('focus', (e) => {
+                const query = e.target.value;
+                if (query.length >= 3) {
+                    performSearch(query);
+                }
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                searchResults.style.display = 'none';
+                clearSearchBtn.style.display = 'none';
+                searchInput.focus();
+            });
+
+            document.addEventListener('click', (e) => {
+                const searchContainer = document.getElementById('searchContainer');
+                if (searchContainer && !searchContainer.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
         // Start the viewer
-        initViewer();
+        initViewer().then(() => {
+            // After initialization, maybe start tour
+            if (totalPages > 0) {
+                setTimeout(startTour, 1000);
+            }
+        });
 
         // Session heartbeat
         setInterval(async () => {

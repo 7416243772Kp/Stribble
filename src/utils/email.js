@@ -11,19 +11,38 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmail = async ({ to, subject, html, text }) => {
+export const sendEmail = async ({ to, subject, html, text, from, attachments }) => {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.SES_FROM_EMAIL || "no-reply@stribble.site",
+    const fromAddress = from || process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
+    
+    const mailOptions = {
+      from: fromAddress,
       to,
       subject,
       text, // Fallback
       html,
-    });
+    };
 
+    if (attachments && Array.isArray(attachments)) {
+      mailOptions.attachments = attachments;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
     console.error("Error sending email:", error);
     return false;
   }
+};
+
+// Helper explicitly for Course Announcements sent from course@stribble.site
+export const sendCourseEmail = async ({ to, subject, html, text, attachments }) => {
+  return sendEmail({
+    from: "course@stribble.site",
+    to,
+    subject,
+    html,
+    text,
+    attachments
+  });
 };

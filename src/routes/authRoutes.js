@@ -36,14 +36,18 @@ router.get('/google/callback', (req, res, next) => {
 }, async (req, res) => {
     try {
         // Generate Session Token
-        const sessionToken = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const sessionToken = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         
         // 🔒 SAVE TOKEN TO DB (Invalidates previous sessions)
         req.user.activeSessionToken = sessionToken;
         await req.user.save();
 
         // Send as HttpOnly Cookie
-        res.cookie('user_token', sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        res.cookie('user_token', sessionToken, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
         
         // Redirect to Home
         res.redirect('/'); 
@@ -149,11 +153,15 @@ router.post('/verify-otp', async (req, res) => {
         otpStore.delete(email);
 
         // Auto-login
-        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         user.activeSessionToken = sessionToken;
         await user.save();
 
-        res.cookie('user_token', sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        res.cookie('user_token', sessionToken, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
         res.json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
 
     } catch (err) {
@@ -258,12 +266,16 @@ router.post('/login', async (req, res) => {
         }
 
         // Generate Token & Enforce Single Session
-        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         
         user.activeSessionToken = sessionToken;
         await user.save();
 
-        res.cookie('user_token', sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        res.cookie('user_token', sessionToken, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
         res.json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
 
     } catch (err) {

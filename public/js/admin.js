@@ -54,6 +54,41 @@ document.addEventListener("DOMContentLoaded", () => {
       logout();
     });
   }
+
+  // Mobile Sidebar Toggle Logic
+  const btnHamburger = document.getElementById('btn-hamburger');
+  const adminSidebar = document.getElementById('adminSidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+  if (btnHamburger && adminSidebar) {
+    const closeSidebarMobile = () => {
+      adminSidebar.classList.remove('open');
+      if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    };
+
+    const toggleSidebar = () => {
+      if (window.innerWidth > 1024) {
+        // Desktop toggle
+        adminSidebar.classList.toggle('collapsed');
+      } else {
+        // Mobile toggle
+        adminSidebar.classList.toggle('open');
+        if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
+      }
+    };
+
+    btnHamburger.addEventListener('click', toggleSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebarMobile);
+
+    // Close sidebar when a navigation link is clicked (on mobile)
+    links.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          closeSidebarMobile();
+        }
+      });
+    });
+  }
 });
 
 
@@ -1282,3 +1317,207 @@ window.showConfirmModal = function(title, message, onConfirmCallback) {
 
     overlay.classList.remove('hidden');
 };
+
+// ===============================
+// Drop-off Analytics
+// ===============================
+async function loadAnalytics() {
+    const container = document.getElementById('analyticsContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="color:#94a3b8; text-align:center; padding:40px;">Loading charts...</p>';
+
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/analytics/dropoff`);
+        const data = await res.json();
+        
+        if (!data.success) throw new Error(data.message || "Failed to load analytics");
+
+        if (!data.analytics || data.analytics.length === 0) {
+            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:40px;">No course data available.</p>';
+            return;
+        }
+
+        container.innerHTML = ''; // clear
+
+        let chartsRendered = 0;
+
+        data.analytics.forEach((course) => {
+            // Ignore courses with 0 readers
+            if (course.totalReaders === 0) return;
+            chartsRendered++;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.backgroundColor = '#fff';
+            wrapper.style.padding = '20px';
+            wrapper.style.borderRadius = '12px';
+            wrapper.style.border = '1px solid #e2e8f0';
+
+            const header = document.createElement('h3');
+            header.style.marginBottom = '5px';
+            header.textContent = `${course.title} (Max Pages: ${course.totalPages}, Active Readers: ${course.totalReaders})`;
+            wrapper.appendChild(header);
+
+            const subheader = document.createElement('p');
+            subheader.style.fontSize = '0.9rem';
+            subheader.style.color = '#64748b';
+            subheader.style.marginBottom = '15px';
+            subheader.innerHTML = `Avgerage Progress: <strong>${course.averageProgressPct}%</strong> | Highest Drop-off at: <strong>Page ${course.maxDropoffPage}</strong>`;
+            wrapper.appendChild(subheader);
+
+            const canvasWrapper = document.createElement('div');
+            canvasWrapper.style.position = 'relative';
+            canvasWrapper.style.height = '300px';
+            
+            const canvas = document.createElement('canvas');
+            canvasWrapper.appendChild(canvas);
+            wrapper.appendChild(canvasWrapper);
+            
+            container.appendChild(wrapper);
+
+            // Setup Chart.js
+            const labels = course.dropoffCurve.map((_, i) => `Page ${i + 1}`);
+            
+            // Background colors (redder as it drops off)
+            const bgColors = course.dropoffCurve.map(val => {
+                const pct = val / course.totalReaders;
+                if (pct > 0.8) return 'rgba(34, 197, 94, 0.7)'; // Green
+                if (pct > 0.5) return 'rgba(234, 179, 8, 0.7)'; // Yellow
+                return 'rgba(239, 68, 68, 0.7)'; // Red
+            });
+
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Trend',
+                            data: course.dropoffCurve,
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#2563eb'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Readers Reaching This Page',
+                            data: course.dropoffCurve,
+                            backgroundColor: bgColors,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: course.totalReaders,
+                            ticks: { precision: 0 } // Integer only
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const val = context.raw;
+                                    const pct = Math.round((val / course.totalReaders) * 100);
+                                    return `${val} readers (${pct}% of total)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        if (chartsRendered === 0) {
+            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:40px;">No active readers tracked yet.</p>';
+        }
+
+    } catch (err) {
+        console.error("Error loading analytics:", err);
+        container.innerHTML = '<p style="color:#ef4444; text-align:center; padding:40px;">Failed to load analytics data.</p>';
+    }
+}
+
+// Hook into navigation clicks
+document.addEventListener("DOMContentLoaded", () => {
+    const navAnalytics = document.getElementById("nav-analytics");
+    if (navAnalytics) {
+        navAnalytics.addEventListener("click", () => {
+            loadAnalytics();
+        });
+    }
+
+    const navAnnouncements = document.getElementById("nav-announcements");
+    if (navAnnouncements) {
+        navAnnouncements.addEventListener("click", () => {
+            loadAnnouncements();
+        });
+    }
+
+    const announcementForm = document.getElementById('announcement-form');
+    if (announcementForm) {
+        announcementForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-send-announcement');
+            const originalText = btn.textContent;
+            
+            btn.textContent = "Sending Emails...";
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData(announcementForm);
+                const res = await authFetch(`${window.API_BASE}/api/admin/announcement`, {
+                    method: 'POST',
+                    body: formData // DO NOT set Content-Type, fetch sets it automatically with boundary for FormData
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showNotification("success", data.message);
+                    announcementForm.reset();
+                } else {
+                    showNotification("error", data.message);
+                }
+            } catch (err) {
+                console.error("Announcement Error:", err);
+                showNotification("error", "Failed to send announcements.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+});
+
+// ===============================
+// Announcements
+// ===============================
+async function loadAnnouncements() {
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/courses`);
+        const data = await res.json();
+        
+        const select = document.getElementById('announcement-course-select');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">-- Select Course --</option>';
+        if (data.success && data.courses) {
+            data.courses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c._id;
+                opt.textContent = c.title;
+                select.appendChild(opt);
+            });
+        }
+    } catch(err) {
+        console.error("Failed to load courses for announcements", err);
+    }
+}

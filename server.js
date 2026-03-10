@@ -25,6 +25,7 @@ import Order from "./src/models/order.js";
 import Contact from "./src/models/Contact.js";
 import Promoter from "./src/models/promoter.js";
 import User from "./src/models/User.js";
+import Unsubscribe from "./src/models/Unsubscribe.js";
 
 // ==== Routes & Middleware ====
 import adminRoutes from "./src/routes/adminRoutes.js";
@@ -272,6 +273,26 @@ app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactLimiter, contactRoutes);
+
+// ---- Unsubscribe Route ----
+app.post("/api/public/unsubscribe", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    // Save or ignore if already there
+    await Unsubscribe.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { email: email.toLowerCase() },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: "Unsubscribed successfully" });
+  } catch (err) {
+    console.error("Unsubscribe error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 // ---- OTP & Email Validation REMOVED ----
 
@@ -577,6 +598,11 @@ app.get('/checkout/:id', (req, res) => {
 // About page
 app.get('/about', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'about.html'));
+});
+
+// Unsubscribe page
+app.get('/unsubscribe', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'unsubscribe.html'));
 });
 
 app.get('/api/admin/messages', authAdmin, async (req, res) => {

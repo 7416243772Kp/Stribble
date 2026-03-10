@@ -166,10 +166,24 @@
       </div>
   </div>
 
+  <div class="admin-global-header">
+    <button id="btn-hamburger" class="hamburger-btn" aria-label="Toggle Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="brand">
+      <div class="brand__dot"></div>
+      Stribble
+    </div>
+  </div>
+
   <div class="admin-root" id="adminRoot">
 
-    <aside class="sidebar" aria-label="Admin Navigation">
-      <button class="sidebar-collapse" id="toggleSidebar" title="Toggle sidebar">⟵</button>
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <aside class="sidebar" id="adminSidebar" aria-label="Admin Navigation">
       <h2>Admin</h2>
       <nav class="sidebar-nav" role="navigation">
         <a href="#" data-section="dashboard" class="active" id="nav-dashboard">📊 Dashboard</a>
@@ -177,6 +191,8 @@
         <a href="#" data-section="coupons" id="nav-coupons">🎟️ Coupons</a>
         <a href="#" data-section="sales" id="nav-sales">💰 Sales</a>
         <a href="#" data-section="promoters" id="nav-promoters">🤝 Promoters</a>
+        <a href="#" data-section="announcements" id="nav-announcements">📢 Announcements</a>
+        <a href="#" data-section="analytics" id="nav-analytics">📈 Engagement</a>
         <a href="#" data-section="disputes" id="nav-disputes">🔎 Disputes</a>
         <a href="#" data-section="messagesSection" id="nav-inquiries">📧 Inquiries</a>
         <a href="#" data-section="refundSection" id="nav-refund">💸 Refunds</a>
@@ -374,6 +390,54 @@
                 <!-- Results injected here -->
             </div>
         </div>
+      </section>
+
+      <section id="analytics" class="content-section hidden">
+        <h2>Reader Engagement (Drop-off Rates)</h2>
+        <p style="color:#64748b; margin-bottom:20px;">
+          Track how far users are actually reading into your courses. Identify where students lose interest.
+        </p>
+        <div id="analyticsContainer" style="display:flex; flex-direction:column; gap:30px;">
+            <!-- Charts will be injected here -->
+            <p style="color:#94a3b8; text-align:center; padding:40px;">Loading charts...</p>
+        </div>
+      </section>
+
+      <section id="announcements" class="content-section hidden">
+        <h2>📢 Send Course Announcement</h2>
+        <p style="color:#64748b; margin-bottom:20px;">
+          Send an email update to all active students (who haven't been refunded) of a specific course.
+        </p>
+
+        <form id="announcement-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:15px; max-width:650px; background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0;">
+          
+          <div class="field">
+              <label>Select Target Course</label>
+              <select name="courseId" id="announcement-course-select" required>
+                  <option value="">-- Select Course --</option>
+              </select>
+          </div>
+
+          <div class="field">
+              <label>Email Subject</label>
+              <input type="text" name="subject" id="announcement-subject" placeholder="e.g., We just added a bonus chapter!" required />
+          </div>
+
+          <div class="field">
+              <label>Message Body</label>
+              <textarea name="message" id="announcement-message" rows="8" placeholder="Type your full announcement here..." required style="resize:vertical;"></textarea>
+          </div>
+
+          <div class="field">
+              <label>Attachments (Optional, max 3 files)</label>
+              <input type="file" name="attachments" id="announcement-attachments" multiple accept=".pdf,.png,.jpg,.jpeg,.zip" />
+              <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">Students will receive these directly in their email.</p>
+          </div>
+
+          <button type="submit" id="btn-send-announcement" class="btn btn--primary" style="margin-top:10px;">
+              Send Email to All Students
+          </button>
+        </form>
       </section>
 
     </main>
