@@ -1262,20 +1262,51 @@
             });
         });
 
-        function buildPageList() {
+        async function buildPageList() {
             pageListContainer.innerHTML = '';
-            for (let i = 1; i <= totalPages; i++) {
-                const item = document.createElement('div');
-                item.className = 'page-item';
-                item.dataset.page = i;
-                item.innerHTML = `
-                    <div class="page-number">${i}</div>
-                    <div class="page-label">Page ${i}</div>
-                    <span class="check-icon">✓</span>
-                `;
-                item.addEventListener('click', () => loadPage(i));
-                pageListContainer.appendChild(item);
+            
+            try {
+                const outline = await pdfDoc.getOutline();
+                if (outline && outline.length > 0) {
+                    for (let item of outline) {
+                        let pageNum = 1;
+                        if (item.dest) {
+                            const destArray = typeof item.dest === 'string' ? await pdfDoc.getDestination(item.dest) : item.dest;
+                            if (destArray && destArray[0]) {
+                                const pageIndex = await pdfDoc.getPageIndex(destArray[0]);
+                                pageNum = pageIndex + 1; 
+                            }
+                        }
+
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'page-item';
+                        itemDiv.dataset.page = pageNum;
+                        itemDiv.innerHTML = `
+                            <div class="page-number">${pageNum}</div>
+                            <div class="page-label" title="${item.title}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
+                            <span class="check-icon">✓</span>
+                        `;
+                        itemDiv.addEventListener('click', () => loadPage(pageNum));
+                        pageListContainer.appendChild(itemDiv);
+                    }
+                } else {
+                    for (let i = 1; i <= totalPages; i++) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'page-item';
+                        itemDiv.dataset.page = i;
+                        itemDiv.innerHTML = `
+                            <div class="page-number">${i}</div>
+                            <div class="page-label">Page ${i}</div>
+                            <span class="check-icon">✓</span>
+                        `;
+                        itemDiv.addEventListener('click', () => loadPage(i));
+                        pageListContainer.appendChild(itemDiv);
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading PDF outline:", err);
             }
+            
             updateSidebarHighlight();
         }
 

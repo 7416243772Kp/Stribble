@@ -35,6 +35,14 @@ const courseSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    averageRating: {
+      type: Number,
+      default: 0
+    },
+    reviewCount: {
+      type: Number,
+      default: 0
+    },
     // optional: if you ever want to store category or tags later
     category: {
       type: String,

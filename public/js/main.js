@@ -69,6 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="card__body">
           <h3 class="card__title">${course.title || 'Untitled'}</h3>
           <p class="card__desc">${(course.description || "").slice(0, 96)}${course.description && course.description.length > 96 ? "…" : ""}</p>
+          <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
+              ${course.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${course.averageRating}</span> (${course.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+          </div>
           <div class="card__footer">
             <span class="price">${INR(course.price)}</span>
             <span class="cta">View</span>
@@ -198,6 +201,9 @@ function renderCatalog(courses) {
                 <div class="card__body">
                   <h3 class="card__title">${c.title || 'Untitled'}</h3>
                   <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
+                  <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
+                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+                  </div>
                   <div class="card__footer">
                     <span class="price">${priceFmt}</span>
                     <span class="cta">View</span>
@@ -323,6 +329,9 @@ function renderCatalog(courses) {
                 <div class="card__body">
                   <h3 class="card__title">${c.title || 'Untitled'}</h3>
                   <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
+                  <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
+                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+                  </div>
                   <div class="card__footer">
                     <span class="price">${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(c.price || 0)}</span>
                     <span class="cta">View</span>

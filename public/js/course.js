@@ -159,18 +159,34 @@ async function loadCourseDetails(courseId) {
 
 
 // Fetch and Render Reviews
-async function loadCourseReviews(courseId) {
+async function loadCourseReviews(courseId, ratingFilter = null, page = 1) {
     const container = document.getElementById('reviews-container');
     if(!container) return;
 
     try {
-        const res = await fetch(`/api/reviews/${courseId}`);
-        const data = await res.json();
+        // Fetch stats and paginated reviews in parallel
+        // For the public course page, we only want to show top reviews (4 & 5 stars) unless a specific rating is selected
+        let reviewsUrl = `/api/reviews/${courseId}?page=${page}`;
+        if (ratingFilter) {
+            reviewsUrl += `&rating=${ratingFilter}`;
+        } else {
+            reviewsUrl += `&onlyTop=true`;
+        }
         
-        if(data.success) {
-            const reviews = data.reviews || [];
+        const [statsRes, reviewsRes] = await Promise.all([
+            fetch(`/api/reviews/course/${courseId}/stats`),
+            fetch(reviewsUrl)
+        ]);
+        
+        const statsData = await statsRes.json();
+        const reviewsData = await reviewsRes.json();
+        
+        if(statsData.success && reviewsData.success) {
+            const stats = statsData.stats;
+            const reviews = reviewsData.reviews || [];
+            const pagination = reviewsData.pagination;
             
-            if(reviews.length === 0) {
+            if(stats.totalReviews === 0) {
                 container.innerHTML = `
                     <div style="text-align:center; padding:60px 0;">
                         <span style="font-size:3rem;">📝</span>
@@ -181,56 +197,77 @@ async function loadCourseReviews(courseId) {
                 return;
             }
 
-            // Calculate Stats
-            let sum = 0;
-            const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };
-            reviews.forEach(r => {
-                sum += r.rating;
-                counts[r.rating] = (counts[r.rating] || 0) + 1;
-            });
-            const avg = (sum / reviews.length).toFixed(1);
-            
             // Render Review List
-            const listHtml = reviews.map(r => `
-                <div class="review-list-item">
-                    <div class="reviewer-info">
-                        <div class="reviewer-avatar">${r.userId.name ? r.userId.name.charAt(0) : (r.userName.charAt(0) || 'U')}</div>
-                        <div class="reviewer-meta">
-                            <h4>${r.userId.name || r.userName || 'Learner'}</h4>
-                            <span>${new Date(r.createdAt).toLocaleDateString()}</span>
+            let listHtml = "";
+            if (reviews.length === 0) {
+                listHtml = `<p style="color:#64748b; padding: 20px 0;">No reviews found for this rating.</p>`;
+            } else {
+                listHtml = reviews.map(r => `
+                    <div class="review-list-item" style="padding: 20px; border-bottom: 1px solid #e2e8f0;">
+                        <div class="reviewer-info" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div class="reviewer-avatar" style="width: 40px; height: 40px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #475569;">
+                                ${r.userId?.name ? r.userId.name.charAt(0).toUpperCase() : (r.userName?.charAt(0).toUpperCase() || 'U')}
+                            </div>
+                            <div class="reviewer-meta">
+                                <h4 style="margin: 0; font-size: 1rem; color: #0f172a;">${r.userId?.name || r.userName || 'Learner'}</h4>
+                                <span style="font-size: 0.85rem; color: #64748b;">${new Date(r.createdAt).toLocaleDateString()}</span>
+                            </div>
                         </div>
+                        <div style="color:#fbbf24; margin-bottom:10px; font-size:1.1rem;">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</div>
+                        <p style="color:#334155; line-height:1.6; margin: 0;">${r.comment}</p>
                     </div>
-                    <div style="color:#fbbf24; margin-bottom:10px; font-size:1.1rem;">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</div>
-                    <p style="color:#334155; line-height:1.6;">${r.comment}</p>
+                `).join('');
+            }
+
+            // Pagination Controls
+            let paginationHtml = "";
+            if (pagination && pagination.totalPages > 1) {
+                paginationHtml = `<div style="display: flex; gap: 8px; margin-top: 24px; justify-content: flex-start;">`;
+                for (let i = 1; i <= pagination.totalPages; i++) {
+                    const isActive = i === pagination.currentPage;
+                    paginationHtml += `<button onclick="loadCourseReviews('${courseId}', ${ratingFilter}, ${i})" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: ${isActive ? '#3b82f6' : '#fff'}; color: ${isActive ? '#fff' : '#475569'}; cursor: pointer; font-weight: ${isActive ? 'bold' : 'normal'}; transition: all 0.2s;">${i}</button>`;
+                }
+                paginationHtml += `</div>`;
+            }
+
+            const filterClearHtml = ratingFilter ? `
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <span style="font-size: 0.95rem; font-weight: 500;">Showing ${ratingFilter}-star reviews</span>
+                    <button onclick="loadCourseReviews('${courseId}', null, 1)" style="margin-left: 12px; font-size: 0.85rem; color: #ef4444; background: none; border: none; cursor: pointer; text-decoration: underline;">Clear Filter</button>
                 </div>
-            `).join('');
+            ` : "";
 
             // Render Full UI
             container.innerHTML = `
-                <div class="rating-snapshot">
-                    <div class="rating-big-score">
-                        <div class="big-rating">${avg}</div>
-                        <div class="big-stars">${"★".repeat(Math.round(avg))}${"☆".repeat(5-Math.round(avg))}</div>
-                        <div style="color:#64748b; font-weight:500;">${reviews.length} Ratings</div>
+                <div class="rating-snapshot" style="display: flex; flex-wrap: wrap; gap: 40px; margin-bottom: 40px; align-items: center; background: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <div class="rating-big-score" style="text-align: center; min-width: 150px;">
+                        <div class="big-rating" style="font-size: 4rem; font-weight: 800; color: #0f172a; line-height: 1;">${stats.avgRating}</div>
+                        <div class="big-stars" style="color: #fbbf24; font-size: 1.5rem; margin: 8px 0;">${"★".repeat(Math.round(stats.avgRating))}${"☆".repeat(5-Math.round(stats.avgRating))}</div>
+                        <div style="color:#64748b; font-weight:500; font-size: 0.95rem;">${stats.totalReviews} Ratings</div>
                     </div>
-                    <div class="rating-bars">
+                    <div class="rating-bars" style="flex: 1; min-width: 250px;">
                         ${[5,4,3,2,1].map(star => {
-                            const percent = ((counts[star] / reviews.length) * 100).toFixed(0);
+                            const percent = stats.percentages[star];
                             return `
-                                <div class="bar-row">
-                                    <div class="bar-label">${star} ★</div>
-                                    <div class="bar-bg"><div class="bar-fill" style="width:${percent}%"></div></div>
-                                    <div class="bar-percent">${percent}%</div>
+                                <div class="bar-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: background 0.2s;" onclick="loadCourseReviews('${courseId}', ${star}, 1)" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                    <div class="bar-label" style="width: 40px; font-size: 0.9rem; color: #475569; font-weight: 600; display: flex; align-items: center; gap: 4px;"><span>${star}</span><span style="color: #fbbf24; font-size: 1rem; line-height: 1;">★</span></div>
+                                    <div class="bar-bg" style="flex: 1; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; position: relative;">
+                                        <div class="bar-fill" style="width:${percent}%; height: 100%; background: #fbbf24; border-radius: 5px; transition: width 0.5s ease-out;"></div>
+                                    </div>
+                                    <div class="bar-percent" style="width: 45px; text-align: right; font-size: 0.9rem; color: #64748b; font-variant-numeric: tabular-nums;">${percent}%</div>
                                 </div>
                             `;
                         }).join('')}
                     </div>
                 </div>
                 
-                <h3 style="margin-bottom:20px;">Reviews</h3>
+                ${filterClearHtml}
+                
+                <h3 style="margin-bottom:20px; font-size: 1.25rem; color: #0f172a;">Reviews</h3>
                 <div class="reviews-list">
                     ${listHtml}
                 </div>
+                ${paginationHtml}
             `;
 
         } else {

@@ -1,7 +1,9 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import Review from "../models/Review.js";
 import User from "../models/User.js";
+import Course from "../models/course.js";
 
 const router = express.Router();
 
@@ -90,9 +92,17 @@ router.post("/", isAuthenticated, async (req, res) => {
     // Ensure reviewedCourses array exists
     if (!user.reviewedCourses) user.reviewedCourses = [];
     user.reviewedCourses.push(courseId);
-    await user.save();
-    
-
+    // 5. Update Course Aggregates
+    const aggResult = await Review.aggregate([
+      { $match: { courseId: new mongoose.Types.ObjectId(courseId) } },
+      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } }
+    ]);
+    if (aggResult.length > 0) {
+      await Course.findByIdAndUpdate(courseId, {
+        averageRating: Number(aggResult[0].avgRating.toFixed(1)),
+        reviewCount: aggResult[0].count
+      });
+    }
 
     res.status(201).json({ success: true, review });
 
@@ -124,16 +134,89 @@ router.get("/top", async (req, res) => {
   }
 });
 
-// GET /api/reviews/:courseId - Get reviews for a course
-router.get("/:courseId", async (req, res) => {
+// GET /api/reviews/course/:courseId/stats - Get rating breakdown for a course
+router.get("/course/:courseId/stats", async (req, res) => {
   try {
     const { courseId } = req.params;
     
-    const reviews = await Review.find({ courseId })
-      .sort({ createdAt: -1 })
-      .populate("userId", "name profilePicture"); // Get latest user details if needed
+    const statsResult = await Review.aggregate([
+      { $match: { courseId: new mongoose.Types.ObjectId(courseId) } },
+      { $group: {
+          _id: "$rating",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    res.json({ success: true, reviews });
+    const totalReviews = statsResult.reduce((acc, curr) => acc + curr.count, 0);
+    const avgRating = totalReviews === 0 
+      ? 0 
+      : statsResult.reduce((acc, curr) => acc + (curr._id * curr.count), 0) / totalReviews;
+
+    const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    statsResult.forEach(item => {
+      breakdown[item._id] = item.count;
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalReviews,
+        avgRating: Number(avgRating.toFixed(1)),
+        breakdown,
+        percentages: {
+          5: totalReviews ? Math.round((breakdown[5] / totalReviews) * 100) : 0,
+          4: totalReviews ? Math.round((breakdown[4] / totalReviews) * 100) : 0,
+          3: totalReviews ? Math.round((breakdown[3] / totalReviews) * 100) : 0,
+          2: totalReviews ? Math.round((breakdown[2] / totalReviews) * 100) : 0,
+          1: totalReviews ? Math.round((breakdown[1] / totalReviews) * 100) : 0,
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Course Review Stats Error:", error);
+    res.status(500).json({ success: false, message: "Error fetching review stats" });
+  }
+});
+
+// GET /api/reviews/:courseId - Get reviews for a course (paginated & filterable)
+router.get("/:courseId", async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { rating, page = 1, onlyTop } = req.query;
+    
+    // Pagination parameters
+    const limit = 50;
+    const skip = (Number(page) - 1) * limit;
+
+    const query = { courseId };
+    if (rating) {
+      query.rating = Number(rating);
+    } else if (onlyTop === 'true') {
+      // If onlyTop is requested, filter for 4 and 5 stars
+      query.rating = { $gte: 4 };
+    }
+    
+    const [reviews, totalCount] = await Promise.all([
+      Review.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("userId", "name profilePicture"),
+      Review.countDocuments(query)
+    ]);
+
+    res.json({ 
+      success: true, 
+      reviews,
+      pagination: {
+        totalReviews: totalCount,
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: skip + reviews.length < totalCount
+      }
+    });
   } catch (error) {
     console.error("Get Course Reviews Error:", error);
     res.status(500).json({ success: false, message: "Error fetching reviews" });

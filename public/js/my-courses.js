@@ -144,7 +144,62 @@ function renderPage(user) {
                     openReviewModal(courseId, courseTitle);
                 });
             });
+
+            // Fetch and inject reviews for each course asynchronously
+            courses.forEach(course => {
+                const courseId = course._id;
+                loadAndInjectPurchasedCourseReviews(courseId);
+            });
         }
+    }
+}
+
+async function loadAndInjectPurchasedCourseReviews(courseId) {
+    try {
+        const res = await fetch(`${API_BASE}/api/reviews/${courseId}?page=1`);
+        const data = await res.json();
+        if (data.success && data.reviews && data.reviews.length > 0) {
+            // Find the item container in the DOM
+            // We use the data-id from the review button or a container class if we added one,
+            // but since we didn't add a specific ID to the container, we can find it by looking for the href in the read button.
+            const readBtn = document.querySelector(`.my-course-item a[href="/read?id=${courseId}"]`);
+            if (readBtn) {
+                const itemContainer = readBtn.closest('.my-course-item');
+                if (itemContainer) {
+                    const reviewsListHtml = data.reviews.slice(0, 3).map(r => `
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <div style="color: #fbbf24; font-size: 0.95rem;">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</div>
+                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${r.userId?.name || r.userName || 'Learner'}</div>
+                            </div>
+                            <p style="margin: 0; color: #334155; font-size: 0.95rem; line-height: 1.5;">${r.comment}</p>
+                        </div>
+                    `).join('');
+                    
+                    const reviewsSection = document.createElement('div');
+                    reviewsSection.style.marginTop = '24px';
+                    reviewsSection.style.paddingTop = '20px';
+                    reviewsSection.style.borderTop = '1px solid #e2e8f0';
+                    reviewsSection.style.width = '100%';
+                    reviewsSection.innerHTML = `
+                        <h4 style="margin: 0 0 16px 0; font-size: 1.1rem; color: #0f172a;">Community Reviews</h4>
+                        ${reviewsListHtml}
+                        ${data.reviews.length > 3 ? `<a href="/course?id=${courseId}" style="display: block; font-size: 0.9rem; color: #3b82f6; text-decoration: none; margin-top: 10px; font-weight: 500;">See all ${data.pagination.totalReviews} reviews →</a>` : ''}
+                    `;
+                    
+                    // We need to change the flex direction of the item to ensure it spans full width
+                    itemContainer.style.flexDirection = 'column';
+                    
+                    // Or keep the side-by-side but append reviews to the content side
+                    const contentContainer = itemContainer.querySelector('.my-course-content');
+                    if (contentContainer) {
+                        contentContainer.appendChild(reviewsSection);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load reviews for course " + courseId, e);
     }
 }
 
@@ -165,55 +220,91 @@ function injectReviewModal() {
     style.textContent = `
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 10000;
+            background: rgba(15, 23, 42, 0.6); z-index: 10000;
             display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
         }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        
         .modal-content {
-            background: white; padding: 25px; border-radius: 12px;
-            width: 90%; max-width: 400px; position: relative;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            background: #ffffff; padding: 32px; border-radius: 16px;
+            width: 90%; max-width: 480px; position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        .modal-overlay.show .modal-content { transform: translateY(0) scale(1); }
+        
         .close-modal {
-            position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #64748b;
+            position: absolute; right: 20px; top: 20px; font-size: 28px; cursor: pointer; color: #94a3b8;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: all 0.2s; line-height: 1;
         }
-        .close-modal:hover { color: #000; }
+        .close-modal:hover { color: #0f172a; background: #f1f5f9; }
+        
+        h3.modal-title { margin: 0 0 24px 0; font-size: 1.5rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; }
+        
+        .form-group-label { display:block; font-size: 0.95rem; font-weight: 600; color: #334155; margin-bottom: 8px; }
+        
         .star-rating {
-            display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px;
+            display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 8px;
+            background: #f8fafc; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;
         }
         .star-rating input { display: none; }
-        .star-rating label { font-size: 24px; color: #ccc; cursor: pointer; transition: color 0.2s; }
+        .star-rating label { font-size: 32px; color: #cbd5e1; cursor: pointer; transition: color 0.2s, transform 0.1s; line-height: 1; }
         .star-rating input:checked ~ label,
         .star-rating label:hover,
         .star-rating label:hover ~ label { color: #fbbf24; }
+        .star-rating label:hover { transform: scale(1.1); }
+        
+        .review-textarea {
+            width: 100%; padding: 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-family: inherit;
+            font-size: 0.95rem; line-height: 1.5; color: #334155; background: #fff; resize: vertical; min-height: 120px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .review-textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .review-textarea::placeholder { color: #94a3b8; }
+        
+        .btn-submit-review {
+            width: 100%; padding: 14px; background: #4f46e5; color: white; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s;
+            margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .btn-submit-review:hover { background: #4338ca; }
+        .btn-submit-review:active { transform: scale(0.98); }
+        .btn-submit-review:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+        
         .review-success-msg {
             display: none;
             align-items: center;
-            gap: 10px;
-            margin-top: 14px;
-            padding: 12px 16px;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 14px 16px;
             background: #f0fdf4;
-            border: 1px solid #86efac;
-            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
             color: #166534;
-            font-size: 14px;
+            font-size: 0.95rem;
             font-weight: 500;
-            animation: fadeInMsg 0.3s ease;
+            animation: fadeInMsg 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .review-success-msg .success-check {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             background: #22c55e;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
         }
         @keyframes fadeInMsg {
-            from { opacity: 0; transform: translateY(6px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         /* Course Progress Bar — Premium Design */
@@ -299,12 +390,12 @@ function injectReviewModal() {
     modalDiv.innerHTML = `
         <div class="modal-content">
             <span class="close-modal" id="btn-close-modal">&times;</span>
-            <h3 style="margin-top:0;">Write a Review</h3>
+            <h3 class="modal-title">Write a Review</h3>
             <form id="review-form">
                 <input type="hidden" id="review-course-id">
                 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:600; margin-bottom:5px;">Rate the Course</label>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-group-label">Rate the Course</label>
                     <div class="star-rating">
                         <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
                         <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
@@ -314,12 +405,12 @@ function injectReviewModal() {
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="review-comment" style="display:block; font-weight:600; margin-bottom:5px;">Your Review about this Course</label>
-                    <textarea id="review-comment" rows="4" placeholder="Share your experience with this course..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="review-comment" class="form-group-label">Your Review about this Course</label>
+                    <textarea id="review-comment" class="review-textarea" placeholder="Share your experience with this course... What did you like? What could be improved?" required></textarea>
                 </div>
 
-                <button type="submit" class="btn btn--primary" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Submit Review</button>
+                <button type="submit" class="btn-submit-review"><span>Submit Review</span></button>
                 <div class="review-success-msg" id="review-success-msg">
                     <span class="success-check">✓</span>
                     <span>Review submitted successfully! Thank you for your feedback.</span>
@@ -347,25 +438,44 @@ function openReviewModal(courseId) {
     
     if (courseIdInput && modal) {
         courseIdInput.value = courseId;
+        // Small delay to allow display to apply before triggering fade in
         modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.classList.add('show');
+        });
     }
 }
 
 function closeReviewModal() {
-    document.getElementById('review-modal').style.display = 'none';
-    document.getElementById('review-form').reset();
-    // Reset success message
+    const modal = document.getElementById('review-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.getElementById('review-form').reset();
+            // Reset success message
+            resetReviewMsg();
+        }, 300); // Wait for transition
+    }
+}
+
+function resetReviewMsg() {
     const successMsg = document.getElementById('review-success-msg');
     if (successMsg) {
         successMsg.style.display = 'none';
         successMsg.style.background = '#f0fdf4';
-        successMsg.style.borderColor = '#86efac';
+        successMsg.style.borderColor = '#bbf7d0';
         successMsg.style.color = '#166534';
-        successMsg.querySelector('.success-check').style.background = '#22c55e';
-        successMsg.querySelector('.success-check').textContent = '✓';
-        successMsg.querySelector('span:last-child').textContent = 'Review submitted successfully! Thank you for your feedback.';
+        const icon = successMsg.querySelector('.success-check');
+        if (icon) {
+            icon.style.background = '#22c55e';
+            icon.textContent = '✓';
+            icon.style.boxShadow = '0 2px 4px rgba(34, 197, 94, 0.2)';
+        }
+        const text = successMsg.querySelector('span:last-child');
+        if (text) text.textContent = 'Review submitted successfully! Thank you for your feedback.';
     }
-    const submitBtn = document.querySelector('#review-form button[type="submit"]');
+    const submitBtn = document.querySelector('.btn-submit-review');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
 }
 
@@ -393,7 +503,7 @@ async function submitReview(e) {
             const successMsg = document.getElementById('review-success-msg');
             if (successMsg) successMsg.style.display = 'flex';
             // Disable the submit button
-            const submitBtn = document.querySelector('#review-form button[type="submit"]');
+            const submitBtn = document.querySelector('.btn-submit-review');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
             // Reload after a short delay so user sees the message
             setTimeout(() => { location.reload(); }, 2000);
@@ -403,9 +513,10 @@ async function submitReview(e) {
             if (successMsg) {
                 successMsg.style.display = 'flex';
                 successMsg.style.background = '#fef2f2';
-                successMsg.style.borderColor = '#fca5a5';
+                successMsg.style.borderColor = '#fecaca';
                 successMsg.style.color = '#991b1b';
                 successMsg.querySelector('.success-check').style.background = '#ef4444';
+                successMsg.querySelector('.success-check').style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.2)';
                 successMsg.querySelector('.success-check').textContent = '✕';
                 successMsg.querySelector('span:last-child').textContent = data.message || 'Failed to submit review';
             }
@@ -416,9 +527,10 @@ async function submitReview(e) {
         if (successMsg) {
             successMsg.style.display = 'flex';
             successMsg.style.background = '#fef2f2';
-            successMsg.style.borderColor = '#fca5a5';
+            successMsg.style.borderColor = '#fecaca';
             successMsg.style.color = '#991b1b';
             successMsg.querySelector('.success-check').style.background = '#ef4444';
+            successMsg.querySelector('.success-check').style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.2)';
             successMsg.querySelector('.success-check').textContent = '✕';
             successMsg.querySelector('span:last-child').textContent = 'Error submitting review';
         }
