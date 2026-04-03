@@ -114,6 +114,7 @@ app.set("trust proxy", 1);
 // ==== CORS & Cookie Parser ====
 import cookieParser from "cookie-parser";
 import escapeHtml from "escape-html";
+import xss from "xss-clean";
 
 const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());
 
@@ -124,6 +125,19 @@ app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // cookie parser (populates req.cookies)
 app.use(cookieParser());
+
+const xssMiddleware = xss();
+
+// Express 5 exposes req.query via a getter, so make it writable before xss-clean runs.
+app.use((req, res, next) => {
+  Object.defineProperty(req, "query", {
+    value: req.query,
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
+  xssMiddleware(req, res, next);
+});
 
 // --- Express 5–safe in-place sanitizer (blocks NoSQL injection operators) ---
 function deepSanitize(obj) {

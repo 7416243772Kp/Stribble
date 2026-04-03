@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Review from '../models/Review.js'; // Import Review Model
 import bcrypt from 'bcrypt';
+import validator from 'validator';
+import { z } from 'zod';
 
 const router = express.Router();
 
@@ -62,14 +64,33 @@ const otpStore = new Map(); // { email: { otp, expiresAt, name, passwordHash } }
 
 import { sendEmail } from '../utils/email.js';
 
+const signupSchema = z.object({
+    name: z.string().trim().min(2, 'Name must be at least 2 characters').max(50, 'Name is too long'),
+    email: z.string().trim().email('Invalid email address format'),
+    password: z.string().min(6, 'Password must be at least 6 characters')
+});
+
+const loginSchema = z.object({
+    email: z.string().trim().email('Invalid email format'),
+    password: z.string().min(1, 'Password is required')
+});
+
+function normalizeAuthEmail(email) {
+    return validator.normalizeEmail(email) || email.trim().toLowerCase();
+}
+
 // 1. SIGNUP STEP 1: Request OTP
 router.post('/signup', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const validationResult = signupSchema.safeParse(req.body);
 
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: "Please provide all fields" });
+        if (!validationResult.success) {
+            const errorMessage = validationResult.error.issues[0]?.message || 'Invalid signup data';
+            return res.status(400).json({ success: false, message: errorMessage });
         }
+
+        const { name, password } = validationResult.data;
+        const email = normalizeAuthEmail(validationResult.data.email);
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -121,7 +142,11 @@ router.post('/signup', async (req, res) => {
 // 2. SIGNUP STEP 2: Verify OTP & Create Account
 router.post('/verify-otp', async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        let { email, otp } = req.body;
+
+        if (typeof email === 'string') {
+            email = normalizeAuthEmail(email);
+        }
 
         if (!email || !otp) {
             return res.status(400).json({ success: false, message: "Email and OTP required" });
@@ -173,7 +198,12 @@ router.post('/verify-otp', async (req, res) => {
 // 3. FORGOT PASSWORD STEP 1: Request OTP
 router.post('/forgot-password', async (req, res) => {
     try {
-        const { email } = req.body;
+        let { email } = req.body;
+
+        if (typeof email === 'string') {
+            email = normalizeAuthEmail(email);
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -213,7 +243,11 @@ router.post('/forgot-password', async (req, res) => {
 // 4. FORGOT PASSWORD STEP 2: Reset Password
 router.post('/reset-password', async (req, res) => {
     try {
-        const { email, otp, newPassword } = req.body;
+        let { email, otp, newPassword } = req.body;
+
+        if (typeof email === 'string') {
+            email = normalizeAuthEmail(email);
+        }
         
         const record = otpStore.get(email);
         
@@ -249,11 +283,14 @@ router.post('/reset-password', async (req, res) => {
 // Email/Password Login
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const validationResult = loginSchema.safeParse(req.body);
 
-        if (!email || !password) {
-            return res.status(400).json({ success: false, message: "Please provide email and password" });
+        if (!validationResult.success) {
+            return res.status(400).json({ success: false, message: "Invalid email or password format" });
         }
+
+        const { password } = validationResult.data;
+        const email = normalizeAuthEmail(validationResult.data.email);
 
         const user = await User.findOne({ email });
         if (!user || !user.password) { // Check if user exists and has a password (not just Google Auth)
