@@ -77,8 +77,8 @@ function renderPage(user) {
                 
                 // CSP FIX: No 'onclick'. We use a class 'js-open-review' and data-attribute.
                 const reviewBtn = isReviewed 
-                    ? `<span class="reviewed-badge">✓ Reviewed</span>` 
-                    : `<button class="btn-write-review js-open-review" data-id="${course._id}" data-title="${(course.title || '').replace(/"/g, '&quot;')}">⭐ Write Review</button>`;
+                    ? `<span class="reviewed-badge">Reviewed</span>`
+                    : `<button class="btn-write-review js-open-review" data-id="${course._id}" data-title="${(course.title || '').replace(/"/g, '&quot;')}">Write Review</button>`;
 
                 // Progress from API totalPages + localStorage visited pages
                 const visitedRaw = localStorage.getItem(`stribble_visited_${course._id}`);
@@ -124,7 +124,7 @@ function renderPage(user) {
                         ${progressHtml}
                         ${certificateHtml}
                         <div class="actions" style="margin-top: 15px;">
-                            <a href="/read?id=${course._id}" class="btn-read">${visited > 0 ? '📖 Continue Reading' : '📖 Start Reading'}</a>
+                            <a href="/read?id=${course._id}" class="btn-read">${visited > 0 ? 'Continue Reading' : 'Start Reading'}</a>
                             ${reviewBtn}
                         </div>
                     </div>
@@ -412,7 +412,7 @@ function injectReviewModal() {
 
                 <button type="submit" class="btn-submit-review"><span>Submit Review</span></button>
                 <div class="review-success-msg" id="review-success-msg">
-                    <span class="success-check">✓</span>
+                    <span class="success-check">OK</span>
                     <span>Review submitted successfully! Thank you for your feedback.</span>
                 </div>
             </form>
@@ -469,7 +469,7 @@ function resetReviewMsg() {
         const icon = successMsg.querySelector('.success-check');
         if (icon) {
             icon.style.background = '#22c55e';
-            icon.textContent = '✓';
+            icon.textContent = 'OK';
             icon.style.boxShadow = '0 2px 4px rgba(34, 197, 94, 0.2)';
         }
         const text = successMsg.querySelector('span:last-child');
@@ -517,7 +517,7 @@ async function submitReview(e) {
                 successMsg.style.color = '#991b1b';
                 successMsg.querySelector('.success-check').style.background = '#ef4444';
                 successMsg.querySelector('.success-check').style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.2)';
-                successMsg.querySelector('.success-check').textContent = '✕';
+                successMsg.querySelector('.success-check').textContent = 'X';
                 successMsg.querySelector('span:last-child').textContent = data.message || 'Failed to submit review';
             }
         }
@@ -531,7 +531,7 @@ async function submitReview(e) {
             successMsg.style.color = '#991b1b';
             successMsg.querySelector('.success-check').style.background = '#ef4444';
             successMsg.querySelector('.success-check').style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.2)';
-            successMsg.querySelector('.success-check').textContent = '✕';
+            successMsg.querySelector('.success-check').textContent = 'X';
             successMsg.querySelector('span:last-child').textContent = 'Error submitting review';
         }
     }

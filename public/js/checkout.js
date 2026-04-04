@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
        setTimeout(() => inputEl.classList.remove("shake"), 500);
        const errDiv = document.getElementById("err-" + inputEl.id);
        if (errDiv) { 
-         errDiv.innerHTML = `<div class="field-msg error">⚠️ ${msg}</div>`; 
+         errDiv.innerHTML = `<div class="field-msg error">Error: ${msg}</div>`;
          errDiv.style.display = "block"; 
          return; 
        }
@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                       </p>
 
                       <a href="/read.html?id=${selectedCourseId}" class="btn-read">
-                        📖 Read Course
+                        Read Course
                       </a>
                       
                       </a>

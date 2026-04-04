@@ -11,6 +11,7 @@
 </head>
 
 <body>
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <header class="nav">
     <div class="container nav__inner">
       <a href="index.html" class="brand">
@@ -109,7 +110,12 @@
 
       <div id="emptyState" class="empty hidden" role="status" aria-hidden="true" style="padding: 60px; text-align: center; background: #f8fafc; border-radius: 16px;">
         <div class="empty__card">
-          <div class="empty__emoji" style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+          <div class="empty__emoji" style="width: 56px; height: 56px; margin: 0 auto 1rem; border-radius: 16px; background: #e2e8f0; color: #475569; display: flex; align-items: center; justify-content: center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
           <h3 style="margin-bottom: 0.5rem;">No courses found</h3>
           <p>Try adjusting your search terms.</p>
         </div>
@@ -143,21 +149,38 @@
       <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px;">
         <!-- Feature 1 -->
         <div style="padding: 2rem; background: #f8fafc; border-radius: 16px;">
-          <div style="width: 50px; height: 50px; background: #dbeafe; color: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 1.5rem;">🚀</div>
+          <div style="width: 50px; height: 50px; background: #dbeafe; color: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14"></path>
+              <path d="M13 5l7 7-7 7"></path>
+            </svg>
+          </div>
           <h3 style="font-size: 1.25rem; margin-bottom: 10px;">Self-Paced Learning</h3>
           <p style="font-size: 0.95rem; margin: 0;">Access your content anytime, anywhere. No deadlines, just learning on your schedule.</p>
         </div>
         
         <!-- Feature 2 -->
         <div style="padding: 2rem; background: #f8fafc; border-radius: 16px;">
-          <div style="width: 50px; height: 50px; background: #dcfce7; color: #16a34a; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 1.5rem;">🔒</div>
+          <div style="width: 50px; height: 50px; background: #dcfce7; color: #16a34a; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+              <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+            </svg>
+          </div>
           <h3 style="font-size: 1.25rem; margin-bottom: 10px;">Lifetime Access</h3>
           <p style="font-size: 0.95rem; margin: 0;">Pay once, keep it forever. Revisit lessons whenever you need a refresher.</p>
         </div>
 
         <!-- Feature 3 -->
         <div style="padding: 2rem; background: #f8fafc; border-radius: 16px;">
-          <div style="width: 50px; height: 50px; background: #fef3c7; color: #d97706; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 1.5rem;">✨</div>
+          <div style="width: 50px; height: 50px; background: #fef3c7; color: #d97706; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v18"></path>
+              <path d="M3 12h18"></path>
+              <path d="M5.5 5.5l13 13"></path>
+              <path d="M18.5 5.5l-13 13"></path>
+            </svg>
+          </div>
           <h3 style="font-size: 1.25rem; margin-bottom: 10px;">Curated Content</h3>
           <p style="font-size: 0.95rem; margin: 0;">Focused topics without the fluff. Get the insights you need quickly.</p>
         </div>
@@ -382,19 +405,72 @@
 
   <style>
   /* Toast Notification Styles */
-  .toast {
-      background: white; border-left: 4px solid #3b82f6;
-      padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      border-radius: 8px; display: flex; align-items: center; gap: 12px;
-      font-size: 0.95rem; color: #1e293b; min-width: 300px;
-      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
-      opacity: 0; animation-fill-mode: forwards;
+  .toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(360px, calc(100vw - 24px));
+      z-index: 2600;
+      pointer-events: none;
   }
-  .toast.success { border-left-color: #10b981; }
-  .toast.error { border-left-color: #ef4444; }
+
+  .toast {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid #dbe5f0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.45);
+      font-size: 0.92rem;
+      color: #1e293b;
+      line-height: 1.45;
+      animation: slideIn 0.3s ease-out, fadeOut 0.25s ease-in 2.75s forwards;
+      opacity: 0;
+      animation-fill-mode: forwards;
+  }
+
+  .toast span:first-child {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #eff6ff;
+      font-size: 1rem;
+      line-height: 1;
+  }
+
+  .toast span:last-child {
+      min-width: 0;
+      word-break: break-word;
+  }
+
+  .toast.success {
+      border-left-color: #10b981;
+  }
+
+  .toast.success span:first-child {
+      background: #ecfdf5;
+  }
+
+  .toast.error {
+      border-left-color: #ef4444;
+  }
+
+  .toast.error span:first-child {
+      background: #fef2f2;
+  }
   
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
+  @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); visibility: hidden; } }
 
   /* Star Rating Styles */
   .star-rating-widget .stars {
@@ -452,6 +528,20 @@
       .hero__actions { justify-content: center !important; }
       .hero__meta { justify-content: center !important; }
       .hero__image { display: none; } /* Hide illustration on small screens or move below */
+      .toast-container {
+          top: 12px;
+          right: 12px;
+          left: 12px;
+          width: auto;
+      }
+      .toast {
+          font-size: 0.86rem;
+          padding: 12px;
+      }
+      .toast span:first-child {
+          width: 30px;
+          height: 30px;
+      }
   }
   </style>
 

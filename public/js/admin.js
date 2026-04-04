@@ -14,6 +14,26 @@ const editCouponOverlay = document.getElementById('edit-coupon-overlay');
 const editCouponForm = document.getElementById('edit-coupon-form');
 const cancelCouponBtn = document.getElementById('cancel-coupon-edit');
 
+function adminIconSvg(name, className = "admin-inline-icon") {
+  const icons = {
+    success: '<svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error: '<svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m6 6 12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    delete: '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6V4h8v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.8"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    download: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+  };
+
+  return `<span class="${className}" aria-hidden="true">${icons[name] || ""}</span>`;
+}
+
+function adminStatusPill(type, label) {
+  const toneClass = type === "success" ? "admin-status-chip--success" : type === "error" ? "admin-status-chip--error" : "admin-status-chip--muted";
+  const iconName = type === "success" ? "success" : type === "error" ? "error" : "mail";
+  return `<span class="admin-status-chip ${toneClass}">${adminIconSvg(iconName, "admin-status-chip__icon")}<span>${label}</span></span>`;
+}
+
 links.forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
@@ -101,13 +121,14 @@ function showNotification(type, message) {
 
   const card = document.createElement("div");
   card.className = `notify-card ${type === "success" ? "notify-success" : "notify-error"}`;
+  card.setAttribute("role", type === "error" ? "alert" : "status");
   card.innerHTML = `
-    <div class="icon">${type === "success" ? "✅" : "❌"}</div>
+    <div class="icon">${adminIconSvg(type === "success" ? "success" : "error", "admin-notify-icon")}</div>
     <div class="msg">${message}</div>
   `;
 
   container.appendChild(card);
-  container.style.display = "block";
+  container.style.display = "flex";
 
   setTimeout(() => {
     card.classList.add("show");
@@ -133,7 +154,7 @@ async function authFetch(url, options = {}) {
 
   if (response.status === 401 || response.status === 403) {
     if (typeof showNotification === "function") {
-      showNotification("error", "🔒 Unauthorized. Please log in again.");
+      showNotification("error", "Unauthorized. Please log in again.");
     }
     const overlay = document.getElementById("login-overlay");
     if (overlay) overlay.style.display = "flex";
@@ -189,7 +210,12 @@ async function loadSalesDashboard() {
     const courseSalesDiv = document.getElementById("course-sales");
     if (courseSalesDiv) {
       courseSalesDiv.innerHTML = data.salesPerCourse
-        .map((c) => `<div>${c.courseTitle}: ₹${c.totalSales} (${c.count} sales)</div>`)
+        .map((c) => `
+          <div class="course-sales-item">
+            <strong>${c.courseTitle}</strong>
+            <span>₹${c.totalSales} (${c.count} sales)</span>
+          </div>
+        `)
         .join("");
     }
 
@@ -204,7 +230,7 @@ async function loadSalesDashboard() {
         .join("");
     }
   } catch (err) {
-    console.error("❌ Load sales dashboard error:", err);
+    console.error("Load sales dashboard error:", err);
   }
 }
 
@@ -342,10 +368,10 @@ function renderCourses(courses) {
         
         <div class="course-admin-actions">
           <button class="btn-action-edit js-edit-course" type="button" data-id="${course._id}">
-            ✏️ Edit
+            ${adminIconSvg("edit", "admin-btn-icon")}<span>Edit</span>
           </button>
           <button class="btn-action-delete js-delete-course" type="button" data-id="${course._id}">
-            🗑 Delete
+            ${adminIconSvg("delete", "admin-btn-icon")}<span>Delete</span>
           </button>
         </div>
       </div>
@@ -681,12 +707,12 @@ async function loadCoupons() {
                 ${upiText}
               </div>
 
-              <div style="display:flex; gap:10px; margin-top:auto;">
-                <button class="btn-action-edit js-edit-coupon" type="button" data-id="${c._id}" style="flex:1; justify-content:center;">
-                  ✏️ Edit
+              <div class="card-actions-row">
+                <button class="btn-action-edit js-edit-coupon" type="button" data-id="${c._id}">
+                  ${adminIconSvg("edit", "admin-btn-icon")}<span>Edit</span>
                 </button>
-                <button class="btn-action-delete js-delete-coupon" type="button" data-id="${c._id}" style="flex:1; justify-content:center;">
-                  🗑 Delete
+                <button class="btn-action-delete js-delete-coupon" type="button" data-id="${c._id}">
+                  ${adminIconSvg("delete", "admin-btn-icon")}<span>Delete</span>
                 </button>
               </div>
             </div>
@@ -865,21 +891,21 @@ if (btnSearchUserOrders) {
       userPurchaseList.innerHTML = data.orders.map(order => {
         const isRefunded = (order.refundStatus === "processed");
         const refundBtn = isRefunded 
-            ? `<span style="color:#64748b; font-size:0.9rem; font-weight:600;">Refunded</span>`
-            : `<button onclick="processRefund('${order._id}')" class="btn" style="background:#ef4444; color:white; padding:6px 14px; font-size:0.9rem;">Refund</button>`;
+            ? `<span class="refund-status">Refunded</span>`
+            : `<button onclick="processRefund('${order._id}')" class="refund-btn" type="button">Refund</button>`;
 
         return `
-        <div style="border:1px solid #e2e8f0; padding:16px; border-radius:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; background:#fff;">
+        <div class="refund-result-card">
           <div>
-            <div style="font-weight:600; color:#0f172a; font-size:1.05rem;">${order.courseId?.title || 'Unknown Course'}</div>
-            <div style="color:#64748b; font-size:0.9rem; margin-top:4px;">
+            <div class="refund-result-card__title">${order.courseId?.title || 'Unknown Course'}</div>
+            <div class="refund-result-card__meta">
                 Price: ₹${order.price || order.amount} • Ord: <code style="background:#f1f5f9; padding:2px 4px; border-radius:4px;">${order.razorpayOrderId}</code>
             </div>
-            <div style="color:#94a3b8; font-size:0.8rem; margin-top:2px;">
+            <div class="refund-result-card__date">
                 Date: ${new Date(order.createdAt).toLocaleDateString()}
             </div>
           </div>
-          <div>${refundBtn}</div>
+          <div class="refund-result-card__action">${refundBtn}</div>
         </div>
       `}).join('');
       
@@ -935,7 +961,7 @@ async function loadFailedEmails() {
     tbody.innerHTML = "";
 
     if (!data.success || !data.failedOrders || !data.failedOrders.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">✅ No failed emails</td></tr>`;
+      tbody.innerHTML = `<tr class="failed-emails-empty"><td colspan="6" style="text-align:center;">No failed emails</td></tr>`;
       return;
     }
 
@@ -943,12 +969,12 @@ async function loadFailedEmails() {
     data.failedOrders.forEach((order) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${order.buyerEmail || "N/A"}</td>
-        <td>${order.courseId?.title || "N/A"}</td>
-        <td>${order.razorpayOrderId || "N/A"}</td>
-        <td>${order.paidAt ? new Date(order.paidAt).toLocaleString() : "N/A"}</td>
-        <td>${order.emailFailReason ? String(order.emailFailReason) : "—"}</td>
-        <td><button class="btn resend-btn" data-id="${order._id}">Resend</button></td>
+        <td data-label="Email">${order.buyerEmail || "N/A"}</td>
+        <td data-label="Course">${order.courseId?.title || "N/A"}</td>
+        <td data-label="Order ID">${order.razorpayOrderId || "N/A"}</td>
+        <td data-label="Paid At">${order.paidAt ? new Date(order.paidAt).toLocaleString() : "N/A"}</td>
+        <td data-label="Reason">${order.emailFailReason ? String(order.emailFailReason) : "—"}</td>
+        <td data-label="Action"><button class="btn resend-btn" data-id="${order._id}">Resend</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -983,7 +1009,7 @@ async function loadFailedEmails() {
   } catch (err) {
     console.error("Failed to load failed emails:", err);
     const tbody = document.getElementById("failedEmailsList");
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#a00">Error loading failed emails</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr class="failed-emails-empty"><td colspan="6" style="text-align:center;color:#a00">Error loading failed emails</td></tr>`;
   }
 }
 
@@ -1035,14 +1061,14 @@ async function loadMessages() {
         }
 
         list.innerHTML = messages.map(msg => `
-            <div class="message-card" style="border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; background:#fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <div class="message-card">
+                <div class="message-card__header">
                     <strong style="color: #2c3e50;">From: ${msg.email}</strong>
                     <span style="font-size:0.85em; color:#7f8c8d;">${new Date(msg.createdAt).toLocaleString()}</span>
                 </div>
-                <p style="background:#f8f9fa; padding:12px; border-radius:6px; color: #34495e; border-left: 4px solid #3498db;">${msg.message}</p>
-                <div style="margin-top: 10px;">
-                    <a href="mailto:${msg.email}" class="btn-action-edit" style="text-decoration:none; font-size: 0.9em; display: inline-block;">✉️ Reply via Email</a>
+                <p class="message-card__body">${msg.message}</p>
+                <div class="message-card__reply">
+                    <a href="mailto:${msg.email}" class="btn-action-edit" style="text-decoration:none; font-size: 0.9em; display: inline-flex; align-items: center;">${adminIconSvg("mail", "admin-btn-icon")}<span>Reply via Email</span></a>
                 </div>
             </div>
         `).join('');
@@ -1205,43 +1231,43 @@ document.addEventListener("DOMContentLoaded", () => {
                     let emailStatusHtml;
                     if (order.status === 'completed') {
                         emailStatusHtml = order.emailSent
-                            ? `<span style="color:#10b981; font-weight:bold;">✅ Sent</span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}`
-                            : `<span style="color:#ef4444; font-weight:bold;">❌ Not Sent</span>`;
+                            ? `${adminStatusPill("success", "Sent")}<span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}</span>`
+                            : adminStatusPill("error", "Not Sent");
                     } else {
                         // If payment failed/pending, email is not expected
-                        emailStatusHtml = `<span style="color:#64748b;">— N/A (Payment ${order.status})</span>`;
+                        emailStatusHtml = adminStatusPill("muted", `N/A (Payment ${order.status})`);
                     }
 
                     // 3. Format Payment Status Color
                     const payStatusColor = order.status === 'completed' ? '#10b981' : (order.status === 'failed' ? '#ef4444' : '#f59e0b');
 
                     return `
-            <div style="border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin-bottom:16px; background:#f8fafc;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
+            <div class="audit-card">
+                <div class="audit-card__header">
                 <div>
-                    <h4 style="margin:0; color:#0f172a;">${order.courseId?.title || "Unknown Course"}</h4>
-                    <div style="font-size:0.9rem; color:#334155; margin-top:4px;"><strong>Customer:</strong> ${order.buyerEmail}</div>
-                    <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">Order ID: ${order.razorpayOrderId}</div>
+                    <h4 class="audit-card__title">${order.courseId?.title || "Unknown Course"}</h4>
+                    <div class="audit-card__meta"><strong>Customer:</strong> ${order.buyerEmail}</div>
+                    <div class="audit-card__order">Order ID: ${order.razorpayOrderId}</div>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-weight:bold; color:#0f172a;">₹${order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)}</div>
-                    <div style="font-size:0.85rem; color:${payStatusColor}; font-weight:600; text-transform:capitalize;">${order.status}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">${new Date(order.createdAt).toLocaleDateString()}</div>
+                <div class="audit-card__amount">
+                    <strong>₹${order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)}</strong>
+                    <div class="audit-card__status" style="color:${payStatusColor};">${order.status}</div>
+                    <div class="audit-card__date">${new Date(order.createdAt).toLocaleDateString()}</div>
                 </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="audit-card__grid">
                 
-                <div>
-                    <h5 style="margin:0 0 8px 0; color:#334155; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">📧 Email Delivery</h5>
-                    <div style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
+                <div class="audit-card__section">
+                    <h5>${adminIconSvg("mail", "admin-inline-icon")}<span>Email Delivery</span></h5>
+                    <div class="audit-card__box">
                     ${emailStatusHtml}
                     </div>
                 </div>
 
-                <div>
-                    <h5 style="margin:0 0 8px 0; color:#334155; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">⬇️ Download Attempts</h5>
-                    <div style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:6px; max-height:150px; overflow-y:auto;">
+                <div class="audit-card__section">
+                    <h5>${adminIconSvg("download", "admin-inline-icon")}<span>Download Attempts</span></h5>
+                    <div class="audit-card__box">
                     ${downloadLogsHtml}
                     </div>
                 </div>
@@ -1348,26 +1374,19 @@ async function loadAnalytics() {
             chartsRendered++;
 
             const wrapper = document.createElement('div');
-            wrapper.style.backgroundColor = '#fff';
-            wrapper.style.padding = '20px';
-            wrapper.style.borderRadius = '12px';
-            wrapper.style.border = '1px solid #e2e8f0';
+            wrapper.className = 'analytics-card';
 
             const header = document.createElement('h3');
-            header.style.marginBottom = '5px';
             header.textContent = `${course.title} (Max Pages: ${course.totalPages}, Active Readers: ${course.totalReaders})`;
             wrapper.appendChild(header);
 
             const subheader = document.createElement('p');
-            subheader.style.fontSize = '0.9rem';
-            subheader.style.color = '#64748b';
-            subheader.style.marginBottom = '15px';
+            subheader.className = 'analytics-card__subtext';
             subheader.innerHTML = `Avgerage Progress: <strong>${course.averageProgressPct}%</strong> | Highest Drop-off at: <strong>Page ${course.maxDropoffPage}</strong>`;
             wrapper.appendChild(subheader);
 
             const canvasWrapper = document.createElement('div');
-            canvasWrapper.style.position = 'relative';
-            canvasWrapper.style.height = '300px';
+            canvasWrapper.className = 'analytics-card__canvas';
             
             const canvas = document.createElement('canvas');
             canvasWrapper.appendChild(canvas);

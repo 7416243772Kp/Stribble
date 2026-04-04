@@ -10,6 +10,11 @@
     <!-- PDF.js v3 library (classic script, not ESM) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
+        :root {
+            --reader-top-offset: 52px;
+            --reader-bottom-offset: 100px;
+        }
+
         *, *::before, *::after { box-sizing: border-box; }
 
         body {
@@ -63,6 +68,14 @@
             z-index: 1500;
         }
 
+        .top-bar-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
         .back-btn {
             display: flex;
             align-items: center;
@@ -78,6 +91,7 @@
             transition: all 0.15s ease;
             font-family: inherit;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .back-btn:hover {
@@ -128,7 +142,7 @@
             display: flex;
             width: 100%;
             height: 100vh;
-            padding-top: 52px; /* top bar + progress bar */
+            padding-top: var(--reader-top-offset); /* top bar + progress bar */
         }
 
         /* ==================== VIEWER (Left / Main) ==================== */
@@ -138,7 +152,7 @@
             flex-direction: column;
             align-items: center;
             overflow-y: auto;
-            padding: 24px 20px 100px 20px;
+            padding: 24px 20px var(--reader-bottom-offset) 20px;
             position: relative;
         }
 
@@ -407,6 +421,7 @@
             font-size: 13px;
             transition: all 0.2s ease;
             font-family: inherit;
+            white-space: nowrap;
         }
 
         .controls button:hover { background: #2563eb; transform: translateY(-1px); }
@@ -418,6 +433,10 @@
             font-variant-numeric: tabular-nums;
             font-weight: 600;
             font-size: 13px;
+            min-width: 52px;
+            text-align: center;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         /* ==================== SECURITY ==================== */
@@ -444,16 +463,25 @@
         .search-container {
             position: relative;
             z-index: 1500;
+            width: 200px;
+            min-width: 0;
+            transition: width 0.2s ease;
+        }
+
+        .search-container:focus-within {
+            width: 240px;
         }
 
         .search-input-wrapper {
             position: relative;
             display: flex;
             align-items: center;
+            width: 100%;
         }
 
         .pdf-search-input {
-            width: 200px;
+            width: 100%;
+            max-width: 100%;
             padding: 8px 32px 8px 36px;
             border: 1px solid #cbd5e1;
             border-radius: 20px;
@@ -469,7 +497,6 @@
             border-color: #3b82f6;
             background: #fff;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            width: 240px;
         }
 
         .search-icon {
@@ -580,7 +607,6 @@
         .action-btns {
             display: flex;
             gap: 8px;
-            margin-right: 12px;
         }
 
         .icon-btn {
@@ -807,6 +833,11 @@
             transform: translateY(0);
         }
 
+        .tour-tooltip.mobile {
+            width: min(280px, calc(100vw - 32px));
+            max-width: calc(100vw - 32px);
+        }
+
         .tour-tooltip::before {
             content: '';
             position: absolute;
@@ -817,10 +848,10 @@
         }
 
         /* Tooltip Arrow Placements */
-        .tour-tooltip[data-placement="bottom"]::before { top: -8px; left: 50%; margin-left: -8px; }
+        .tour-tooltip[data-placement="bottom"]::before { top: -8px; left: var(--tour-arrow-left, 50%); margin-left: -8px; }
         .tour-tooltip[data-placement="bottom-right"]::before { top: -8px; right: 24px; }
         .tour-tooltip[data-placement="left"]::before { top: 50%; right: -8px; margin-top: -8px; }
-        .tour-tooltip[data-placement="top"]::before { bottom: -8px; left: 50%; margin-left: -8px; }
+        .tour-tooltip[data-placement="top"]::before { bottom: -8px; left: var(--tour-arrow-left, 50%); margin-left: -8px; }
 
         .tour-header {
             display: flex;
@@ -912,10 +943,286 @@
 
         /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
-            .top-bar-center { display: none; }
-            .pdf-search-input { width: 140px; }
-            .pdf-search-input:focus { width: 180px; }
-            .search-results-dropdown { width: 280px; }
+            .top-bar {
+                padding: 0 12px;
+                gap: 10px;
+            }
+
+            .top-bar-center {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 10px;
+                border-radius: 999px;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                color: #475569;
+                font-size: 11px;
+                letter-spacing: 0.03em;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .top-bar-controls {
+                gap: 8px;
+            }
+
+            .action-btns {
+                gap: 6px;
+            }
+
+            .icon-btn,
+            .menu-toggle {
+                width: 34px;
+                height: 34px;
+            }
+
+            .search-container {
+                width: 144px;
+            }
+
+            .search-container:focus-within {
+                width: 180px;
+            }
+
+            .search-results-dropdown {
+                width: min(280px, calc(100vw - 24px));
+                max-width: calc(100vw - 24px);
+            }
+
+            .controls {
+                width: min(320px, calc(100vw - 24px));
+                padding: 8px 10px;
+                gap: 8px;
+            }
+
+            .controls button {
+                flex: 1 1 0;
+                min-width: 0;
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            :root {
+                --reader-top-offset: 98px;
+            }
+
+            .top-bar {
+                height: auto;
+                flex-wrap: wrap;
+                align-items: center;
+                padding: 8px 12px 10px;
+            }
+
+            .top-bar-center {
+                margin-left: auto;
+                padding: 3px 8px;
+                font-size: 10.5px;
+                letter-spacing: 0.02em;
+            }
+
+            .top-bar-controls {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 420px) {
+            :root {
+                --reader-top-offset: 98px;
+                --reader-bottom-offset: 108px;
+            }
+
+            .top-bar {
+                height: auto;
+                flex-wrap: wrap;
+                align-items: center;
+                padding: 8px 12px 10px;
+            }
+
+            .back-btn {
+                padding: 4px 6px;
+                font-size: 12px;
+                gap: 4px;
+            }
+
+            .back-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .top-bar-center {
+                padding: 3px 7px;
+                font-size: 10px;
+            }
+
+            .top-bar-controls {
+                width: 100%;
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                gap: 8px;
+            }
+
+            .search-container,
+            .search-container:focus-within {
+                width: 100%;
+            }
+
+            .pdf-search-input {
+                font-size: 12px;
+                padding: 7px 30px 7px 32px;
+            }
+
+            .search-icon {
+                left: 10px;
+                width: 14px;
+                height: 14px;
+            }
+
+            .clear-search-btn {
+                right: 10px;
+            }
+
+            .search-results-dropdown {
+                left: 0;
+                right: auto;
+                width: 100%;
+                max-width: 100%;
+                max-height: 50vh;
+            }
+
+            .viewer-area {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            .page-sidebar {
+                position: static;
+                height: auto;
+                width: 0;
+                min-width: 0;
+                border-left-color: transparent;
+                box-shadow: none;
+                z-index: auto;
+                transform: none;
+                opacity: 1;
+                pointer-events: auto;
+                transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.28s ease;
+            }
+
+            .page-sidebar.open {
+                width: min(190px, 48vw);
+                min-width: min(190px, 48vw);
+                border-left-color: #e2e8f0;
+            }
+
+            .sidebar-header {
+                padding: 14px 12px 12px;
+            }
+
+            .sidebar-header h3 {
+                font-size: 12px;
+            }
+
+            .sidebar-tab {
+                font-size: 12px;
+                padding: 10px 0;
+            }
+
+            .page-item {
+                padding: 8px 12px;
+                gap: 10px;
+            }
+
+            .page-item .page-number {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+
+            .controls {
+                bottom: 14px;
+                width: calc(100vw - 24px);
+                max-width: 340px;
+                padding: 8px;
+                gap: 6px;
+            }
+
+            .controls button {
+                padding: 9px 10px;
+                font-size: 11px;
+                border-radius: 18px;
+            }
+
+            #page-info {
+                min-width: 44px;
+                font-size: 12px;
+            }
+
+            .tour-tooltip.mobile {
+                width: min(272px, calc(100vw - 32px));
+                max-width: calc(100vw - 32px);
+                padding: 14px;
+                border-radius: 14px;
+            }
+
+            .tour-header {
+                margin-bottom: 10px;
+                gap: 9px;
+            }
+
+            .tour-icon {
+                width: 30px;
+                height: 30px;
+            }
+
+            .tour-title {
+                font-size: 14px;
+            }
+
+            .tour-text {
+                font-size: 12px;
+                line-height: 1.45;
+                margin-bottom: 14px;
+            }
+
+            .tour-footer {
+                justify-content: space-between;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .tour-dots {
+                gap: 5px;
+            }
+
+            .tour-dot {
+                width: 7px;
+                height: 7px;
+            }
+
+            .tour-dot.active {
+                width: 14px;
+            }
+
+            .tour-btns {
+                gap: 6px;
+            }
+
+            .tour-btn-next,
+            .tour-btn-skip {
+                min-height: 34px;
+                font-size: 12px;
+            }
+
+            .tour-btn-next {
+                padding: 6px 14px;
+            }
+
+            .tour-btn-skip {
+                padding: 6px 8px;
+            }
         }
     </style>
 </head>
@@ -937,7 +1244,7 @@
         <div class="top-bar-center">
             <span id="progress-label-inline">0%</span> complete
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="top-bar-controls">
             <div class="action-btns">
                 <button id="btn-bookmark" class="icon-btn" title="Toggle Bookmark">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="bookmark-icon"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -1103,6 +1410,8 @@
         const pageLoading = document.getElementById('page-loading');
         const pdfWrapper = document.getElementById('pdf-wrapper');
         const watermarkOverlay = document.getElementById('watermark-overlay');
+        const viewerArea = document.getElementById('viewerArea');
+        const sidebarToggleBtn = document.getElementById('sidebarToggle');
         const pageList = document.getElementById('pageList');
         const progressBar = document.getElementById('progress-bar');
         const progressLabelInline = document.getElementById('progress-label-inline');
@@ -1110,6 +1419,8 @@
         const sidebarProgressPct = document.getElementById('sidebar-progress-pct');
         const sidebarVisitedCount = document.getElementById('sidebar-visited-count');
         const sidebarTotalCount = document.getElementById('sidebar-total-count');
+        let layoutRefitTimeout = null;
+        let lastViewerWidth = 0;
 
 
         // Block copy/cut — wipe clipboard data
@@ -1242,12 +1553,31 @@
         const bookmarkListContainer = document.getElementById('bookmarkList');
         const noteListContainer = document.getElementById('noteList');
 
+        function scheduleLayoutRefit(delay = 150) {
+            clearTimeout(layoutRefitTimeout);
+            if (!pdfDoc || totalPages < 1) return;
+
+            layoutRefitTimeout = setTimeout(() => {
+                if (isLoadingPage) {
+                    scheduleLayoutRefit(120);
+                    return;
+                }
+                loadPage(pageNum);
+            }, delay);
+        }
+
         function toggleSidebar() {
             sidebarOpen = !sidebarOpen;
             sidebar.classList.toggle('open', sidebarOpen);
+            sidebarToggleBtn.setAttribute('aria-expanded', String(sidebarOpen));
         }
 
-        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+        sidebar.addEventListener('transitionend', (event) => {
+            if (event.propertyName === 'width') {
+                scheduleLayoutRefit(0);
+            }
+        });
 
         // Sidebar Tabs Logic
         document.querySelectorAll('.sidebar-tab').forEach(tab => {
@@ -1385,9 +1715,9 @@
                 const page = await pdfDoc.getPage(num);
 
                 // --- 1. DYNAMIC RESPONSIVE SCALE ---
-                const viewerArea = document.getElementById('viewerArea');
-                // Calculate width accounting for padding (40px)
-                const availableWidth = viewerArea.clientWidth > 0 ? (viewerArea.clientWidth - 40) : window.innerWidth;
+                const viewerAreaStyles = window.getComputedStyle(viewerArea);
+                const horizontalPadding = parseFloat(viewerAreaStyles.paddingLeft || '0') + parseFloat(viewerAreaStyles.paddingRight || '0');
+                const availableWidth = viewerArea.clientWidth > 0 ? (viewerArea.clientWidth - horizontalPadding) : window.innerWidth;
                 const unscaledViewport = page.getViewport({ scale: 1.0 });
 
                 // Calculate scale to fit width. Capped at 2.5 to prevent massive sizing on ultra-wide screens.
@@ -1487,7 +1817,8 @@
 
                 pageLoading.style.display = 'none';
                 pdfWrapper.style.display = 'block';
-                document.getElementById('viewerArea').scrollTop = 0;
+                viewerArea.scrollTop = 0;
+                lastViewerWidth = viewerArea.clientWidth;
 
                 requestAnimationFrame(() => renderWatermark());
 
@@ -1694,16 +2025,11 @@
         const tourTooltip = document.getElementById('tourTooltip');
         const btnTourNext = document.getElementById('btnTourNext');
         const btnTourSkip = document.getElementById('btnTourSkip');
+        const getTourStorageKey = () => (window.innerWidth < 768 ? 'stribble_tour_completed_mobile' : 'stribble_tour_completed');
 
         function startTour() {
             // Check if already taken
-            if (localStorage.getItem('stribble_tour_completed') === 'true') return;
-            
-            // For mobile, we might just skip the tour or adjust it
-            if (window.innerWidth < 768) {
-                localStorage.setItem('stribble_tour_completed', 'true');
-                return;
-            }
+            if (localStorage.getItem(getTourStorageKey()) === 'true') return;
 
             currentTourStep = 0;
             tourOverlay.style.display = 'block';
@@ -1721,7 +2047,7 @@
             setTimeout(() => {
                 tourOverlay.style.display = 'none';
             }, 300);
-            localStorage.setItem('stribble_tour_completed', 'true');
+            localStorage.setItem(getTourStorageKey(), 'true');
         }
 
         function renderTourStep() {
@@ -1757,16 +2083,56 @@
                 btnTourNext.textContent = currentTourStep === tourSteps.length - 1 ? 'Got it!' : 'Next';
 
                 // Position Tooltip
+                const isMobileTour = window.innerWidth < 768;
+                tourTooltip.classList.toggle('mobile', isMobileTour);
                 tourTooltip.setAttribute('data-placement', step.placement);
+                tourTooltip.style.setProperty('--tour-arrow-left', '50%');
                 
                 // Reset Tooltip transform/position
                 tourTooltip.style.top = 'auto';
                 tourTooltip.style.bottom = 'auto';
                 tourTooltip.style.left = 'auto';
                 tourTooltip.style.right = 'auto';
+                tourTooltip.style.display = 'block';
+                tourTooltip.style.visibility = 'visible';
                 tourTooltip.style.transform = 'translateY(10px) translateX(0)'; // Reset translation
 
-                if (step.placement === 'bottom-right') {
+                if (isMobileTour) {
+                    const viewportPadding = 12;
+                    const spacing = 14;
+
+                    tourTooltip.style.visibility = 'hidden';
+
+                    setTimeout(() => {
+                        const tipRect = tourTooltip.getBoundingClientRect();
+                        const centeredLeft = Math.min(
+                            Math.max(rect.left + (rect.width / 2) - (tipRect.width / 2), viewportPadding),
+                            window.innerWidth - tipRect.width - viewportPadding
+                        );
+                        const spaceAbove = rect.top - viewportPadding;
+                        const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+                        const placeAbove = spaceBelow < (tipRect.height + spacing) && spaceAbove > spaceBelow;
+
+                        tourTooltip.setAttribute('data-placement', placeAbove ? 'top' : 'bottom');
+                        tourTooltip.style.left = `${centeredLeft}px`;
+                        tourTooltip.style.top = `${placeAbove
+                            ? Math.max(viewportPadding, rect.top - tipRect.height - spacing)
+                            : Math.min(window.innerHeight - tipRect.height - viewportPadding, rect.bottom + spacing)
+                        }px`;
+                        const arrowLeft = Math.min(
+                            Math.max((rect.left + (rect.width / 2)) - centeredLeft, 26),
+                            tipRect.width - 26
+                        );
+                        tourTooltip.style.setProperty('--tour-arrow-left', `${arrowLeft}px`);
+                        tourTooltip.style.transform = placeAbove ? 'translateY(-10px)' : 'translateY(10px)';
+                        tourTooltip.style.visibility = 'visible';
+
+                        setTimeout(() => {
+                            tourTooltip.style.transform = 'translateY(0)';
+                            tourTooltip.classList.add('show');
+                        }, 50);
+                    }, 10);
+                } else if (step.placement === 'bottom-right') {
                     tourTooltip.style.top = `${rect.bottom + padding + 12}px`;
                     // Align right edge of tooltip roughly with target
                     let tooltipLeft = rect.right - 300 + 16; 
@@ -1820,6 +2186,10 @@
         window.addEventListener('resize', () => {
             if (tourOverlay.style.display === 'block') {
                 renderTourStep(); // Reposition highlight
+            }
+            const currentViewerWidth = viewerArea.clientWidth;
+            if (Math.abs(currentViewerWidth - lastViewerWidth) > 2) {
+                scheduleLayoutRefit(180);
             }
         });
 

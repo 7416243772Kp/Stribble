@@ -13,9 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
-        let icon = 'ℹ️';
-        if(type === 'success') icon = '✅';
-        if(type === 'error') icon = '⚠️';
+        let icon = 'i';
+        if(type === 'success') icon = 'OK';
+        if(type === 'error') icon = '!';
 
         toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
         container.appendChild(toast);
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <h3 class="card__title">${course.title || 'Untitled'}</h3>
           <p class="card__desc">${(course.description || "").slice(0, 96)}${course.description && course.description.length > 96 ? "…" : ""}</p>
           <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
-              ${course.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${course.averageRating}</span> (${course.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+              ${course.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">&#9733;</span> <span style="font-weight: 600; color: #334155;">${course.averageRating}</span> (${course.reviewCount} reviews)` : `<span>No reviews yet</span>`}
           </div>
           <div class="card__footer">
             <span class="price">${INR(course.price)}</span>
@@ -174,7 +174,7 @@ function renderCatalog(courses) {
          if(ownedIds.length > 0 && courses.length > 0) {
              empty.innerHTML = `
                 <div class="empty__card">
-                  <h3 style="margin-bottom: 0.5rem;">All courses purchased! 🚀</h3>
+                  <h3 style="margin-bottom: 0.5rem;">All courses purchased!</h3>
                   <p>Check your library above.</p>
                 </div>
             `;
@@ -202,7 +202,7 @@ function renderCatalog(courses) {
                   <h3 class="card__title">${c.title || 'Untitled'}</h3>
                   <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
                   <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
-                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">&#9733;</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
                   </div>
                   <div class="card__footer">
                     <span class="price">${priceFmt}</span>
@@ -243,7 +243,7 @@ function renderAuthUI() {
     const authUI = document.getElementById('auth-ui');
     authUI.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px;">
-            <a href="/my-courses" class="btn btn--ghost" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">📚 My Courses</a>
+            <a href="/my-courses" class="btn btn--ghost" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">My Courses</a>
             <span style="font-weight:500; font-size:0.9rem; margin-left:5px;">Hi, ${currentUser.name.split(' ')[0]}</span>
             <button onclick="logout()" class="btn btn--outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color:#ef4444; color:#ef4444;">Logout</button>
         </div>
@@ -295,7 +295,7 @@ function renderCatalog(courses) {
         if(ownedIds.length > 0) {
             empty.innerHTML = `
                 <div class="empty__card">
-                  <h3 style="margin-bottom: 0.5rem;">All courses purchased! 🚀</h3>
+                  <h3 style="margin-bottom: 0.5rem;">All courses purchased!</h3>
                   <p>Check your library above.</p>
                 </div>
             `;
@@ -330,7 +330,7 @@ function renderCatalog(courses) {
                   <h3 class="card__title">${c.title || 'Untitled'}</h3>
                   <p class="card__desc">${(c.description || "").slice(0, 96)}${c.description && c.description.length > 96 ? "…" : ""}</p>
                   <div style="font-size: 0.9rem; margin-top: 8px; margin-bottom: 12px; color: #64748b; font-weight: 500;">
-                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">⭐</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
+                      ${c.reviewCount > 0 ? `<span style="color: #fbbf24; font-size: 1.1rem;">&#9733;</span> <span style="font-weight: 600; color: #334155;">${c.averageRating}</span> (${c.reviewCount} reviews)` : `<span>No reviews yet</span>`}
                   </div>
                   <div class="card__footer">
                     <span class="price">${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(c.price || 0)}</span>
@@ -361,9 +361,9 @@ window.showToast = function(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     
-    let icon = 'ℹ️';
-    if(type === 'success') icon = '✅';
-    if(type === 'error') icon = '⚠️';
+    let icon = 'i';
+    if(type === 'success') icon = 'OK';
+    if(type === 'error') icon = '!';
 
     toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
     container.appendChild(toast);
@@ -442,9 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = Object.fromEntries(formData);
             
             // DEBUG: Log what we're sending
-            console.log("📧 [Login] Form data:", formData);
-            console.log("📧 [Login] Payload being sent:", payload);
-            console.log("📧 [Login] Email:", payload.email, "Password length:", payload.password?.length);
+            console.log("[Login] Form data:", formData);
+            console.log("[Login] Payload being sent:", payload);
+            console.log("[Login] Email:", payload.email, "Password length:", payload.password?.length);
             
             try {
                 const res = await fetch('/auth/login', {
@@ -456,8 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 
                 // DEBUG: Log response
-                console.log("📧 [Login] Server response status:", res.status);
-                console.log("📧 [Login] Server response data:", data);
+                console.log("[Login] Server response status:", res.status);
+                console.log("[Login] Server response data:", data);
                 
                 if (data.success) {
                     showToast("Login successful!", "success");
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(data.message || 'Login failed', "error");
                 }
             } catch (err) { 
-                console.error("📧 [Login] Error:", err);
+                console.error("[Login] Error:", err);
                 showToast('Server error', "error"); 
             }
         });
@@ -633,9 +633,9 @@ window.showToast = function(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     
-    let icon = 'ℹ️';
-    if(type === 'success') icon = '✅';
-    if(type === 'error') icon = '⚠️';
+    let icon = 'i';
+    if(type === 'success') icon = 'OK';
+    if(type === 'error') icon = '!';
 
     toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
     container.appendChild(toast);
@@ -650,7 +650,7 @@ window.showToast = function(message, type = 'info') {
 
 // 1. Ensure the function is globally accessible (Fixes "is not defined" error)
 window.toggleReviewModal = function(courseId = null) {
-    console.log("👉 [Frontend] Review button clicked or toggled. Course ID:", courseId);
+    console.log("[Frontend] Review button clicked or toggled. Course ID:", courseId);
 
     const modal = document.getElementById('review-modal-overlay');
     // Also try checking for just 'review-modal' if the overlay logic differs per page
@@ -662,20 +662,20 @@ window.toggleReviewModal = function(courseId = null) {
 
     if (targetModal) {
         if (isActive && !courseId) {
-             console.log("👉 [Frontend] Closing modal");
+             console.log("[Frontend] Closing modal");
              targetModal.classList.remove('active');
         } else {
              // Only open if we have a modal to show
-             console.log("👉 [Frontend] Opening modal");
+             console.log("[Frontend] Opening modal");
              targetModal.classList.add('active');
         }
     } else {
-        console.error("❌ [Frontend] Modal overlay element not found!");
+        console.error("[Frontend] Modal overlay element not found!");
     }
 };
 
 window.openReviewModal = function(courseId, courseTitle) {
-    console.log("👉 [Frontend] openReviewModal called with:", courseId, courseTitle);
+    console.log("[Frontend] openReviewModal called with:", courseId, courseTitle);
     
     const modal = document.getElementById('review-modal-overlay');
     const titleEl = document.getElementById('modal-course-title');
@@ -691,7 +691,7 @@ window.openReviewModal = function(courseId, courseTitle) {
         if(form) form.reset();
         resetStars();
     } else {
-        console.error("❌ [Frontend] One or more modal elements missing in openReviewModal");
+        console.error("[Frontend] One or more modal elements missing in openReviewModal");
         console.log("modal:", modal, "titleEl:", titleEl, "idInput:", idInput);
     }
 };
@@ -746,11 +746,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reviewForm) {
         reviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log("👉 [Frontend] Submitting review...");
+            console.log("[Frontend] Submitting review...");
             
             const formData = new FormData(reviewForm);
             const data = Object.fromEntries(formData.entries());
-            console.log("👉 [Frontend] Payload:", data);
+            console.log("[Frontend] Payload:", data);
             
             if(!data.rating || data.rating == "0") {
                 showToast("Please select a star rating", "error");
@@ -765,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(data)
                 });
                 const json = await res.json();
-                console.log("👉 [Frontend] Server Response:", json);
+                console.log("[Frontend] Server Response:", json);
                 
                 if (json.success) {
                     showToast("Review submitted successfully!", "success");
@@ -778,12 +778,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(json.message || "Failed to submit review", "error");
                 }
             } catch (err) {
-                console.error("❌ [Frontend] Network/Script Error:", err);
+                console.error("[Frontend] Network/Script Error:", err);
                 showToast("An error occurred", "error");
             }
         });
     } else {
-        console.warn("⚠️ [Frontend] Review form not found in DOM");
+        console.warn("[Frontend] Review form not found in DOM");
     }
     
     // CSP FIX: Attach event listener for close button instead of inline onclick
