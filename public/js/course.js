@@ -67,62 +67,53 @@ async function loadCourseDetails(courseId) {
       : `${API_BASE}${course.thumbnail || "/images/placeholder-course.png"}`;
 
     courseDetailsContainer.innerHTML = `
-      <div class="course-hero">
-        <div class="course-hero__inner">
-          <div class="course-breadcrumb">Courses &nbsp;/&nbsp; ${course.title}</div>
-          <h1>${course.title}</h1>
-          <p class="course-hero__desc">${courseDescription.slice(0, 150)}${courseDescription.length > 150 ? "..." : ""}</p>
-        </div>
-      </div>
+      <div class="course-container course-container--compact">
+        <div class="course-content course-content--single" id="course-content-area">
+          <section class="course-section course-section--summary">
+            <span class="course-summary__eyebrow">Course</span>
+            <h1 class="course-summary__title">${course.title}</h1>
 
-      <div class="course-container">
-        <div class="course-grid-layout">
-          <aside class="course-sidebar">
-            <div class="pricing-card">
-              <img src="${thumb}" alt="${course.title}">
-              <div class="pricing-card__eyebrow">Course Access</div>
-              <h2 class="pricing-card__title">${course.title}</h2>
-              <div class="pricing-price">&#8377;${course.price}</div>
-              <p class="pricing-card__meta">One-time purchase. Read anytime at your own pace.</p>
-              ${isOwned
-                ? `<a href="/read?id=${course._id}" class="btn btn--primary btn--block pricing-card__cta pricing-card__cta--owned">Read Now</a>`
-                : `<button id="buy-btn" class="btn btn--primary btn--block pricing-card__cta" type="button">Buy Now</button>`
-              }
-              <p class="course-cta-note">Includes lifetime access on your account.</p>
-            </div>
-          </aside>
+            <div class="course-summary__detail-card">
+              <div class="course-summary__media-card">
+                <img src="${thumb}" alt="${course.title}">
+              </div>
 
-          <div class="course-content" id="course-content-area">
-            <section class="course-section course-section--about">
-              <h2 class="course-section__heading">Course Details</h2>
-              <div class="course-rich-text">
+              <div class="course-rich-text course-summary__description">
                 <p>${courseDescription.replace(/\n/g, "<br>")}</p>
               </div>
-            </section>
+            </div>
 
-            <section class="course-section course-section--reviews">
-              <h2 class="course-section__heading">Course Reviews</h2>
-              <div id="reviews-container" class="course-reviews-shell">
-                <p class="course-loading-copy">Loading reviews...</p>
-              </div>
-            </section>
+            <div class="course-summary__purchase">
+              <div class="pricing-price course-summary__price">&#8377;${course.price}</div>
+              ${isOwned
+                ? `<a href="/read?id=${course._id}" class="btn btn--primary btn--block pricing-card__cta pricing-card__cta--owned course-summary__cta">Read Now</a>`
+                : `<button id="buy-btn" class="btn btn--primary btn--block pricing-card__cta course-summary__cta" type="button">Buy Now</button>`
+              }
+            </div>
+          </section>
 
-            <section class="course-section course-section--share">
-              <div id="share-bar" class="course-share-card">
-                <div class="course-share-header">
-                  <h3>Share this course</h3>
-                  <p>Send it to someone who would enjoy it.</p>
-                </div>
-                <div class="course-share-actions">
-                  <button id="copy-link" class="course-share-action course-share-action--copy" type="button">Copy Link</button>
-                  <a id="whatsapp-link" class="course-share-action" target="_blank" rel="noopener" href="#">WhatsApp</a>
-                  <a id="facebook-link" class="course-share-action" target="_blank" rel="noopener" href="#">Facebook</a>
-                  <a id="x-link" class="course-share-action" target="_blank" rel="noopener" href="#">X</a>
-                  <a id="linkedin-link" class="course-share-action" target="_blank" rel="noopener" href="#">LinkedIn</a>
-                </div>
+          <section class="course-section course-section--reviews">
+            <h2 class="course-section__heading">Course Reviews</h2>
+            <div id="reviews-container" class="course-reviews-shell">
+              <p class="course-loading-copy">Loading reviews...</p>
+            </div>
+          </section>
+
+          <section class="course-section course-section--share">
+            <div id="share-bar" class="course-share-card">
+              <div class="course-share-header">
+                <h3>Share this course</h3>
+                <p>Send it to someone who would enjoy it.</p>
               </div>
-            </section>
-          </div>
+              <div class="course-share-actions">
+                <button id="copy-link" class="course-share-action course-share-action--copy" type="button">Copy Link</button>
+                <a id="whatsapp-link" class="course-share-action" target="_blank" rel="noopener" href="#">WhatsApp</a>
+                <a id="facebook-link" class="course-share-action" target="_blank" rel="noopener" href="#">Facebook</a>
+                <a id="x-link" class="course-share-action" target="_blank" rel="noopener" href="#">X</a>
+                <a id="linkedin-link" class="course-share-action" target="_blank" rel="noopener" href="#">LinkedIn</a>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     `;
@@ -153,8 +144,6 @@ async function loadCourseReviews(courseId, ratingFilter = null, page = 1) {
     let reviewsUrl = `/api/reviews/${courseId}?page=${page}`;
     if (ratingFilter) {
       reviewsUrl += `&rating=${ratingFilter}`;
-    } else {
-      reviewsUrl += "&onlyTop=true";
     }
 
     const [statsRes, reviewsRes] = await Promise.all([
@@ -196,15 +185,17 @@ async function loadCourseReviews(courseId, ratingFilter = null, page = 1) {
           <article class="review-list-item course-review-card">
             <div class="course-review-card__header">
               <div class="course-review-card__identity">
-                <div class="reviewer-avatar course-review-card__avatar">
-                  ${review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : (review.userName?.charAt(0).toUpperCase() || "U")}
-                </div>
                 <div class="reviewer-meta course-review-card__meta">
                   <h4>${review.userId?.name || review.userName || "Learner"}</h4>
-                  <span>${new Date(review.createdAt).toLocaleDateString()}</span>
+                  <div class="course-review-card__meta-line">
+                    <span class="course-review-card__time">${formatRelativeTime(review.createdAt)}</span>
+                  </div>
                 </div>
               </div>
-              <div class="course-review-card__stars">${renderStars(review.rating)}</div>
+              <div class="course-review-card__rating">
+                <span class="course-review-card__stars">${renderStars(review.rating)}</span>
+                <span class="course-review-card__rating-value">${review.rating}.0</span>
+              </div>
             </div>
             <p class="course-review-card__text">${review.comment}</p>
           </article>
@@ -228,44 +219,75 @@ async function loadCourseReviews(courseId, ratingFilter = null, page = 1) {
       paginationHtml += `</div>`;
     }
 
-    const filterClearHtml = ratingFilter ? `
-      <div class="course-review-filter">
-        <span>Showing ${ratingFilter}-star reviews</span>
-        <button type="button" class="course-review-filter__clear" onclick="loadCourseReviews('${courseId}', null, 1)">Clear filter</button>
+    const reviewFilterChips = `
+      <div class="course-review-filters" role="group" aria-label="Filter reviews by rating">
+        <button
+          type="button"
+          class="course-review-chip${ratingFilter === null ? " is-active" : ""}"
+          onclick="loadCourseReviews('${courseId}', null, 1)"
+        >
+          All Reviews
+        </button>
+        ${[5, 4, 3, 2, 1].map((star) => `
+          <button
+            type="button"
+            class="course-review-chip${Number(ratingFilter) === star ? " is-active" : ""}"
+            onclick="loadCourseReviews('${courseId}', ${star}, 1)"
+          >
+            ${star} Star
+          </button>
+        `).join("")}
       </div>
-    ` : "";
+    `;
 
     container.innerHTML = `
-      <div class="rating-snapshot course-rating-snapshot">
-        <div class="rating-big-score">
-          <div class="big-rating">${stats.avgRating}</div>
-          <div class="big-stars">${renderStars(Math.round(stats.avgRating))}</div>
-          <div class="course-rating-count">${stats.totalReviews} Ratings</div>
-        </div>
-        <div class="rating-bars">
-          ${[5, 4, 3, 2, 1].map((star) => {
-            const percent = stats.percentages[star];
-            return `
-              <button type="button" class="course-rating-bar" onclick="loadCourseReviews('${courseId}', ${star}, 1)">
-                <div class="bar-label"><span>${star}</span><span class="bar-label__star">&#9733;</span></div>
-                <div class="bar-bg"><div class="bar-fill" style="width:${percent}%;"></div></div>
-                <div class="bar-percent">${percent}%</div>
-              </button>
-            `;
-          }).join("")}
-        </div>
-      </div>
+      <div class="course-reviews-panel">
+        <div class="course-reviews-summary">
+          <div class="course-reviews-score">
+            <span class="course-reviews-score__eyebrow">Average Rating</span>
+            <div class="big-rating">${stats.avgRating}</div>
+            <div class="big-stars">${renderStars(Math.round(stats.avgRating))}</div>
+            <div class="course-rating-count">Total ${stats.totalReviews} Reviews</div>
+          </div>
 
-      ${filterClearHtml}
+          <div class="course-reviews-breakdown">
+            <div class="rating-bars">
+              ${[5, 4, 3, 2, 1].map((star) => {
+                const percent = stats.percentages[star];
+                const isActive = Number(ratingFilter) === star ? " is-active" : "";
+                return `
+                  <button
+                    type="button"
+                    class="course-rating-bar${isActive}"
+                    onclick="loadCourseReviews('${courseId}', ${star}, 1)"
+                    title="Show ${star}-star reviews"
+                    aria-label="Show ${star}-star reviews"
+                  >
+                    <div class="course-rating-bar__meta">
+                      <div class="course-rating-bar__value"><span>${star}</span><span class="bar-label__star">&#9733;</span></div>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width:${percent}%;"></div></div>
+                    <div class="bar-percent">${percent}%</div>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        </div>
 
-      <div class="course-review-list-heading">
-        <h3>Reviews</h3>
-        <p>Top learner feedback from this course page.</p>
+        ${reviewFilterChips}
+
+        <div class="course-review-list-heading">
+          <div>
+            <h3>${ratingFilter ? `${ratingFilter}-Star Reviews` : "Latest Reviews"}</h3>
+            <p>${ratingFilter ? `${stats.breakdown[ratingFilter] || 0} verified reviews with a ${ratingFilter}-star rating.` : "All are verified reviews."}</p>
+          </div>
+        </div>
+        <div class="reviews-list course-reviews-list">
+          ${listHtml}
+        </div>
+        ${paginationHtml}
       </div>
-      <div class="reviews-list course-reviews-list">
-        ${listHtml}
-      </div>
-      ${paginationHtml}
     `;
   } catch (error) {
     console.error("Review fetch error", error);
@@ -275,6 +297,44 @@ async function loadCourseReviews(courseId, ratingFilter = null, page = 1) {
 
 function renderStars(rating) {
   return `${"&#9733;".repeat(rating)}${"&#9734;".repeat(5 - rating)}`;
+}
+
+function formatRelativeTime(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMs = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (diffMs < minute) return "Just now";
+  if (diffMs < hour) {
+    const minutes = Math.max(1, Math.floor(diffMs / minute));
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  }
+  if (diffMs < day) {
+    const hours = Math.max(1, Math.floor(diffMs / hour));
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  }
+  if (diffMs < week) {
+    const days = Math.max(1, Math.floor(diffMs / day));
+    return `${days} ${days === 1 ? "day" : "days"} ago`;
+  }
+  if (diffMs < month) {
+    const weeks = Math.max(1, Math.floor(diffMs / week));
+    return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+  }
+  if (diffMs < year) {
+    const months = Math.max(1, Math.floor(diffMs / month));
+    return `${months} ${months === 1 ? "month" : "months"} ago`;
+  }
+
+  const years = Math.max(1, Math.floor(diffMs / year));
+  return `${years} ${years === 1 ? "year" : "years"} ago`;
 }
 
 function updateShareLinks(course, currentUrl) {

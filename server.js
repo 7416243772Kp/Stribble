@@ -113,7 +113,6 @@ app.set("trust proxy", 1);
 
 // ==== CORS & Cookie Parser ====
 import cookieParser from "cookie-parser";
-import escapeHtml from "escape-html";
 import xss from "xss-clean";
 
 const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://127.0.0.1:8080,http://localhost:8080").split(",").map(s => s.trim());

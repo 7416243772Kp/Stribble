@@ -9,130 +9,679 @@
   <script src="/js/settings.js" defer></script>
   <script src="/js/checkout.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var cb = document.getElementById('termsCheckbox');
-      var btn = document.getElementById('payment-btn');
-      if (cb && btn) {
-        cb.addEventListener('change', function() {
-          if (cb.checked) {
-            btn.disabled = false;
-            btn.style.background = '';
-            btn.style.boxShadow = '0 10px 20px -5px rgba(37, 99, 235, 0.4)';
-            btn.style.cursor = 'pointer';
-            btn.style.opacity = '1';
-          } else {
-            btn.disabled = true;
-            btn.style.background = '#94a3b8';
-            btn.style.boxShadow = 'none';
-            btn.style.cursor = 'not-allowed';
-            btn.style.opacity = '0.85';
-          }
-        });
-      }
-    });
-  </script>
-  
+
   <style>
-    /* LOCAL OVERRIDES FOR UNIFIED CHECKOUT DESIGN */
-    body { background-color: #f8fafc; }
-    .checkout-page { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-    .unified-checkout-card {
-        background: white; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-        width: 100%; max-width: 900px; display: grid; grid-template-columns: 280px 1fr;
-        overflow: hidden; border: 1px solid #e2e8f0;
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.10) 0%, rgba(248, 250, 252, 0.96) 34%, #f8fafc 100%);
     }
-    .checkout-summary-side { background: #f1f5f9; padding: 32px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-    .checkout-form-side { padding: 40px; background: white; }
-    .summary-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 20px; }
-    .course-mini-thumb { width: 100%; height: auto; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid rgba(0,0,0,0.05); display: block; }
-    .course-mini-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; line-height: 1.4; margin-bottom: 8px; }
-    .price-tag-large { font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-top: auto; padding-top: 20px; border-top: 1px dashed #cbd5e1; }
-    
-    .checkout-form label { font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 8px; display: block; }
-    .coupon-row { display: flex; gap: 10px; margin-bottom: 24px; }
-    .coupon-input { flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #f8fafc; }
-    .coupon-input:focus { background: white; border-color: var(--primary); outline: none; }
-    
-    @media (max-width: 768px) {
-        .unified-checkout-card { grid-template-columns: 1fr; max-width: 500px; }
-        .checkout-summary-side { padding: 24px; border-right: none; border-bottom: 1px solid #e2e8f0; }
-        .checkout-form-side { padding: 24px; }
+
+    .checkout-page {
+      min-height: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 16px;
+    }
+
+    .footer {
+      margin-top: 0;
+    }
+
+    .checkout-shell {
+      width: 100%;
+      max-width: 1040px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+      grid-template-areas: "form summary";
+      gap: 24px;
+      align-items: start;
+    }
+
+    .checkout-form-side {
+      grid-area: form;
+      padding: 32px;
+      border-radius: 28px;
+      border: 1px solid #deebfb;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
+      box-shadow: 0 24px 44px -36px rgba(15, 23, 42, 0.28);
+    }
+
+    .checkout-summary-side {
+      grid-area: summary;
+      position: sticky;
+      top: 24px;
+      padding: 24px;
+      border-radius: 28px;
+      border: 1px solid #dce8f8;
+      background: linear-gradient(180deg, #f6f9ff 0%, #eef5ff 100%);
+      box-shadow: 0 22px 40px -34px rgba(37, 99, 235, 0.28);
+    }
+
+    .checkout-form-intro {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .checkout-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .checkout-lock {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+      color: #1d4ed8;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      flex: 0 0 40px;
+    }
+
+    .checkout-lock svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .checkout-form-intro h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .checkout-form-intro p {
+      margin: 0;
+      font-size: 0.96rem;
+      line-height: 1.6;
+      color: #64748b;
+    }
+
+    .checkout-trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .checkout-trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f8fbff;
+      border: 1px solid #e3edf9;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .checkout-action-card {
+      padding: 24px;
+      border-radius: 24px;
+      background: #ffffff;
+      border: 1px solid #e2ebf7;
+      box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.2);
+    }
+
+    .checkout-form-unified {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .checkout-label {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 0.96rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+
+    .coupon-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 16px;
+      padding: 4px;
+      border-radius: 18px;
+      border: 1px solid #d7e3f2;
+      background: #f8fbff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .coupon-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 56px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 14px;
+      background: transparent;
+      box-shadow: none;
+      font-size: 0.96rem;
+      color: #0f172a;
+    }
+
+    .coupon-input::placeholder {
+      color: #94a3b8;
+      opacity: 1;
+    }
+
+    .coupon-input:focus {
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+      outline: none;
+    }
+
+    .coupon-apply-btn {
+      min-width: 116px;
+      height: 56px;
+      padding: 0 24px !important;
+      border-radius: 14px !important;
+      border: none;
+      background: #ffffff;
+      box-shadow: 0 14px 24px -22px rgba(15, 23, 42, 0.4);
+      font-weight: 800 !important;
+      color: #0f172a !important;
+    }
+
+    .coupon-feedback {
+      margin-bottom: 16px !important;
+      min-height: 0;
+    }
+
+    .terms-container {
+      padding-top: 16px;
+      border-top: 1px solid #edf2f7;
+      transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .terms-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .terms-checkbox {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+      flex: 0 0 18px;
+      accent-color: #2563eb;
+    }
+
+    .terms-copy {
+      font-size: 0.94rem;
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .terms-copy a {
+      color: #0f172a;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .terms-error {
+      margin-top: 10px !important;
+      min-height: 0;
+    }
+
+    .terms-error .field-msg {
+      width: 100%;
+      display: flex;
+    }
+
+    .checkout-pay-btn {
+      width: 100%;
+      margin-top: 20px;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px !important;
+      border-radius: 18px !important;
+      background: linear-gradient(135deg, #a7b4c8 0%, #90a0b8 100%);
+      color: #ffffff !important;
+      font-size: 1.08rem !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.01em;
+      box-shadow: none;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .checkout-pay-btn.is-ready {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
+      box-shadow: 0 22px 36px -24px rgba(37, 99, 235, 0.9);
+    }
+
+    .checkout-pay-btn.is-ready:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 28px 42px -24px rgba(37, 99, 235, 0.95);
+    }
+
+    .pay-btn__icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 18px;
+    }
+
+    .pay-btn__icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .checkout-cancel {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .checkout-cancel a {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .checkout-cancel a:hover {
+      color: #64748b;
+    }
+
+    .summary-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1d4ed8;
+    }
+
+    .summary-title::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2563eb, #60a5fa);
+    }
+
+    .order-summary-card {
+      padding: 20px;
+      border-radius: 24px;
+      background: #ffffff;
+      border: 1px solid #dfeaf8;
+      box-shadow: 0 18px 34px -30px rgba(15, 23, 42, 0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .order-summary-media {
+      overflow: hidden;
+      border-radius: 20px;
+      background: #dbeafe;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    .course-mini-thumb {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      display: block;
+    }
+
+    .order-summary-content {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .course-mini-title {
+      margin: 0;
+      font-size: 1.3rem;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .course-mini-meta {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.08);
+      color: #4f46e5;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .summary-pricing {
+      margin: 0;
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 20px;
+      background: #f9fbff;
+      border: 1px solid #e5edf8;
+    }
+
+    .summary-row,
+    .summary-total {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      margin: 0;
+    }
+
+    .summary-row__label,
+    .summary-row__value {
+      margin: 0;
+    }
+
+    .summary-row__label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .summary-row__value {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .summary-row--discount .summary-row__value {
+      color: #047857;
+    }
+
+    .summary-savings {
+      display: none;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #effcf3;
+      border: 1px solid #bbf7d0;
+      color: #047857;
+      font-size: 0.83rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .summary-total {
+      padding-top: 14px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .summary-total__label {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .summary-total__label span {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+
+    .summary-total__label small {
+      font-size: 0.79rem;
+      line-height: 1.45;
+      color: #64748b;
+    }
+
+    .price-tag-large {
+      font-size: 2.2rem;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    @media (max-width: 920px) {
+      .checkout-page {
+        padding: 16px 10px 8px;
+      }
+
+      .checkout-shell {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "summary"
+          "form";
+        max-width: 560px;
+      }
+
+      .checkout-summary-side {
+        position: static;
+        padding: 18px 16px;
+      }
+
+      .checkout-form-side {
+        padding: 18px 16px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .checkout-form-side,
+      .checkout-summary-side {
+        border-radius: 24px;
+      }
+
+      .checkout-form-side {
+        padding: 16px 14px;
+      }
+
+      .checkout-summary-side {
+        padding: 16px 14px;
+      }
+
+      .checkout-form-intro h1 {
+        font-size: 1.22rem;
+      }
+
+      .checkout-form-intro p {
+        font-size: 0.84rem;
+      }
+
+      .checkout-action-card,
+      .order-summary-card {
+        padding: 14px;
+        border-radius: 20px;
+      }
+
+      .coupon-row {
+        padding: 4px;
+      }
+
+      .coupon-input {
+        height: 48px;
+        padding: 0 12px;
+        font-size: 0.9rem;
+      }
+
+      .coupon-input::placeholder {
+        font-size: 0.84rem;
+      }
+
+      .coupon-apply-btn {
+        min-width: 88px;
+        height: 48px;
+        padding: 0 14px !important;
+      }
+
+      .terms-copy {
+        font-size: 0.86rem;
+      }
+
+      .summary-pricing {
+        padding: 12px;
+      }
+
+      .summary-row__label {
+        font-size: 0.72rem;
+      }
+
+      .summary-row__value {
+        font-size: 0.88rem;
+      }
+
+      .summary-total__label span {
+        font-size: 0.92rem;
+        white-space: normal;
+      }
+
+      .summary-total__label small {
+        font-size: 0.75rem;
+      }
+
+      .price-tag-large {
+        font-size: 1.82rem;
+      }
+
+      .checkout-pay-btn {
+        margin-top: 16px;
+        padding: 15px !important;
+        font-size: 1rem !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <main class="checkout-page">
-    <div class="unified-checkout-card">
-        <!-- LEFT COLUMN: Summary -->
-        <div class="checkout-summary-side">
-            <div class="summary-title">Order Summary</div>
-            
-            <img id="miniThumb" class="course-mini-thumb skeleton" src="/images/placeholder-course.png" alt="Course">
-            
-            <h2 id="miniTitle" class="course-mini-title">Loading Course...</h2>
-            <div style="font-size: 0.85rem; color: #64748b; font-weight: 500; margin-bottom: 16px;">Lifetime Access</div>
+    <div class="checkout-shell">
+      <section class="checkout-form-side" aria-labelledby="checkout-title">
+        <div class="checkout-form-intro">
+          <div class="checkout-title-row">
+            <span class="checkout-lock" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+              </svg>
+            </span>
+            <h1 id="checkout-title">Secure Checkout</h1>
+          </div>
+          <p>Encrypted payment flow with instant access as soon as your purchase is successful.</p>
+          <div class="checkout-trust-row" aria-label="Checkout trust signals">
+            <span class="checkout-trust-pill">256-bit secure payment</span>
+            <span class="checkout-trust-pill">Instant course access</span>
+          </div>
+        </div>
 
-            <div style="margin-top: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                    <span style="font-size: 0.9rem; color: #64748b;">Total to Pay</span>
-                    <span id="priceNow" class="price-tag-large">₹0</span>
-                </div>
-                <!-- Hidden helpers -->
-                <span id="priceBefore" style="display:none"></span>
-                <div id="priceSavings" style="display:none"></div>
-                <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
+        <form id="checkoutForm" class="checkout-form-unified" autocomplete="on" novalidate>
+          <div class="checkout-action-card">
+            <label for="coupon" class="checkout-label">Have a Coupon Code?</label>
+            <div class="coupon-row">
+              <input
+                type="text"
+                id="coupon"
+                class="coupon-input"
+                placeholder="Enter code (optional)"
+                aria-label="Coupon code"
+                aria-describedby="err-coupon couponMessage"
+              />
+              <button type="button" id="apply-coupon-btn" class="btn btn--ghost coupon-apply-btn" aria-label="Apply coupon code">Apply</button>
             </div>
+            <div id="err-coupon" class="field-error"></div>
+            <div id="couponMessage" class="coupon-feedback" aria-live="polite"></div>
+
+            <div class="terms-container">
+              <label class="terms-label" for="termsCheckbox">
+                <input type="checkbox" id="termsCheckbox" class="terms-checkbox" aria-describedby="err-terms">
+                <span class="terms-copy">
+                  I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                </span>
+              </label>
+              <div id="err-terms" class="field-error terms-error" style="display:none;" aria-live="polite"></div>
+            </div>
+
+            <button type="submit" id="payment-btn" class="btn btn--primary btn--block checkout-pay-btn" aria-label="Proceed to pay securely">
+              <span class="pay-btn__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                </svg>
+              </span>
+              <span>Proceed to Pay</span>
+            </button>
+
+            <div class="checkout-cancel">
+              <a href="/">&larr; Cancel and return home</a>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <aside class="checkout-summary-side" aria-label="Order summary">
+        <div class="summary-title">Order Summary</div>
+        <div class="order-summary-card">
+          <div class="order-summary-media">
+            <img id="miniThumb" class="course-mini-thumb skeleton" src="/images/placeholder-course.png" alt="Course thumbnail">
+          </div>
+
+          <div class="order-summary-content">
+            <h2 id="miniTitle" class="course-mini-title">Loading Course...</h2>
+            <div class="course-mini-meta">Lifetime Access</div>
+
+            <dl class="summary-pricing">
+              <div class="summary-row">
+                <dt class="summary-row__label">List Price</dt>
+                <dd id="priceBefore" class="summary-row__value">&#8377;0</dd>
+              </div>
+              <div id="discountRow" class="summary-row summary-row--discount" style="display:none;">
+                <dt class="summary-row__label">Discount Applied</dt>
+                <dd id="priceDiscount" class="summary-row__value">-&#8377;0</dd>
+              </div>
+              <div id="priceSavings" class="summary-savings" style="display:none;"></div>
+              <div class="summary-total">
+                <div class="summary-total__label">
+                  <span>Amount Payable</span>
+                  <small>Final price after discount</small>
+                </div>
+                <dd id="priceNow" class="price-tag-large">&#8377;0</dd>
+              </div>
+            </dl>
+            <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
+          </div>
         </div>
-
-        <!-- RIGHT COLUMN: Payment Form -->
-        <div class="checkout-form-side">
-             <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-                <h1 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0;">Secure Checkout</h1>
-                <p style="font-size: 0.9rem; color: #64748b; margin-top: 4px;">Complete your purchase details below.</p>
-             </div>
-
-             <form id="checkoutForm" class="checkout-form" autocomplete="on" novalidate>
-                
-                <label for="coupon">Have a Coupon Code?</label>
-                <div class="coupon-row">
-                    <input type="text" id="coupon" class="coupon-input" placeholder="Enter code (optional)" />
-                    <button type="button" id="apply-coupon-btn" class="btn btn--ghost" style="padding: 0 20px; border-radius: 10px; font-weight: 600;">Apply</button>
-                </div>
-                <div id="err-coupon" class="field-error"></div>
-                <div id="couponMessage" aria-live="polite" style="margin-bottom: 20px;"></div>
-
-                <!-- Terms Checkbox -->
-                <div style="margin-bottom: 30px;">
-                    <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 12px; margin: 0;">
-                        <input type="checkbox" id="termsCheckbox" style="margin-top: 4px; width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-size: 0.95rem; color: #475569; line-height: 1.5; font-weight: 400;">
-                            I agree to the <a href="/terms.html" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Terms of Service</a> and <a href="/privacy.html" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Privacy Policy</a>.
-                        </span>
-                    </label>
-                    <div id="err-terms" class="field-error" style="margin-top: 5px; display: none;"></div>
-                </div>
-
-                <!-- Main CTA -->
-                <button type="submit" id="payment-btn" class="btn btn--primary btn--block" disabled style="padding: 16px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; background: #94a3b8; box-shadow: none; cursor: not-allowed; opacity: 0.85; transition: all 0.3s ease;">
-                    Proceed to Pay
-                </button>
-
-                <div style="text-align: center; margin-top: 20px;">
-                     <a href="/" style="color: #94a3b8; font-size: 0.9rem; text-decoration: none; transition: color 0.2s;">&larr; Cancel and return home</a>
-                </div>
-
-             </form>
-        </div>
-
+      </aside>
     </div>
   </main>
 
   <footer class="footer">
     <div class="container footer__inner">
-
-      <!-- Brand & Contact -->
       <div>
         <div class="brand" style="margin-bottom: 0.75rem;">
           <span class="brand__dot"></span>
@@ -157,7 +706,6 @@
         </p>
       </div>
 
-      <!-- Legal -->
       <div>
         <h4>Legal</h4>
         <a href="privacy.html">Privacy Policy</a>
@@ -165,14 +713,12 @@
         <a href="refund.html">Refund Policy</a>
       </div>
 
-      <!-- Support -->
       <div>
         <h4>Support</h4>
         <a href="contact.html">Contact Us</a>
         <a href="about.html">About Us</a>
         <a href="index.html">Courses</a>
       </div>
-
     </div>
 
     <div class="copyright">

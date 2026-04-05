@@ -15,6 +15,14 @@ if (!selectedCourseId) {
 // API base (settings.js sets window.API_BASE)
 const API_BASE = (typeof window !== "undefined" && window.API_BASE) ? window.API_BASE : "";
 
+function formatINR(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
+}
+
 /** safeJsonFetch: fetch wrapper that surfaces server error text as thrown Error */
 async function safeJsonFetch(url, opts = {}) {
   const res = await fetch(url, opts);
@@ -84,18 +92,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Elements mapping
   const couponInput = document.getElementById("coupon");
   const paymentBtn = document.getElementById("payment-btn");
-  // if(paymentBtn) paymentBtn.disabled = true; // No longer blocking by default
   const termsCheckbox = document.getElementById("termsCheckbox");
-  
-  // if (termsCheckbox && paymentBtn) {
-  //     termsCheckbox.addEventListener('change', (e) => {
-  //         paymentBtn.disabled = !e.target.checked;
-  //     });
-  // }
   const form = document.getElementById("checkoutForm");
+  const termsContainer = document.querySelector(".terms-container");
+  const termsErrorEl = document.getElementById("err-terms");
 
   // Price display elements
   const priceBeforeEl = document.getElementById("priceBefore");
+  const discountRowEl = document.getElementById("discountRow");
+  const priceDiscountEl = document.getElementById("priceDiscount");
   const priceNowEl = document.getElementById("priceNow");
   const priceSavingsEl = document.getElementById("priceSavings");
   const totalAmtEl = document.getElementById('totalAmount'); // Helper for storing raw price
@@ -112,7 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Notification Box Logic
   let notificationBox = document.getElementById("notification");
   if (!notificationBox) {
-    const checkoutCard = document.querySelector(".checkout-form");
+    const checkoutCard = document.querySelector(".checkout-form-unified");
     if (checkoutCard) {
       notificationBox = document.createElement("div");
       notificationBox.id = "notification";
@@ -127,22 +132,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     finalAmount: 0   // amount after coupon
   };
 
+  function renderPriceSummary(baseAmount, finalAmount = baseAmount) {
+    const base = Number(baseAmount || 0);
+    const final = Number(finalAmount || 0);
+    const savings = Math.max(0, base - final);
+
+    if (priceBeforeEl) {
+      priceBeforeEl.style.display = "";
+      priceBeforeEl.textContent = formatINR(base);
+    }
+    if (priceNowEl) priceNowEl.textContent = formatINR(final);
+
+    if (priceDiscountEl) {
+      priceDiscountEl.textContent = `-${formatINR(savings)}`;
+    }
+
+    if (discountRowEl) {
+      discountRowEl.style.display = savings > 0 ? "flex" : "none";
+    }
+
+    if (priceSavingsEl) {
+      if (savings > 0) {
+        priceSavingsEl.style.display = "block";
+        priceSavingsEl.textContent = `You saved ${formatINR(savings)} on this order`;
+      } else {
+        priceSavingsEl.style.display = "none";
+        priceSavingsEl.textContent = "";
+      }
+    }
+
+    if (totalAmtEl) {
+      totalAmtEl.dataset.amount = base;
+      totalAmtEl.dataset.finalAmount = final;
+    }
+  }
+
   // Populate UI with course data (Now works even if fetched from API)
   if (course) {
     const base = Number(course.price || 0);
     priceDataset.amount = base;
     priceDataset.finalAmount = base;
-    
-    // Update visual elements
-    if (priceNowEl) priceNowEl.textContent = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(base);
-    if (priceBeforeEl) priceBeforeEl.style.display = "none";
-    if (priceSavingsEl) priceSavingsEl.style.display = "none";
-    
-    // Store raw amount in DOM for reliability
-    if (totalAmtEl) {
-        totalAmtEl.dataset.amount = base;
-        totalAmtEl.dataset.finalAmount = base;
-    }
+    renderPriceSummary(base, base);
 
     // Mini Info
     if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
@@ -163,6 +193,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Nothing selected
     if (priceNowEl) priceNowEl.textContent = "₹0";
   }
+
+  renderPriceSummary(priceDataset.amount, priceDataset.finalAmount);
 
   // --- Notification Helpers ---
   let _notifyTimer = null;
@@ -235,8 +267,60 @@ document.addEventListener("DOMContentLoaded", async () => {
   function setLoading(btn, isLoading, text) {
       if(!btn) return;
       if(isLoading) { btn.dataset.orig = btn.textContent; btn.textContent=text; btn.disabled=true; }
-      else { btn.textContent = btn.dataset.orig || btn.textContent; btn.disabled=false; }
+      else {
+        btn.textContent = btn.dataset.orig || btn.textContent;
+        btn.disabled = false;
+        updatePaymentButtonState();
+      }
   }
+
+  function updatePaymentButtonState() {
+    if (!paymentBtn) return;
+    const isReady = Boolean(termsCheckbox?.checked);
+    paymentBtn.classList.toggle("is-ready", isReady);
+    paymentBtn.setAttribute("aria-disabled", isReady ? "false" : "true");
+  }
+
+  function showTermsError(message = "Please accept Terms of Service to proceed to pay.") {
+    if (termsErrorEl) {
+      termsErrorEl.innerHTML = `<div class="field-msg error">${message}</div>`;
+      termsErrorEl.style.display = "block";
+    }
+
+    if (termsContainer) {
+      termsContainer.style.boxShadow = "0 0 0 1px #ef4444";
+      termsContainer.style.borderRadius = "16px";
+      termsContainer.style.backgroundColor = "#fff5f5";
+      termsContainer.style.borderColor = "#fecaca";
+    }
+
+    updatePaymentButtonState();
+  }
+
+  function clearTermsError() {
+    if (termsErrorEl) {
+      termsErrorEl.innerHTML = "";
+      termsErrorEl.style.display = "none";
+    }
+
+    if (termsContainer) {
+      termsContainer.style.boxShadow = "";
+      termsContainer.style.borderRadius = "";
+      termsContainer.style.backgroundColor = "";
+      termsContainer.style.borderColor = "";
+    }
+  }
+
+  if (termsCheckbox) {
+    termsCheckbox.addEventListener("change", () => {
+      updatePaymentButtonState();
+      if (termsCheckbox.checked) {
+        clearTermsError();
+      }
+    });
+  }
+
+  updatePaymentButtonState();
 
   // --- Coupon Logic ---
   async function applyCoupon() {
@@ -244,46 +328,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!code) { showError(couponInput, "Enter coupon code"); return; }
     // Ensure ID is set
     if (!selectedCourseId && course?._id) selectedCourseId = course._id;
-    
-    setLoading(applyCouponBtn, true, "Checking…");
+
+    setLoading(applyCouponBtn, true, "Checking...");
     try {
-      const result = await safeJsonFetch(`${API_BASE}/api/validate/coupon`, {
+      const couponResponse = await safeJsonFetch(`${API_BASE}/api/validate/coupon`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ couponCode: code, courseId: selectedCourseId })
       });
 
-      const coupon = result.coupon || result;
-      if (!coupon) throw new Error("Invalid coupon");
+      const couponData = couponResponse.coupon || couponResponse;
+      if (!couponData) throw new Error("Invalid coupon");
 
-      // Calculate logic
-      const base = priceDataset.amount; // Use the robust dataset amount
-      let savings = 0;
-      const pct = Number(coupon?.percent || 0);
-      const fixed = Number(coupon?.discount || coupon?.amount || 0);
+      const baseAmount = priceDataset.amount;
+      const percentDiscount = Number(couponData?.percent || 0);
+      const fixedDiscount = Number(couponData?.discount || couponData?.amount || 0);
+      const savingsAmount = percentDiscount > 0
+        ? Math.round((baseAmount * percentDiscount) / 100)
+        : fixedDiscount;
+      const finalAmount = Math.max(0, baseAmount - savingsAmount);
 
-      if (pct > 0) savings = Math.round((base * pct) / 100);
-      else savings = fixed;
+      priceDataset.finalAmount = finalAmount;
+      renderPriceSummary(baseAmount, finalAmount);
 
-      const final = Math.max(0, base - savings);
-      priceDataset.finalAmount = final;
-
-      // Update UI
-      if (priceBeforeEl) { priceBeforeEl.style.display = ""; priceBeforeEl.textContent = "₹" + base; }
-      if (priceNowEl) priceNowEl.textContent = "₹" + final;
-      if (priceSavingsEl) { priceSavingsEl.style.display = ""; priceSavingsEl.textContent = `You saved ₹${savings}`; }
-
-      showInlineSuccess("couponMessage", `Coupon '${code}' applied! Saved ₹${savings}`);
+      showInlineSuccess("couponMessage", `Coupon ${code} applied. You saved ${formatINR(savingsAmount)}.`);
       sessionStorage.setItem("buyerCoupon", code);
-      clearError('coupon');
+      clearError("coupon");
     } catch (err) {
       showError(couponInput, err.message || "Invalid coupon");
-      // Reset price
       priceDataset.finalAmount = priceDataset.amount;
-      if (priceNowEl) priceNowEl.textContent = "₹" + priceDataset.amount;
+      renderPriceSummary(priceDataset.amount, priceDataset.amount);
     } finally {
       setLoading(applyCouponBtn, false, "Apply");
     }
+    return;
   }
   if (applyCouponBtn) applyCouponBtn.addEventListener("click", applyCoupon);
 
@@ -299,22 +377,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           return; 
       }
 
-      if (!document.getElementById("termsCheckbox")?.checked) {
-          // Show error on click
-          showError(null, "Please accept the Terms & Privacy Policy");
-           // Also highlight the checkbox area
-           const termContainer = document.querySelector('.terms-container');
-           if(termContainer) {
-              termContainer.style.border = "1px solid red";
-              termContainer.style.borderRadius = "8px";
-              termContainer.style.padding = "8px";
-              setTimeout(() => { 
-                  termContainer.style.border = "none"; 
-                  termContainer.style.padding = "0";
-              }, 2000);
-           }
+      if (!termsCheckbox?.checked) {
+          showTermsError();
           return;
       }
+
+      clearTermsError();
 
       // Use logged in user email
       const email = currentUser.email;
