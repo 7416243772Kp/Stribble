@@ -306,33 +306,33 @@ async function fetchDashboardStats() {
 
         // Build HTML for all cards
         let html = `
-          <div class="stat-card" style="flex: 1; min-width: 200px;">
+          <div class="stat-card stat-card--metric">
             <h3>${courses}</h3>
             <p>Total Courses</p>
           </div>
-          <div class="stat-card" style="flex: 1; min-width: 200px;">
+          <div class="stat-card stat-card--metric">
             <h3>${coupons}</h3>
             <p>Total Coupons</p>
           </div>
-          <div class="stat-card" style="flex: 1; min-width: 200px;">
+          <div class="stat-card stat-card--metric">
             <h3>${sales}</h3>
             <p>Total Sales (Count)</p>
           </div>
           
           <!-- New Time-based Sales -->
-          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #3b82f6;">
+          <div class="stat-card stat-card--metric" style="border-color: #3b82f6;">
             <h3 style="color:#2563eb;">${fmt(todaySales)}</h3>
             <p>Today's Sales <strong>(${todayCount || 0} sold)</strong></p>
           </div>
-          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #8b5cf6;">
+          <div class="stat-card stat-card--metric" style="border-color: #8b5cf6;">
             <h3 style="color:#7c3aed;">${fmt(weekSales)}</h3>
             <p>This Week's Sales</p>
           </div>
-          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #10b981;">
+          <div class="stat-card stat-card--metric" style="border-color: #10b981;">
             <h3 style="color:#059669;">${fmt(monthSales)}</h3>
             <p>This Month's Sales</p>
           </div>
-          <div class="stat-card" style="flex: 1; min-width: 200px; border-color: #f59e0b;">
+          <div class="stat-card stat-card--metric" style="border-color: #f59e0b;">
             <h3 style="color:#d97706;">${fmt(lastMonthSales || 0)}</h3>
             <p>Last Month's Sales</p>
           </div>
@@ -341,10 +341,10 @@ async function fetchDashboardStats() {
         // Append Per-Course Sales
         perCourseSales.forEach(c => {
            html += `
-            <div class="stat-card" style="flex: 1; min-width: 250px;">
-              <h4 style="font-size:1.1rem; margin-bottom:4px; color:#1e293b;">${c.title}</h4>
-              <h3 style="font-size:1.5rem;">${fmt(c.total)}</h3>
-              <p style="font-size:0.85rem;">${c.count} orders</p>
+            <div class="stat-card stat-card--detail stat-card--course">
+              <h4>${c.title}</h4>
+              <h3>${fmt(c.total)}</h3>
+              <p>${c.count} orders</p>
             </div>
            `; 
         });
@@ -352,10 +352,10 @@ async function fetchDashboardStats() {
         // Append Per-Coupon Sales
         perCouponSales.forEach(c => {
            html += `
-            <div class="stat-card" style="flex: 1; min-width: 200px;">
-              <h4 style="font-size:1.1rem; margin-bottom:4px; color:#1e293b;">Coupon: <span style="font-family:monospace; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${c.code}</span></h4>
-              <h3 style="font-size:1.5rem;">${fmt(c.total)}</h3>
-              <p style="font-size:0.85rem;">${c.count} uses</p>
+            <div class="stat-card stat-card--detail stat-card--coupon">
+              <h4>Coupon: <span class="stat-card__code">${c.code}</span></h4>
+              <h3>${fmt(c.total)}</h3>
+              <p>${c.count} uses</p>
             </div>
            `; 
         });
