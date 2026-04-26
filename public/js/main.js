@@ -99,6 +99,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (searchInput) searchInput.addEventListener("input", applySearch);
 
+    if (new URLSearchParams(window.location.search).get('loginRequired') === '1') {
+        window.showToast('Please login to access the content in the website.', 'error');
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+
     async function loadCourses() {
         try {
             setYear();
@@ -154,8 +159,16 @@ document.addEventListener("DOMContentLoaded", () => {
 let currentUser = null;
 let allCourses = [];
 
+function requireLoginForCourse(event) {
+    if (currentUser) return true;
+
+    event.preventDefault();
+    showToast('Please login to access the content in the website.', 'error');
+    return false;
+}
+
 // Helper to render catalog with filtering
-function renderCatalog(courses) {
+function renderCatalogLegacy(courses) {
     const wrap = document.getElementById("courses");
     const empty = document.getElementById("emptyState");
     if(!wrap || !empty) return;
@@ -322,6 +335,7 @@ function renderCatalog(courses) {
              const div = document.createElement('a'); // Using 'a' tag as card
              div.className = "card hover-lift";
              div.href = `/course/${c._id}`;
+             div.addEventListener('click', requireLoginForCourse);
              div.innerHTML = `
                 <div class="card__media">
                   <img src="${thumb}" alt="${(c.title || '').replace(/\"/g, '')}" loading="lazy" style="width:100%; height:auto; display:block;" />

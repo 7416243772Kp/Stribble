@@ -7,6 +7,7 @@ import express from "express";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
@@ -190,6 +191,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==== Static Files ====
+app.use(['/admin-login', '/admin.html', '/course.html'], (req, res) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.status(404).send('Not found');
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static("uploads"));
 
@@ -222,6 +228,27 @@ const razorpay = new Razorpay({
 // const ses = ... 
 
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
+
+async function requireUserPage(req, res, next) {
+  try {
+    const token = req.cookies?.user_token;
+    if (!token) return res.redirect('/?loginRequired=1');
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('activeSessionToken');
+
+    if (!user || user.activeSessionToken !== token) {
+      res.clearCookie('user_token');
+      return res.redirect('/?loginRequired=1');
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    res.clearCookie('user_token');
+    return res.redirect('/?loginRequired=1');
+  }
+}
 
 // ============================
 //  Rate Limiters
@@ -568,13 +595,13 @@ app.get('/refund', (req, res) => {
 });
 
 // Admin login
-app.get('/admin-login', (req, res) => {
+app.get('/adm_lgn', (req, res) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Course page - Handles the specific IDs listed in the sitemap above
-app.get('/course/:id', (req, res) => {
+app.get('/course/:id', requireUserPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'course.html'));
 });
 
