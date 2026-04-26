@@ -110,6 +110,29 @@
         </div>
         
         <div class="field">
+          <label>Current Thumbnail</label>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
+            <img
+              id="edit-thumbnail-preview"
+              alt="Current course thumbnail"
+              style="display:none; width:180px; max-width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc;"
+            />
+            <div
+              id="edit-thumbnail-empty"
+              style="display:none; min-width:180px; min-height:101px; padding:16px; border:1px dashed #cbd5e1; border-radius:10px; background:#f8fafc; color:#64748b;"
+            >
+              No thumbnail uploaded yet.
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+           <label for="edit-thumbnail">Update Course Thumbnail (Optional)</label>
+           <input type="file" id="edit-thumbnail" name="thumbnail" accept="image/*" />
+           <small id="edit-thumbnail-help" style="color:#666;">Leave empty to keep existing thumbnail.</small>
+        </div>
+
+        <div class="field">
            <label for="edit-pdf">Update Course PDF (Optional)</label>
            <input type="file" id="edit-pdf" name="coursePdf" accept="application/pdf" />
            <small style="color:#666;">Leave empty to keep existing file.</small>

@@ -156,11 +156,58 @@
             position: relative;
         }
 
+        .reader-content-rail {
+            width: min(100%, 970px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .reader-ad-slot {
+            width: 100%;
+            min-height: 96px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 16px 20px;
+            border-radius: 18px;
+            border: 1px dashed #cbd5e1;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+            box-shadow: 0 14px 32px -28px rgba(15, 23, 42, 0.24);
+            text-align: center;
+            color: #64748b;
+        }
+
+        .reader-ad-slot__label {
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #3b82f6;
+        }
+
+        .reader-ad-slot__copy {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .reader-ad-slot__size {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-variant-numeric: tabular-nums;
+        }
+
         #viewer-container {
             position: relative;
             box-shadow: 0 4px 24px rgba(0,0,0,0.1);
             background: #fff;
-            max-width: 95%;
+            max-width: 100%;
+            width: fit-content;
             border-radius: 8px;
             overflow: visible;
             display: inline-block;
@@ -943,6 +990,24 @@
 
         /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
+            .reader-content-rail {
+                gap: 16px;
+            }
+
+            .reader-ad-slot {
+                min-height: 84px;
+                padding: 14px 16px;
+                border-radius: 16px;
+            }
+
+            .reader-ad-slot__copy {
+                font-size: 0.84rem;
+            }
+
+            .reader-ad-slot__size {
+                font-size: 0.72rem;
+            }
+
             .top-bar {
                 padding: 0 12px;
                 gap: 10px;
@@ -1032,6 +1097,29 @@
             :root {
                 --reader-top-offset: 98px;
                 --reader-bottom-offset: 108px;
+            }
+
+            .reader-content-rail {
+                gap: 14px;
+            }
+
+            .reader-ad-slot {
+                min-height: 74px;
+                padding: 12px 14px;
+                border-radius: 14px;
+            }
+
+            .reader-ad-slot__label {
+                font-size: 0.68rem;
+                letter-spacing: 0.1em;
+            }
+
+            .reader-ad-slot__copy {
+                font-size: 0.78rem;
+            }
+
+            .reader-ad-slot__size {
+                font-size: 0.68rem;
             }
 
             .top-bar {
@@ -1280,19 +1368,33 @@
     <div class="reader-layout">
         <!-- Main Viewer -->
         <div class="viewer-area" id="viewerArea">
-            <div id="viewer-container">
-                <div id="page-loading" class="page-loading">
-                    <div class="spinner"></div>
-                    <span>Loading course...</span>
+            <div class="reader-content-rail" id="readerContentRail">
+                <div class="reader-ad-slot reader-ad-slot--top" id="topAdPlaceholder" aria-label="Top advertisement placeholder">
+                    <div class="reader-ad-slot__label">Advertisement</div>
+                    <div class="reader-ad-slot__copy">Top horizontal ad placement</div>
+                    <div class="reader-ad-slot__size">Recommended sizes: 970x90, 728x90, or 320x100</div>
                 </div>
 
-                <!-- PDF page wrapper: canvas + annotation layer -->
-                <div id="pdf-wrapper" style="display: none; position: relative;">
-                    <canvas id="pdf-canvas"></canvas>
-                    <div id="annotation-layer" class="annotationLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;"></div>
+                <div id="viewer-container">
+                    <div id="page-loading" class="page-loading">
+                        <div class="spinner"></div>
+                        <span>Loading course...</span>
+                    </div>
+
+                    <!-- PDF page wrapper: canvas + annotation layer -->
+                    <div id="pdf-wrapper" style="display: none; position: relative;">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div id="annotation-layer" class="annotationLayer" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;"></div>
+                    </div>
+
+                    <div id="watermark-overlay" class="watermark-overlay"></div>
                 </div>
 
-                <div id="watermark-overlay" class="watermark-overlay"></div>
+                <div class="reader-ad-slot reader-ad-slot--bottom" id="bottomAdPlaceholder" aria-label="Bottom advertisement placeholder">
+                    <div class="reader-ad-slot__label">Advertisement</div>
+                    <div class="reader-ad-slot__copy">Bottom horizontal ad placement</div>
+                    <div class="reader-ad-slot__size">Recommended sizes: 970x90, 728x90, or 320x100</div>
+                </div>
             </div>
         </div>
 
@@ -1411,6 +1513,7 @@
         const pdfWrapper = document.getElementById('pdf-wrapper');
         const watermarkOverlay = document.getElementById('watermark-overlay');
         const viewerArea = document.getElementById('viewerArea');
+        const readerContentRail = document.getElementById('readerContentRail');
         const sidebarToggleBtn = document.getElementById('sidebarToggle');
         const pageList = document.getElementById('pageList');
         const progressBar = document.getElementById('progress-bar');
@@ -1421,6 +1524,16 @@
         const sidebarTotalCount = document.getElementById('sidebar-total-count');
         let layoutRefitTimeout = null;
         let lastViewerWidth = 0;
+
+        function getReaderRenderWidth() {
+            if (readerContentRail && readerContentRail.clientWidth > 0) {
+                return readerContentRail.clientWidth;
+            }
+
+            const viewerAreaStyles = window.getComputedStyle(viewerArea);
+            const horizontalPadding = parseFloat(viewerAreaStyles.paddingLeft || '0') + parseFloat(viewerAreaStyles.paddingRight || '0');
+            return viewerArea.clientWidth > 0 ? (viewerArea.clientWidth - horizontalPadding) : window.innerWidth;
+        }
 
 
         // Block copy/cut — wipe clipboard data
@@ -1715,9 +1828,7 @@
                 const page = await pdfDoc.getPage(num);
 
                 // --- 1. DYNAMIC RESPONSIVE SCALE ---
-                const viewerAreaStyles = window.getComputedStyle(viewerArea);
-                const horizontalPadding = parseFloat(viewerAreaStyles.paddingLeft || '0') + parseFloat(viewerAreaStyles.paddingRight || '0');
-                const availableWidth = viewerArea.clientWidth > 0 ? (viewerArea.clientWidth - horizontalPadding) : window.innerWidth;
+                const availableWidth = getReaderRenderWidth();
                 const unscaledViewport = page.getViewport({ scale: 1.0 });
 
                 // Calculate scale to fit width. Capped at 2.5 to prevent massive sizing on ultra-wide screens.
@@ -1818,7 +1929,7 @@
                 pageLoading.style.display = 'none';
                 pdfWrapper.style.display = 'block';
                 viewerArea.scrollTop = 0;
-                lastViewerWidth = viewerArea.clientWidth;
+                lastViewerWidth = getReaderRenderWidth();
 
                 requestAnimationFrame(() => renderWatermark());
 
@@ -2187,7 +2298,7 @@
             if (tourOverlay.style.display === 'block') {
                 renderTourStep(); // Reposition highlight
             }
-            const currentViewerWidth = viewerArea.clientWidth;
+            const currentViewerWidth = getReaderRenderWidth();
             if (Math.abs(currentViewerWidth - lastViewerWidth) > 2) {
                 scheduleLayoutRefit(180);
             }

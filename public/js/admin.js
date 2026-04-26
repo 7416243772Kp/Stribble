@@ -9,10 +9,18 @@ const sectionTitle = document.getElementById("section-title");
 const editOverlay = document.getElementById('edit-course-overlay');
 const editForm = document.getElementById('edit-course-form');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
+const editThumbnailInput = document.getElementById('edit-thumbnail');
+const editThumbnailPreview = document.getElementById('edit-thumbnail-preview');
+const editThumbnailEmpty = document.getElementById('edit-thumbnail-empty');
+const editThumbnailHelp = document.getElementById('edit-thumbnail-help');
+const editPdfInput = document.getElementById('edit-pdf');
 
 const editCouponOverlay = document.getElementById('edit-coupon-overlay');
 const editCouponForm = document.getElementById('edit-coupon-form');
 const cancelCouponBtn = document.getElementById('cancel-coupon-edit');
+
+const EDIT_THUMBNAIL_HELP_TEXT = "Leave empty to keep existing thumbnail.";
+let editThumbnailObjectUrl = "";
 
 function adminIconSvg(name, className = "admin-inline-icon") {
   const icons = {
@@ -32,6 +40,47 @@ function adminStatusPill(type, label) {
   const toneClass = type === "success" ? "admin-status-chip--success" : type === "error" ? "admin-status-chip--error" : "admin-status-chip--muted";
   const iconName = type === "success" ? "success" : type === "error" ? "error" : "mail";
   return `<span class="admin-status-chip ${toneClass}">${adminIconSvg(iconName, "admin-status-chip__icon")}<span>${label}</span></span>`;
+}
+
+function releaseEditThumbnailObjectUrl() {
+  if (editThumbnailObjectUrl) {
+    URL.revokeObjectURL(editThumbnailObjectUrl);
+    editThumbnailObjectUrl = "";
+  }
+}
+
+function setEditThumbnailPreview(src) {
+  if (!editThumbnailPreview || !editThumbnailEmpty) return;
+
+  if (src) {
+    editThumbnailPreview.src = src;
+    editThumbnailPreview.style.display = "block";
+    editThumbnailEmpty.style.display = "none";
+    return;
+  }
+
+  editThumbnailPreview.removeAttribute("src");
+  editThumbnailPreview.style.display = "none";
+  editThumbnailEmpty.style.display = "block";
+}
+
+function resetEditCourseModal() {
+  releaseEditThumbnailObjectUrl();
+
+  if (editForm) editForm.reset();
+
+  const courseIdInput = document.getElementById("edit-course-id");
+  if (courseIdInput) courseIdInput.value = "";
+
+  if (editThumbnailPreview) {
+    editThumbnailPreview.dataset.originalSrc = "";
+  }
+
+  if (editThumbnailHelp) {
+    editThumbnailHelp.textContent = EDIT_THUMBNAIL_HELP_TEXT;
+  }
+
+  setEditThumbnailPreview("");
 }
 
 links.forEach((link) => {
@@ -378,8 +427,9 @@ function renderCourses(courses) {
     `;
     courseList.appendChild(item);
   });
+}
 
-  // Event Delegation for Courses
+if (courseList) {
   courseList.addEventListener('click', (e) => {
     const editBtn = e.target.closest('.js-edit-course');
     const deleteBtn = e.target.closest('.js-delete-course');
@@ -424,6 +474,8 @@ async function editCourse(id) {
   const editForm = document.getElementById('edit-course-form');
   const submitBtn = editForm.querySelector('button[type="submit"]');
 
+  resetEditCourseModal();
+
   submitBtn.textContent = "Loading...";
   submitBtn.disabled = true;
 
@@ -442,12 +494,22 @@ async function editCourse(id) {
     document.getElementById('edit-title').value = course.title || '';
     document.getElementById('edit-desc').value = course.description || '';
     document.getElementById('edit-price').value = course.price || '';
-    // document.getElementById('edit-link').value = course.googleDriveLink || '';
+
+    const currentThumbnail = course.thumbnail || "";
+    if (editThumbnailPreview) {
+      editThumbnailPreview.dataset.originalSrc = currentThumbnail;
+    }
+    if (editThumbnailHelp) {
+      editThumbnailHelp.textContent = EDIT_THUMBNAIL_HELP_TEXT;
+    }
+    setEditThumbnailPreview(currentThumbnail);
 
   } catch (err) {
     console.error("Failed to fetch course details", err);
     showNotification("error", "Failed to load course details");
     editOverlay.classList.add('hidden');
+    editOverlay.setAttribute('aria-hidden', 'true');
+    resetEditCourseModal();
   } finally {
     submitBtn.textContent = "Save Changes";
     submitBtn.disabled = false;
@@ -476,9 +538,12 @@ if (editForm) {
     formData.append('price', document.getElementById('edit-price').value);
 
     // Only append files if the user selected a new one
-    const pdfInput = document.getElementById('edit-pdf'); 
-    if (pdfInput && pdfInput.files[0]) {
-        formData.append('coursePdf', pdfInput.files[0]);
+    if (editThumbnailInput && editThumbnailInput.files[0]) {
+        formData.append('thumbnail', editThumbnailInput.files[0]);
+    }
+
+    if (editPdfInput && editPdfInput.files[0]) {
+        formData.append('coursePdf', editPdfInput.files[0]);
     }
 
     try {
@@ -494,6 +559,8 @@ if (editForm) {
       if (data.success) {
         showNotification("success", "Course updated successfully");
         editOverlay.classList.add('hidden'); // Close modal
+        editOverlay.setAttribute('aria-hidden', 'true');
+        resetEditCourseModal();
         fetchCourses(); // Refresh grid
       } else {
         showNotification("error", data.message || "Update failed");
@@ -513,6 +580,7 @@ if (cancelEditBtn) {
   cancelEditBtn.addEventListener('click', () => {
     editOverlay.classList.add('hidden');
     editOverlay.setAttribute('aria-hidden', 'true');
+    resetEditCourseModal();
   });
 }
 
@@ -521,6 +589,33 @@ if (editOverlay) {
   editOverlay.addEventListener('click', (e) => {
     if (e.target === editOverlay) {
       editOverlay.classList.add('hidden');
+      editOverlay.setAttribute('aria-hidden', 'true');
+      resetEditCourseModal();
+    }
+  });
+}
+
+if (editThumbnailInput) {
+  editThumbnailInput.addEventListener("change", () => {
+    const selectedFile = editThumbnailInput.files && editThumbnailInput.files[0];
+
+    releaseEditThumbnailObjectUrl();
+
+    if (selectedFile) {
+      editThumbnailObjectUrl = URL.createObjectURL(selectedFile);
+      setEditThumbnailPreview(editThumbnailObjectUrl);
+
+      if (editThumbnailHelp) {
+        editThumbnailHelp.textContent = `Selected: ${selectedFile.name}`;
+      }
+      return;
+    }
+
+    const originalThumbnail = editThumbnailPreview?.dataset.originalSrc || "";
+    setEditThumbnailPreview(originalThumbnail);
+
+    if (editThumbnailHelp) {
+      editThumbnailHelp.textContent = EDIT_THUMBNAIL_HELP_TEXT;
     }
   });
 }
