@@ -276,6 +276,12 @@ app.use((req, res, next) => {
 //  Routes
 // ============================
 
+// Prevent indexing of sensitive backend routes
+app.use(['/api', '/admin', '/private', '/server', '/config'], (req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  next();
+});
+
 // ---- Admin Routes ----
 app.use("/auth", authRoutes); // Google Auth
 app.use("/api/admin/auth", adminAuthRoutes);
@@ -493,38 +499,6 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
 
 });
 
-app.get('/sitemap.xml', async (req, res) => {
-  try {
-    // Fetch _id instead of slug because your route is /course/:id
-    const courses = await Course.find({}, '_id updatedAt');
-    const baseUrl = 'https://stribble.site';
-
-    let sitemap = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-
-    // Add static pages
-    sitemap += `<url><loc>${baseUrl}/</loc><changefreq>daily</changefreq></url>`;
-    sitemap += `<url><loc>${baseUrl}/about</loc><changefreq>monthly</changefreq></url>`;
-
-    // Add dynamic courses using the ID
-    courses.forEach(course => {
-      sitemap += `
-                <url>
-                    <loc>${baseUrl}/course/${course._id}</loc>
-                    <lastmod>${course.updatedAt.toISOString()}</lastmod>
-                    <changefreq>weekly</changefreq>
-                </url>
-            `;
-    });
-
-    sitemap += '</urlset>';
-    res.header('Content-Type', 'application/xml');
-    res.send(sitemap);
-  } catch (e) {
-    console.error(e);
-    res.status(500).end();
-  }
-});
-
 app.post("/api/order/log-download", async (req, res) => {
   try {
     const { razorpayOrderId } = req.body;
@@ -595,6 +569,7 @@ app.get('/refund', (req, res) => {
 
 // Admin login
 app.get('/admin-login', (req, res) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
@@ -605,6 +580,7 @@ app.get('/course/:id', (req, res) => {
 
 // Checkout page 
 app.get('/checkout/:id', (req, res) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
 });
 

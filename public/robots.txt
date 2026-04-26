@@ -1,18 +1,8 @@
 User-agent: *
-# Allow Public Pages
+
 Allow: /
 Allow: /course/
 Allow: /about
-
-# Disallow Sensitive & Private Routes
-Disallow: /admin
-Disallow: /admin-login
-Disallow: /api/
-Disallow: /checkout/
-Disallow: /uploads/
-Disallow: /private/
-Disallow: /server/
-Disallow: /config/
 
 # Block internal files
 Disallow: /src/
@@ -20,7 +10,6 @@ Disallow: /node_modules/
 Disallow: /scripts/
 Disallow: /backend/
 
-# Prevent crawling of unnecessary assets
 Disallow: /*.json$
 Disallow: /*.md$
 Disallow: /*.log$
