@@ -174,24 +174,27 @@
       padding: 16px !important;
       border-radius: 18px !important;
       border: none;
-      background: linear-gradient(135deg, #b3bfd3 0%, #9aa9bf 100%);
+      background: var(--primary);
       color: #ffffff !important;
       font-size: 1.08rem !important;
       font-weight: 800 !important;
       letter-spacing: -0.01em;
-      box-shadow: 0 16px 26px -24px rgba(100, 116, 139, 0.65);
+      box-shadow: 0 16px 26px -24px rgba(15, 23, 42, 0.45);
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      opacity: 0.82;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
     }
 
     .checkout-pay-btn.is-ready {
-      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
-      box-shadow: 0 22px 36px -24px rgba(37, 99, 235, 0.9);
+      background: var(--primary);
+      box-shadow: 0 22px 36px -24px rgba(15, 23, 42, 0.55);
+      opacity: 1;
     }
 
     .checkout-pay-btn.is-ready:hover {
+      background: var(--primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 28px 42px -24px rgba(37, 99, 235, 0.95);
+      box-shadow: 0 28px 42px -24px rgba(15, 23, 42, 0.62);
     }
 
     .order-summary-card {
