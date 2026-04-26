@@ -14,156 +14,68 @@
     body {
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at top, rgba(59, 130, 246, 0.10) 0%, rgba(248, 250, 252, 0.96) 34%, #f8fafc 100%);
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.12) 0%, rgba(248, 250, 252, 0.98) 40%, #f8fafc 100%);
+      color: #0f172a;
     }
 
     .checkout-page {
-      min-height: auto;
       display: flex;
-      align-items: flex-start;
       justify-content: center;
       padding: 32px 16px 16px;
     }
 
     .footer {
-      margin-top: 0;
+      margin-top: 8px;
     }
 
     .checkout-shell {
       width: 100%;
-      max-width: 1040px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
-      grid-template-areas: "form summary";
-      gap: 24px;
-      align-items: start;
+      max-width: 720px;
     }
 
     .checkout-form-side {
-      grid-area: form;
-      padding: 32px;
-      border-radius: 28px;
-      border: 1px solid #deebfb;
+      padding: 28px;
+      border-radius: 32px;
+      border: 1px solid #d9e5f4;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
-      box-shadow: 0 24px 44px -36px rgba(15, 23, 42, 0.28);
-    }
-
-    .checkout-summary-side {
-      grid-area: summary;
-      position: sticky;
-      top: 24px;
-      padding: 24px;
-      border-radius: 28px;
-      border: 1px solid #dce8f8;
-      background: linear-gradient(180deg, #f6f9ff 0%, #eef5ff 100%);
-      box-shadow: 0 22px 40px -34px rgba(37, 99, 235, 0.28);
-    }
-
-    .checkout-form-intro {
-      display: grid;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .checkout-title-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .checkout-lock {
-      width: 40px;
-      height: 40px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-      color: #1d4ed8;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-      flex: 0 0 40px;
-    }
-
-    .checkout-lock svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .checkout-form-intro h1 {
-      margin: 0;
-      font-size: 1.55rem;
-      line-height: 1.15;
-      letter-spacing: -0.035em;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .checkout-form-intro p {
-      margin: 0;
-      font-size: 0.96rem;
-      line-height: 1.6;
-      color: #64748b;
-    }
-
-    .checkout-trust-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .checkout-trust-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #f8fbff;
-      border: 1px solid #e3edf9;
-      color: #475569;
-      font-size: 0.82rem;
-      font-weight: 600;
+      box-shadow: 0 32px 60px -44px rgba(15, 23, 42, 0.32);
     }
 
     .checkout-action-card {
-      padding: 24px;
+      padding: 20px;
       border-radius: 24px;
       background: #ffffff;
       border: 1px solid #e2ebf7;
-      box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.2);
+      box-shadow: 0 18px 36px -32px rgba(15, 23, 42, 0.2);
     }
 
     .checkout-form-unified {
       max-width: none;
-      margin: 0;
+      margin: 18px 0 0;
       padding: 0;
       border: none;
       box-shadow: none;
       background: transparent;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 0;
     }
 
     .checkout-label {
       display: block;
-      margin-bottom: 12px;
-      font-size: 0.96rem;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
       font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #0f172a;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
     }
 
     .coupon-row {
       display: flex;
       align-items: stretch;
-      gap: 0;
-      margin-bottom: 16px;
-      padding: 4px;
-      border-radius: 18px;
-      border: 1px solid #d7e3f2;
-      background: #f8fbff;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .coupon-input {
@@ -171,10 +83,10 @@
       min-width: 0;
       height: 56px;
       padding: 0 16px;
-      border: none;
-      border-radius: 14px;
-      background: transparent;
-      box-shadow: none;
+      border: 1px solid #d7e3f2;
+      border-radius: 16px;
+      background: #f8fbff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
       font-size: 0.96rem;
       color: #0f172a;
     }
@@ -186,28 +98,30 @@
 
     .coupon-input:focus {
       background: #ffffff;
+      border-color: #93c5fd;
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
       outline: none;
     }
 
     .coupon-apply-btn {
-      min-width: 116px;
+      min-width: 108px;
       height: 56px;
-      padding: 0 24px !important;
-      border-radius: 14px !important;
-      border: none;
+      padding: 0 22px !important;
+      border-radius: 16px !important;
+      border: 1px solid #d7e3f2;
       background: #ffffff;
-      box-shadow: 0 14px 24px -22px rgba(15, 23, 42, 0.4);
+      box-shadow: none;
       font-weight: 800 !important;
       color: #0f172a !important;
     }
 
     .coupon-feedback {
-      margin-bottom: 16px !important;
+      margin: 0 0 16px !important;
       min-height: 0;
     }
 
     .terms-container {
+      margin-top: 16px;
       padding-top: 16px;
       border-top: 1px solid #edf2f7;
       transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
@@ -222,15 +136,15 @@
     }
 
     .terms-checkbox {
-      width: 18px;
-      height: 18px;
-      margin-top: 3px;
-      flex: 0 0 18px;
+      width: 19px;
+      height: 19px;
+      margin-top: 2px;
+      flex: 0 0 19px;
       accent-color: #2563eb;
     }
 
     .terms-copy {
-      font-size: 0.94rem;
+      font-size: 0.95rem;
       line-height: 1.6;
       color: #334155;
     }
@@ -253,19 +167,19 @@
 
     .checkout-pay-btn {
       width: 100%;
-      margin-top: 20px;
+      margin-top: 18px;
       display: inline-flex !important;
       align-items: center;
       justify-content: center;
-      gap: 10px;
       padding: 16px !important;
       border-radius: 18px !important;
-      background: linear-gradient(135deg, #a7b4c8 0%, #90a0b8 100%);
+      border: none;
+      background: linear-gradient(135deg, #b3bfd3 0%, #9aa9bf 100%);
       color: #ffffff !important;
       font-size: 1.08rem !important;
       font-weight: 800 !important;
       letter-spacing: -0.01em;
-      box-shadow: none;
+      box-shadow: 0 16px 26px -24px rgba(100, 116, 139, 0.65);
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
@@ -280,125 +194,97 @@
       box-shadow: 0 28px 42px -24px rgba(37, 99, 235, 0.95);
     }
 
-    .pay-btn__icon {
-      width: 18px;
-      height: 18px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 18px;
-    }
-
-    .pay-btn__icon svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .checkout-cancel {
-      margin-top: 16px;
-      text-align: center;
-    }
-
-    .checkout-cancel a {
-      color: #94a3b8;
-      font-size: 0.92rem;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-
-    .checkout-cancel a:hover {
-      color: #64748b;
-    }
-
-    .summary-title {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #1d4ed8;
-    }
-
-    .summary-title::before {
-      content: "";
-      width: 28px;
-      height: 2px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #2563eb, #60a5fa);
-    }
-
     .order-summary-card {
-      padding: 20px;
-      border-radius: 24px;
-      background: #ffffff;
-      border: 1px solid #dfeaf8;
-      box-shadow: 0 18px 34px -30px rgba(15, 23, 42, 0.18);
-      display: flex;
-      flex-direction: column;
+      display: grid;
       gap: 18px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
     }
 
     .order-summary-media {
-      overflow: hidden;
-      border-radius: 20px;
-      background: #dbeafe;
-      border: 1px solid rgba(148, 163, 184, 0.22);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 14px;
+      border-radius: 24px;
+      background: #f8fbff;
+      border: 1px solid #e2ebf7;
     }
 
     .course-mini-thumb {
-      width: 100%;
-      aspect-ratio: 16 / 10;
-      object-fit: cover;
       display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 540px;
+      object-fit: contain;
+      border-radius: 18px;
+      background: #ffffff;
     }
 
     .order-summary-content {
-      display: flex;
-      flex-direction: column;
+      display: grid;
       gap: 14px;
     }
 
     .course-mini-title {
       margin: 0;
-      font-size: 1.3rem;
-      line-height: 1.18;
-      letter-spacing: -0.03em;
+      font-size: clamp(2rem, 5vw, 2.6rem);
+      line-height: 1.02;
+      letter-spacing: -0.055em;
       font-weight: 800;
       color: #0f172a;
     }
 
-    .course-mini-meta {
-      display: inline-flex;
-      width: fit-content;
-      align-items: center;
-      padding: 7px 12px;
-      border-radius: 999px;
-      background: rgba(37, 99, 235, 0.08);
-      color: #4f46e5;
-      font-size: 0.78rem;
-      font-weight: 700;
+    .course-mini-desc {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.72;
+      color: #52637a;
     }
 
     .summary-pricing {
       margin: 0;
       display: grid;
-      gap: 12px;
-      padding: 16px;
+      gap: 10px;
+      padding: 18px 20px;
       border-radius: 20px;
-      background: #f9fbff;
-      border: 1px solid #e5edf8;
+      background: #ffffff;
+      border: 1px solid #e2ebf7;
+      box-shadow: 0 18px 30px -34px rgba(15, 23, 42, 0.3);
     }
 
-    .summary-row,
-    .summary-total {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+    .summary-price-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
       gap: 16px;
-      align-items: center;
+    }
+
+    .summary-price-label {
       margin: 0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .summary-price-stack {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
     }
 
     .summary-row__label,
@@ -407,21 +293,24 @@
     }
 
     .summary-row__label {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      font-weight: 800;
+      font-size: 0.95rem;
+      color: #52637a;
+      font-weight: 600;
     }
 
     .summary-row__value {
-      font-size: 0.98rem;
+      font-size: 0.95rem;
       font-weight: 800;
-      color: #0f172a;
+      color: #047857;
+      white-space: nowrap;
     }
 
-    .summary-row--discount .summary-row__value {
-      color: #047857;
+    .summary-row__value--before {
+      display: none;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-decoration: line-through;
     }
 
     .summary-savings {
@@ -436,33 +325,8 @@
       line-height: 1.45;
     }
 
-    .summary-total {
-      padding-top: 14px;
-      border-top: 1px dashed #cbd5e1;
-    }
-
-    .summary-total__label {
-      display: grid;
-      gap: 4px;
-      min-width: 0;
-    }
-
-    .summary-total__label span {
-      font-size: 1rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #0f172a;
-      white-space: nowrap;
-    }
-
-    .summary-total__label small {
-      font-size: 0.79rem;
-      line-height: 1.45;
-      color: #64748b;
-    }
-
     .price-tag-large {
-      font-size: 2.2rem;
+      font-size: clamp(2.1rem, 6vw, 2.9rem);
       line-height: 1;
       letter-spacing: -0.05em;
       font-weight: 900;
@@ -470,22 +334,9 @@
       margin: 0;
     }
 
-    @media (max-width: 920px) {
+    @media (max-width: 720px) {
       .checkout-page {
         padding: 16px 10px 8px;
-      }
-
-      .checkout-shell {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "summary"
-          "form";
-        max-width: 560px;
-      }
-
-      .checkout-summary-side {
-        position: static;
-        padding: 18px 16px;
       }
 
       .checkout-form-side {
@@ -494,39 +345,25 @@
     }
 
     @media (max-width: 520px) {
-      .checkout-form-side,
-      .checkout-summary-side {
+      .checkout-form-side {
+        padding: 16px 14px;
         border-radius: 24px;
       }
 
-      .checkout-form-side {
-        padding: 16px 14px;
-      }
-
-      .checkout-summary-side {
-        padding: 16px 14px;
-      }
-
-      .checkout-form-intro h1 {
-        font-size: 1.22rem;
-      }
-
-      .checkout-form-intro p {
-        font-size: 0.84rem;
-      }
-
-      .checkout-action-card,
-      .order-summary-card {
+      .checkout-action-card {
         padding: 14px;
-        border-radius: 20px;
+      }
+
+      .order-summary-media {
+        padding: 10px;
       }
 
       .coupon-row {
-        padding: 4px;
+        flex-direction: column;
       }
 
       .coupon-input {
-        height: 48px;
+        height: 52px;
         padding: 0 12px;
         font-size: 0.9rem;
       }
@@ -536,8 +373,9 @@
       }
 
       .coupon-apply-btn {
-        min-width: 88px;
-        height: 48px;
+        width: 100%;
+        min-width: 0;
+        height: 52px;
         padding: 0 14px !important;
       }
 
@@ -549,25 +387,28 @@
         padding: 12px;
       }
 
-      .summary-row__label {
-        font-size: 0.72rem;
+      .summary-price-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
       }
 
+      .summary-price-stack {
+        justify-content: flex-start;
+      }
+
+      .course-mini-desc,
+      .summary-row__label,
       .summary-row__value {
-        font-size: 0.88rem;
-      }
-
-      .summary-total__label span {
-        font-size: 0.92rem;
-        white-space: normal;
-      }
-
-      .summary-total__label small {
-        font-size: 0.75rem;
+        font-size: 0.9rem;
       }
 
       .price-tag-large {
         font-size: 1.82rem;
+      }
+
+      .course-mini-thumb {
+        max-height: 420px;
       }
 
       .checkout-pay-btn {
@@ -582,33 +423,48 @@
 <body>
   <main class="checkout-page">
     <div class="checkout-shell">
-      <section class="checkout-form-side" aria-labelledby="checkout-title">
-        <div class="checkout-form-intro">
-          <div class="checkout-title-row">
-            <span class="checkout-lock" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="11" width="16" height="9" rx="2"></rect>
-                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
-              </svg>
-            </span>
-            <h1 id="checkout-title">Secure Checkout</h1>
+      <section class="checkout-form-side" aria-labelledby="miniTitle">
+        <div class="order-summary-card">
+          <div class="order-summary-content">
+            <h1 id="miniTitle" class="course-mini-title">Loading Course...</h1>
           </div>
-          <p>Encrypted payment flow with instant access as soon as your purchase is successful.</p>
-          <div class="checkout-trust-row" aria-label="Checkout trust signals">
-            <span class="checkout-trust-pill">256-bit secure payment</span>
-            <span class="checkout-trust-pill">Instant course access</span>
+
+          <div class="order-summary-media">
+            <img id="miniThumb" class="course-mini-thumb skeleton" src="" alt="Course thumbnail">
+          </div>
+
+          <div class="order-summary-content">
+            <p id="miniDesc" class="course-mini-desc">Loading description...</p>
+
+            <div class="summary-pricing" aria-label="Course price">
+              <div class="summary-price-header">
+                <p class="summary-price-label">Price</p>
+                <div class="summary-price-stack">
+                  <span id="priceBefore" class="summary-row__value--before">&#8377;0</span>
+                  <p id="priceNow" class="price-tag-large">&#8377;0</p>
+                </div>
+              </div>
+              <div id="discountRow" class="summary-row" style="display:none;">
+                <p class="summary-row__label">Coupon discount</p>
+                <p id="priceDiscount" class="summary-row__value">-&#8377;0</p>
+              </div>
+              <div id="priceSavings" class="summary-savings" style="display:none;"></div>
+            </div>
+            <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
           </div>
         </div>
 
         <form id="checkoutForm" class="checkout-form-unified" autocomplete="on" novalidate>
+          <div id="notification" aria-live="polite"></div>
+
           <div class="checkout-action-card">
-            <label for="coupon" class="checkout-label">Have a Coupon Code?</label>
+            <label for="coupon" class="checkout-label">Coupon Code</label>
             <div class="coupon-row">
               <input
                 type="text"
                 id="coupon"
                 class="coupon-input"
-                placeholder="Enter code (optional)"
+                placeholder="Enter coupon code"
                 aria-label="Coupon code"
                 aria-describedby="err-coupon couponMessage"
               />
@@ -628,55 +484,11 @@
             </div>
 
             <button type="submit" id="payment-btn" class="btn btn--primary btn--block checkout-pay-btn" aria-label="Proceed to pay securely">
-              <span class="pay-btn__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="4" y="11" width="16" height="9" rx="2"></rect>
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
-                </svg>
-              </span>
-              <span>Proceed to Pay</span>
+              Proceed to Pay
             </button>
-
-            <div class="checkout-cancel">
-              <a href="/">&larr; Cancel and return home</a>
-            </div>
           </div>
         </form>
       </section>
-
-      <aside class="checkout-summary-side" aria-label="Order summary">
-        <div class="summary-title">Order Summary</div>
-        <div class="order-summary-card">
-          <div class="order-summary-media">
-            <img id="miniThumb" class="course-mini-thumb skeleton" src="/images/placeholder-course.png" alt="Course thumbnail">
-          </div>
-
-          <div class="order-summary-content">
-            <h2 id="miniTitle" class="course-mini-title">Loading Course...</h2>
-            <div class="course-mini-meta">Lifetime Access</div>
-
-            <dl class="summary-pricing">
-              <div class="summary-row">
-                <dt class="summary-row__label">List Price</dt>
-                <dd id="priceBefore" class="summary-row__value">&#8377;0</dd>
-              </div>
-              <div id="discountRow" class="summary-row summary-row--discount" style="display:none;">
-                <dt class="summary-row__label">Discount Applied</dt>
-                <dd id="priceDiscount" class="summary-row__value">-&#8377;0</dd>
-              </div>
-              <div id="priceSavings" class="summary-savings" style="display:none;"></div>
-              <div class="summary-total">
-                <div class="summary-total__label">
-                  <span>Amount Payable</span>
-                  <small>Final price after discount</small>
-                </div>
-                <dd id="priceNow" class="price-tag-large">&#8377;0</dd>
-              </div>
-            </dl>
-            <p id="totalAmount" data-amount="0" data-final-amount="0" style="display:none"></p>
-          </div>
-        </div>
-      </aside>
     </div>
   </main>
 

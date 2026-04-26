@@ -108,11 +108,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // mini course info
   const miniThumb = document.getElementById("miniThumb");
   const miniTitle = document.getElementById("miniTitle");
+  const miniDesc = document.getElementById("miniDesc");
 
   // coupon UI elements
   const applyCouponBtn = document.getElementById("apply-coupon-btn");
-  const couponHint = document.getElementById("couponHint");
-  const defaultCouponTag = document.getElementById("defaultCouponTag");
 
   // Notification Box Logic
   let notificationBox = document.getElementById("notification");
@@ -138,8 +137,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const savings = Math.max(0, base - final);
 
     if (priceBeforeEl) {
-      priceBeforeEl.style.display = "";
-      priceBeforeEl.textContent = formatINR(base);
+      if (savings > 0) {
+        priceBeforeEl.style.display = "inline-block";
+        priceBeforeEl.textContent = formatINR(base);
+      } else {
+        priceBeforeEl.style.display = "none";
+        priceBeforeEl.textContent = "";
+      }
     }
     if (priceNowEl) priceNowEl.textContent = formatINR(final);
 
@@ -176,8 +180,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Mini Info
     if (miniTitle) miniTitle.textContent = course.title || "Untitled course";
-    const placeholderThumb = "/images/placeholder-course.png";
+    if (miniDesc) {
+      miniDesc.textContent = course.description?.trim() || "No description available for this course yet.";
+    }
+    const placeholderThumb = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+        <rect width="640" height="640" rx="40" fill="#f8fafc"/>
+        <rect x="44" y="44" width="552" height="552" rx="28" fill="#e2e8f0"/>
+        <path d="M188 420l88-106 70 78 52-62 54 90H188z" fill="#94a3b8"/>
+        <circle cx="254" cy="240" r="42" fill="#cbd5e1"/>
+      </svg>
+    `)}`;
     if (miniThumb) {
+      miniThumb.alt = course.title ? `${course.title} thumbnail` : "Course thumbnail";
+      miniThumb.onerror = () => {
+        miniThumb.onerror = null;
+        miniThumb.src = placeholderThumb;
+      };
+
       if (course.thumbnail && typeof course.thumbnail === "string") {
         if (course.thumbnail.startsWith("http") || course.thumbnail.startsWith("//")) {
              miniThumb.src = course.thumbnail;
@@ -191,7 +211,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } else {
     // Nothing selected
-    if (priceNowEl) priceNowEl.textContent = "₹0";
+    if (priceNowEl) priceNowEl.textContent = formatINR(0);
+    if (miniDesc) miniDesc.textContent = "Course details are unavailable right now.";
   }
 
   renderPriceSummary(priceDataset.amount, priceDataset.finalAmount);
