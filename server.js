@@ -15,6 +15,8 @@ import bcrypt from "bcrypt";
 import rateLimit from "express-rate-limit";
 import passport from "passport";
 import session from "express-session";
+import { RedisStore } from "connect-redis";
+import { createClient } from "redis";
 import "./src/config/passport.js";
 
 // ==== Models ====
@@ -174,7 +176,7 @@ app.use(cors({
 }));
 
 // ==== Session & Passport ====
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'super_secret_key_change_me',
   resave: false,
   saveUninitialized: false,
@@ -185,7 +187,28 @@ app.use(session({
             : process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
-}));
+};
+
+if (process.env.NODE_ENV === 'production') {
+  const redisClient = createClient({
+    url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+  });
+
+  redisClient.on("error", (err) => {
+    console.error("Redis session error:", err);
+  });
+
+  redisClient.connect().catch((err) => {
+    console.error("Redis session connection failed:", err);
+  });
+
+  sessionConfig.store = new RedisStore({
+    client: redisClient,
+    prefix: process.env.REDIS_SESSION_PREFIX || "stribble:",
+  });
+}
+
+app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
