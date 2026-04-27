@@ -176,7 +176,23 @@ app.use(cors({
 }));
 
 // ==== Session & Passport ====
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+});
+
+redisClient.on("error", (err) => {
+  console.error("Redis session error:", err);
+});
+
+redisClient.connect().catch((err) => {
+  console.error("Redis session connection failed:", err);
+});
+
 const sessionConfig = {
+  store: new RedisStore({
+    client: redisClient,
+    prefix: process.env.REDIS_SESSION_PREFIX || "stribble:",
+  }),
   secret: process.env.SESSION_SECRET || 'super_secret_key_change_me',
   resave: false,
   saveUninitialized: false,
@@ -188,25 +204,6 @@ const sessionConfig = {
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 };
-
-if (process.env.NODE_ENV === 'production') {
-  const redisClient = createClient({
-    url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
-  });
-
-  redisClient.on("error", (err) => {
-    console.error("Redis session error:", err);
-  });
-
-  redisClient.connect().catch((err) => {
-    console.error("Redis session connection failed:", err);
-  });
-
-  sessionConfig.store = new RedisStore({
-    client: redisClient,
-    prefix: process.env.REDIS_SESSION_PREFIX || "stribble:",
-  });
-}
 
 app.use(session(sessionConfig));
 
@@ -255,21 +252,21 @@ const FROM_EMAIL = process.env.SES_FROM_EMAIL || "no-reply@stribble.site";
 async function requireUserPage(req, res, next) {
   try {
     const token = req.cookies?.user_token;
-    if (!token) return res.redirect('/?loginRequired=1');
+    if (!token) return res.redirect('/?openLogin=1');
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('activeSessionToken');
 
     if (!user || user.activeSessionToken !== token) {
       res.clearCookie('user_token');
-      return res.redirect('/?loginRequired=1');
+      return res.redirect('/?openLogin=1');
     }
 
     req.user = user;
     next();
   } catch (err) {
     res.clearCookie('user_token');
-    return res.redirect('/?loginRequired=1');
+    return res.redirect('/?openLogin=1');
   }
 }
 

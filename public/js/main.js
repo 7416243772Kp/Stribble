@@ -99,8 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (searchInput) searchInput.addEventListener("input", applySearch);
 
-    if (new URLSearchParams(window.location.search).get('loginRequired') === '1') {
-        window.showToast('Please login to access the content in the website.', 'error');
+    if (new URLSearchParams(window.location.search).get('openLogin') === '1') {
+        window.openLoginModal();
         window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
     }
 
@@ -163,7 +163,7 @@ function requireLoginForCourse(event) {
     if (currentUser) return true;
 
     event.preventDefault();
-    showToast('Please login to access the content in the website.', 'error');
+    window.openLoginModal();
     return false;
 }
 
@@ -396,6 +396,14 @@ window.toggleLoginModal = function() {
   } else {
     modal.style.display = 'none';
   }
+}
+
+window.openLoginModal = function() {
+  const modal = document.getElementById('student-login-overlay');
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+  switchAuthMode('login');
 }
 
 window.showForgotForm = function() {
