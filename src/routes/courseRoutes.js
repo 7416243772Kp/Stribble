@@ -202,7 +202,7 @@ router.get("/access/:courseId", protectUser, async (req, res) => {
       buyerEmail: req.user.email,
       courseId: req.params.courseId,
       status: "completed"
-    }).select("buyerEmail razorpayOrderId createdAt");
+    }).select("buyerEmail paymentOrderId cashfreeOrderId razorpayOrderId createdAt");
 
     if (!order) {
         // Fallback: Check if they have the course in their profile

@@ -360,7 +360,7 @@ router.get('/orders', async (req, res) => {
 
         const orders = await Order.find({ buyerEmail: user.email, status: 'completed' })
             .sort({ createdAt: -1 })
-            .select('razorpayOrderId courseId amount ownerAmount createdAt status')
+            .select('paymentProvider paymentOrderId cashfreeOrderId razorpayOrderId courseId amount ownerAmount createdAt status')
             .populate('courseId', 'title thumbnail');
 
         res.json({ success: true, orders });

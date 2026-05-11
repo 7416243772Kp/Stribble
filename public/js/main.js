@@ -5,8 +5,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("searchInput");
     const INR = (v) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v || 0);
 
-    // Toast Notification Helper
-    window.showToast = function(message, type = 'info') {
+window.showAuthError = function(message) {
+    const errorDiv = document.getElementById('auth-error');
+    if (!errorDiv) return;
+
+    errorDiv.innerText = message;
+    errorDiv.style.display = 'block';
+
+    // Find active form to highlight its inputs
+    const activeForm = [
+        document.getElementById('login-form'),
+        document.getElementById('signup-form'),
+        document.getElementById('otp-form'),
+        document.getElementById('forgot-form'),
+        document.getElementById('reset-form')
+    ].find(f => f && f.style.display !== 'none');
+
+    if (activeForm) {
+        activeForm.querySelectorAll('input').forEach(input => {
+            input.classList.add('input-error', 'shake');
+            input.addEventListener('input', () => {
+                input.classList.remove('input-error', 'shake');
+                errorDiv.style.display = 'none';
+            }, { once: true });
+        });
+    }
+};
+
         const container = document.getElementById('toast-container');
         if (!container) return;
         
@@ -485,12 +510,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Login successful!", "success");
                     window.location.reload();
                 } else {
-                    showToast(data.message || 'Login failed', "error");
+                    showAuthError(data.message || 'Login failed');
                 }
             } catch (err) { 
                 console.error("[Login] Error:", err);
-                showToast('Server error', "error"); 
+                showAuthError('Server error'); 
             }
+
         });
     }
 
@@ -532,10 +558,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const footer = document.getElementById('auth-footer');
                     if(footer) footer.style.display = 'none';
                     
-                } else {
-                    showToast(data.message || 'Signup failed', "error");
-                }
-            } catch (err) { showToast('Server error', "error"); }
+                 } else {
+                     showAuthError(data.message || 'Signup failed');
+                 }
+             } catch (err) { showAuthError('Server error'); }
+
             finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Sign Up";
@@ -559,8 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 if (data.success) window.location.reload();
-                else showToast(data.message || 'Verification failed', "error");
-            } catch(e) { showToast('Verification error', "error"); }
+                else showAuthError(data.message || 'Verification failed');
+            } catch(e) { showAuthError('Verification error'); }
             finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Verify & Login";
@@ -593,9 +620,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     forgotForm.style.display = 'none';
                     resetForm.style.display = 'block';
                 } else {
-                    showToast(data.message || "Failed to send code", "error");
+                    showAuthError(data.message || "Failed to send code");
                 }
-            } catch(e) { showToast("Server error", "error"); }
+            } catch(e) { showAuthError("Server error"); }
             finally {
                 btn.disabled = false;
                 btn.textContent = original;
@@ -624,9 +651,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Password reset! Please login.", "success");
                     switchAuthMode('login');
                 } else {
-                    showToast(data.message || "Reset failed", "error");
+                    showAuthError(data.message || "Reset failed");
                 }
-            } catch (e) { showToast("Server error", "error"); }
+            } catch (e) { showAuthError("Server error"); }
             finally { btn.disabled = false; }
          });
     }

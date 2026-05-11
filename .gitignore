@@ -5,3 +5,5 @@ node_modules/
 .vscode/
 opencode.json
 private_courses/
+server.out
+server.err

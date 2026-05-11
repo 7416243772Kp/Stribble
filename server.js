@@ -5,8 +5,6 @@ dotenv.config();
 
 import express from "express";
 import mongoose from "mongoose";
-import Razorpay from "razorpay";
-import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -18,6 +16,18 @@ import session from "express-session";
 import { RedisStore } from "connect-redis";
 import { createClient } from "redis";
 import "./src/config/passport.js";
+import {
+  buildCashfreeCustomerId,
+  buildCashfreeIdempotencyKey,
+  buildCashfreeOrderId,
+  cashfreeConfigReady,
+  createCashfreeOrder,
+  fetchCashfreeOrder,
+  fetchCashfreePayments,
+  getCashfreeMode,
+  normalizeCashfreeError,
+  verifyCashfreeWebhookSignature,
+} from "./src/config/cashfree.js";
 
 // ==== Models ====
 import AdminUser from "./src/models/AdminUser.js";
@@ -59,7 +69,7 @@ app.set('trust proxy', 1);
 // ============================
 app.use(
   helmet({
-    // 1. Allow Razorpay popup to communicate (Fixes "Please use another method" error)
+    // 1. Allow payment popup windows to communicate with checkout.
     crossOriginOpenerPolicy: false,
 
     // 2. Allow resources from other origins (Prevents blocking images/scripts)
@@ -69,16 +79,16 @@ app.use(
     //    We let Helmet generate the valid header with double-quotes.
     permissionsPolicy: {
       features: {
-        // Allow sensors (Used by Razorpay for fraud detection/biometrics)
+        // Allow common checkout risk checks.
         accelerometer: ["*"],
         gyroscope: ["*"],
         magnetometer: ["*"],
         // Allow payment API
-        payment: ["self", "https://checkout.razorpay.com", "https://*.razorpay.com"],
+        payment: ["self", "https://sdk.cashfree.com", "https://*.cashfree.com"],
       },
     },
 
-    // 4. Content Security Policy (Allows Razorpay & Inline Scripts)
+    // 4. Content Security Policy
     contentSecurityPolicy: false, // TEMPORARY DEBUG: Disabled CSP to rule it out
 
     // contentSecurityPolicy: {
@@ -86,21 +96,20 @@ app.use(
     //     defaultSrc: ["'self'"],
     //     scriptSrc: [
     //       "'self'",
-    //       "https://checkout.razorpay.com",
-    //       "https://*.razorpay.com",
+    //       "https://sdk.cashfree.com",
+    //       "https://*.cashfree.com",
     //       "https://cdn.jsdelivr.net",
     //       "'unsafe-inline'",
-    //       "'unsafe-eval'" // Required by some Razorpay builds
+    //       "'unsafe-eval'"
     //     ],
     //     scriptSrcAttr: ["'unsafe-inline'"],
     //     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     //     fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    //     frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com"],
+    //     frameSrc: ["'self'", "https://*.cashfree.com"],
     //     imgSrc: ["'self'", "data:", "https:"],
     //     connectSrc: [
     //       "'self'",
-    //       "https://lumberjack.razorpay.com",
-    //       "https://*.razorpay.com",
+    //       "https://*.cashfree.com",
     //       "https://cdn.jsdelivr.net"
     //     ]
     //   },
@@ -122,7 +131,14 @@ const rawAllowed = (process.env.CORS_ORIGINS || "http://localhost:5000,http://12
 
 // allow JSON bodies (already present) + urlencoded for admin forms if needed
 // allow JSON bodies (increased limit for base64 uploads)
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({
+  limit: "50mb",
+  verify: (req, res, buf) => {
+    if (req.originalUrl?.startsWith("/api/payment/webhook/cashfree")) {
+      req.rawBody = buf.toString("utf8");
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // cookie parser (populates req.cookies)
@@ -171,8 +187,7 @@ app.use(cors({
     return callback(null, false);
   },
   credentials: true,
-  // This allows the browser to see the Razorpay tracking header without warning
-  exposedHeaders: ["x-rtb-fingerprint-id"], 
+  exposedHeaders: [],
 }));
 
 // ==== Session & Passport ====
@@ -236,12 +251,102 @@ mongoose
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // ============================
-//  Razorpay Setup
+//  Payment Helpers
 // ============================
-const razorpay = new Razorpay({
-  key_id: String(process.env.RAZORPAY_KEY_ID || "").trim(),
-  key_secret: String(process.env.RAZORPAY_KEY_SECRET || "").trim(),
-});
+function getPublicBaseUrl(req) {
+  return String(
+    process.env.PUBLIC_BASE_URL ||
+    process.env.FRONTEND_URL ||
+    `${req.protocol}://${req.get("host")}`
+  ).replace(/\/$/, "");
+}
+
+function getOrderLookupQuery(providerOrderId) {
+  return {
+    $or: [
+      { paymentOrderId: providerOrderId },
+      { cashfreeOrderId: providerOrderId },
+      { razorpayOrderId: providerOrderId },
+    ],
+  };
+}
+
+async function findOrderByProviderOrderId(providerOrderId) {
+  return Order.findOne(getOrderLookupQuery(providerOrderId)).populate({
+    path: "courseId",
+    select: "+googleDriveLink title price",
+  });
+}
+
+function getSuccessfulCashfreePayment(payments) {
+  return payments.find((payment) => String(payment.payment_status || "").toUpperCase() === "SUCCESS") || null;
+}
+
+function getLatestCashfreePayment(payments) {
+  return payments
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.payment_completion_time || b.payment_time || 0) - new Date(a.payment_completion_time || a.payment_time || 0))[0] || null;
+}
+
+function orderTotalAmount(order) {
+  return Number(order.ownerAmount || 0) +
+    Number(order.influencerCommission || 0) +
+    Number(order.ebookCreatorCommission || 0);
+}
+
+async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
+  await order.populate({
+    path: "courseId",
+    select: "+googleDriveLink title price",
+  });
+
+  if (order.status !== "completed") {
+    order.status = "completed";
+    order.paymentProvider = "cashfree";
+    order.paymentOrderId = order.cashfreeOrderId || cashfreeOrder?.order_id || order.paymentOrderId;
+    order.cashfreeOrderId = cashfreeOrder?.order_id || order.cashfreeOrderId || order.paymentOrderId;
+    order.cashfreeCfOrderId = cashfreeOrder?.cf_order_id || order.cashfreeCfOrderId;
+    order.cashfreeOrderStatus = cashfreeOrder?.order_status || order.cashfreeOrderStatus || "PAID";
+    order.cashfreePaymentId = cashfreePayment?.cf_payment_id || cashfreePayment?.payment_id || order.cashfreePaymentId;
+    order.cashfreePaymentStatus = cashfreePayment?.payment_status || order.cashfreePaymentStatus || "SUCCESS";
+    order.cashfreeBankReference = cashfreePayment?.bank_reference || order.cashfreeBankReference;
+    order.cashfreePaymentGroup = cashfreePayment?.payment_group || order.cashfreePaymentGroup;
+    order.paidAt = new Date();
+    await order.save();
+
+    // Update stats (Promoter, Coupon, Course Sold Count)
+    if (order.referrer) { /* ... (Keep your existing promoter logic here if needed) ... */ }
+    if (order.couponId) await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => { });
+    if (order.courseId?._id) await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => { });
+
+    // === CRITICAL: Update User's Purchased Courses ===
+    if (order.buyerEmail) {
+      await User.findOneAndUpdate(
+        { email: order.buyerEmail },
+        { $addToSet: { purchasedCourses: order.courseId._id } }
+      ).catch(err => console.error("Failed to link course to user:", err));
+    }
+
+    await Payment.create({
+      email: order.buyerEmail,
+      courseId: order.courseId?._id,
+      amount: orderTotalAmount(order),
+      provider: "cashfree",
+      provider_order_id: order.paymentOrderId,
+      provider_payment_id: order.cashfreePaymentId || "",
+      cashfree_order_id: order.cashfreeOrderId,
+      cashfree_cf_order_id: order.cashfreeCfOrderId,
+      cashfree_payment_id: order.cashfreePaymentId || "",
+      cashfree_order_status: order.cashfreeOrderStatus || "PAID",
+      cashfree_payment_status: order.cashfreePaymentStatus || "SUCCESS",
+      cashfree_bank_reference: order.cashfreeBankReference || "",
+      status: "success",
+      createdAt: new Date(),
+    });
+  }
+
+  return order;
+}
 
 // ==== AWS SES Setup (REMOVED) ====
 // const hasAwsCreds = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
@@ -437,16 +542,34 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
       }
     }
 
-    const amountPaise = Math.round(finalAmount * 100);
-    
+    if (!cashfreeConfigReady()) {
+      return res.status(500).json({ success: false, message: "Cashfree credentials are not configured" });
+    }
 
+    const baseUrl = getPublicBaseUrl(req);
+    const cashfreeOrderId = buildCashfreeOrderId();
+    const orderAmount = Number(finalAmount.toFixed(2));
 
-    const rzpOrder = await razorpay.orders.create({
-      amount: amountPaise,
-      currency: "INR",
-      receipt: "rcpt_" + Date.now().toString().slice(-8),
-      notes: { email, courseId, couponCode: coupon ? coupon.code : "", referrer: referrer || "" },
-    });
+    const cashfreeOrder = await createCashfreeOrder({
+      order_id: cashfreeOrderId,
+      order_amount: orderAmount,
+      order_currency: "INR",
+      customer_details: {
+        customer_id: buildCashfreeCustomerId(email),
+        customer_email: email,
+        customer_phone: process.env.CASHFREE_DEFAULT_CUSTOMER_PHONE || "9999999999",
+      },
+      order_meta: {
+        return_url: `${baseUrl}/checkout/${courseId}?cashfree_order_id=${encodeURIComponent(cashfreeOrderId)}`,
+        notify_url: process.env.CASHFREE_NOTIFY_URL || `${baseUrl}/api/payment/webhook/cashfree`,
+      },
+      order_note: `Stribble course purchase: ${String(course.title || courseId).slice(0, 120)}`,
+      order_tags: {
+        courseId: String(courseId),
+        couponCode: coupon ? coupon.code : "",
+        referrer: referrer || "",
+      },
+    }, buildCashfreeIdempotencyKey());
 
     await Order.create({
       courseId,
@@ -457,102 +580,142 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
       ownerAmount,
       promoterCommission,
       referrer,
-      razorpayOrderId: rzpOrder.id,
+      paymentProvider: "cashfree",
+      paymentOrderId: cashfreeOrder.order_id,
+      cashfreeOrderId: cashfreeOrder.order_id,
+      cashfreeCfOrderId: cashfreeOrder.cf_order_id,
+      cashfreePaymentSessionId: cashfreeOrder.payment_session_id,
+      cashfreeOrderStatus: cashfreeOrder.order_status,
       status: "pending",
       createdAt: new Date(),
     });
 
-    res.json({ success: true, orderId: rzpOrder.id, amountPaise: rzpOrder.amount, currency: rzpOrder.currency, keyId: process.env.RAZORPAY_KEY_ID });
+    res.json({
+      success: true,
+      provider: "cashfree",
+      orderId: cashfreeOrder.order_id,
+      cashfreeOrderId: cashfreeOrder.order_id,
+      cfOrderId: cashfreeOrder.cf_order_id,
+      paymentSessionId: cashfreeOrder.payment_session_id,
+      amount: cashfreeOrder.order_amount,
+      currency: cashfreeOrder.order_currency || "INR",
+      cashfreeMode: getCashfreeMode(),
+    });
   } catch (err) {
-    console.error("Order creation failed:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Order creation failed:", err?.response?.data || err);
+    res.status(500).json({ success: false, message: normalizeCashfreeError(err) || "Server error" });
   }
 });
 
 // ---- Payment Verification & Course Delivery ----
 app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const cashfreeOrderId = req.body.cashfree_order_id || req.body.cashfreeOrderId || req.body.order_id || req.body.orderId;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature)
-      return res.status(400).json({ success: false, message: "Missing payment fields" });
+    if (!cashfreeOrderId)
+      return res.status(400).json({ success: false, message: "Missing Cashfree order ID" });
 
-    const secret = process.env.RAZORPAY_KEY_SECRET;
-    const expected = crypto
-      .createHmac("sha256", secret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
-
-    if (expected !== razorpay_signature)
-      return res.status(400).json({ success: false, message: "Invalid signature" });
-
-    // 1. FETCH ORDER WITH GOOGLE DRIVE LINK (Critical Change)
-    const order = await Order.findOne({ razorpayOrderId: razorpay_order_id })
-      .populate({
-        path: "courseId",
-        select: "+googleDriveLink title price" // <--- Explicitly select the hidden link
-      });
-
+    const order = await findOrderByProviderOrderId(cashfreeOrderId);
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-    if (order.status !== "completed") {
-      order.status = "completed";
-      order.razorpayPaymentId = razorpay_payment_id;
-      order.razorpaySignature = razorpay_signature;
-      order.paidAt = new Date();
-      await order.save();
+    const [cashfreeOrder, cashfreePayments] = await Promise.all([
+      fetchCashfreeOrder(cashfreeOrderId),
+      fetchCashfreePayments(cashfreeOrderId).catch(() => []),
+    ]);
 
-      // Update stats (Promoter, Coupon, Course Sold Count)
-      if (order.referrer) { /* ... (Keep your existing promoter logic here if needed) ... */ }
-      if (order.couponId) await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => { });
-      if (order.courseId?._id) await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => { });
+    const successfulPayment = getSuccessfulCashfreePayment(cashfreePayments);
+    const latestPayment = successfulPayment || getLatestCashfreePayment(cashfreePayments);
+    const orderStatus = String(cashfreeOrder?.order_status || "").toUpperCase();
+    const paymentStatus = String(latestPayment?.payment_status || "").toUpperCase();
+    const isPaid = orderStatus === "PAID" || paymentStatus === "SUCCESS";
 
-      // === CRITICAL: Update User's Purchased Courses ===
-      if (order.buyerEmail) {
-          await User.findOneAndUpdate(
-              { email: order.buyerEmail },
-              { $addToSet: { purchasedCourses: order.courseId._id } }
-          ).catch(err => console.error("Failed to link course to user:", err));
+    if (!isPaid) {
+      if (["FAILED", "CANCELLED", "USER_DROPPED", "VOID"].includes(orderStatus) || ["FAILED", "CANCELLED", "USER_DROPPED"].includes(paymentStatus)) {
+        order.status = "failed";
+        order.cashfreeOrderStatus = cashfreeOrder?.order_status || order.cashfreeOrderStatus;
+        order.cashfreePaymentStatus = latestPayment?.payment_status || order.cashfreePaymentStatus;
+        order.cashfreePaymentId = latestPayment?.cf_payment_id || latestPayment?.payment_id || order.cashfreePaymentId;
+        await order.save();
       }
-      // ===============================================
 
-      // Record Payment
-      const amountPaid = Number(order.ownerAmount || 0) + Number(order.influencerCommission || 0) + Number(order.ebookCreatorCommission || 0);
-      await Payment.create({
-        email: order.buyerEmail,
-        courseId: order.courseId?._id,
-        amount: amountPaid,
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        status: "success",
-        createdAt: new Date(),
+      return res.status(400).json({
+        success: false,
+        message: "Payment is not successful yet",
+        orderStatus: cashfreeOrder?.order_status || "",
+        paymentStatus: latestPayment?.payment_status || "",
       });
-      // Email sending removed as per user request
     }
 
-    // 2. SEND LINK TO FRONTEND
+    await completePaidOrder(order, cashfreeOrder, successfulPayment || latestPayment);
+
     res.json({
       success: true,
       message: "Payment verified",
-      downloadLink: order.courseId?.googleDriveLink || "" // <--- Send link here
+      provider: "cashfree",
+      orderId: order.cashfreeOrderId || order.paymentOrderId,
+      paymentId: order.cashfreePaymentId || "",
+      downloadLink: order.courseId?.googleDriveLink || ""
     });
 
   } catch (err) {
-    console.error("Payment verification failed:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Payment verification failed:", err?.response?.data || err);
+    res.status(500).json({ success: false, message: normalizeCashfreeError(err) || "Server error" });
   }
+});
 
+app.post("/api/payment/webhook/cashfree", async (req, res) => {
+  try {
+    const signature = req.get("x-webhook-signature");
+    const timestamp = req.get("x-webhook-timestamp");
+    const rawBody = req.rawBody || JSON.stringify(req.body || {});
 
+    if (!verifyCashfreeWebhookSignature(rawBody, signature, timestamp)) {
+      return res.status(401).json({ success: false, message: "Invalid webhook signature" });
+    }
+
+    const payload = req.body || {};
+    const eventData = payload.data || {};
+    const webhookOrder = eventData.order || {};
+    const webhookPayment = eventData.payment || {};
+    const cashfreeOrderId = webhookOrder.order_id || eventData.order_id;
+
+    if (!cashfreeOrderId) return res.json({ success: true });
+
+    const order = await findOrderByProviderOrderId(cashfreeOrderId);
+    if (!order) return res.json({ success: true });
+
+    const paymentStatus = String(webhookPayment.payment_status || "").toUpperCase();
+    const orderStatus = String(webhookOrder.order_status || "").toUpperCase();
+
+    if (paymentStatus === "SUCCESS" || orderStatus === "PAID") {
+      const [cashfreeOrder, cashfreePayments] = await Promise.all([
+        fetchCashfreeOrder(cashfreeOrderId).catch(() => webhookOrder),
+        fetchCashfreePayments(cashfreeOrderId).catch(() => [webhookPayment]),
+      ]);
+      const successfulPayment = getSuccessfulCashfreePayment(cashfreePayments) || webhookPayment;
+      await completePaidOrder(order, cashfreeOrder, successfulPayment);
+    } else if (["FAILED", "CANCELLED", "USER_DROPPED"].includes(paymentStatus) || ["FAILED", "CANCELLED", "USER_DROPPED", "VOID"].includes(orderStatus)) {
+      order.status = "failed";
+      order.cashfreeOrderStatus = webhookOrder.order_status || order.cashfreeOrderStatus;
+      order.cashfreePaymentStatus = webhookPayment.payment_status || order.cashfreePaymentStatus;
+      order.cashfreePaymentId = webhookPayment.cf_payment_id || webhookPayment.payment_id || order.cashfreePaymentId;
+      await order.save();
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Cashfree webhook failed:", err?.response?.data || err);
+    res.status(500).json({ success: false });
+  }
 });
 
 app.post("/api/order/log-download", async (req, res) => {
   try {
-    const { razorpayOrderId } = req.body;
-    if (!razorpayOrderId) return res.status(400).json({ success: false });
+    const providerOrderId = req.body.orderId || req.body.cashfreeOrderId || req.body.cashfree_order_id || req.body.razorpayOrderId;
+    if (!providerOrderId) return res.status(400).json({ success: false });
 
     await Order.findOneAndUpdate(
-      { razorpayOrderId },
+      getOrderLookupQuery(providerOrderId),
       { 
         $push: { 
           downloadHistory: {
@@ -658,7 +821,7 @@ app.get("/api/admin/search-orders", authAdmin, async (req, res) => {
 
     let query = {};
     if (orderId) {
-        query.razorpayOrderId = orderId.trim();
+        query = getOrderLookupQuery(orderId.trim());
     } else if (email) {
         query.buyerEmail = new RegExp(email, 'i');
     }

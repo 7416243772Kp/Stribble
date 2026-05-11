@@ -9,6 +9,12 @@ import Contact from '../models/Contact.js';
 import CourseProgress from "../models/CourseProgress.js";
 import Unsubscribe from "../models/Unsubscribe.js";
 import { sendCourseEmail } from "../utils/email.js";
+import {
+  buildCashfreeIdempotencyKey,
+  cashfreeConfigReady,
+  createCashfreeRefund,
+  normalizeCashfreeError,
+} from "../config/cashfree.js";
 
 const router = express.Router();
 
@@ -310,12 +316,6 @@ router.get('/messages', async (req, res) => {
 // Refund Logic
 // ===============================
 import User from "../models/User.js";
-import Razorpay from "razorpay";
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
 
 // 1. GET /api/admin/user-orders-by-email?email=...
 // Retrieves all completed courses for a specific email
@@ -357,26 +357,36 @@ router.post("/process-refund", async (req, res) => {
         );
     }
 
-    // Process refund via Razorpay (Paise)
-    const refundAmount = Math.round((order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)) * 100);
-    
-    const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
-      amount: refundAmount,
-      notes: { reason: "Refund requested by student via email" }
-    });
+    if (!cashfreeConfigReady()) {
+      return res.status(500).json({ success: false, message: "Cashfree credentials are not configured" });
+    }
+
+    const cashfreeOrderId = order.cashfreeOrderId || order.paymentOrderId;
+    if (!cashfreeOrderId) {
+      return res.status(400).json({ success: false, message: "Cashfree order ID missing for this order" });
+    }
+
+    const refundAmount = Number((Number(order.ownerAmount || 0) + Number(order.influencerCommission || 0) + Number(order.ebookCreatorCommission || 0)).toFixed(2));
+    const refundId = `rfnd${order._id.toString().slice(-12)}${Date.now().toString().slice(-6)}`;
+
+    const refund = await createCashfreeRefund(cashfreeOrderId, {
+      refund_id: refundId,
+      refund_amount: refundAmount,
+      refund_note: "Refund requested by student via email",
+    }, buildCashfreeIdempotencyKey());
 
     // Update order status
     order.refundStatus = "processed";
-    order.refundId = refund.id;
+    order.refundId = refund.refund_id || refundId;
     order.refundedAt = new Date();
     order.status = "failed";
 
     await order.save();
 
-    res.json({ success: true, message: "Refund processed and access revoked", refundId: refund.id });
+    res.json({ success: true, message: "Refund processed and access revoked", refundId: order.refundId });
   } catch (err) {
-    console.error("Refund error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Refund error:", err?.response?.data || err);
+    res.status(500).json({ success: false, message: normalizeCashfreeError(err) });
   }
 });
 

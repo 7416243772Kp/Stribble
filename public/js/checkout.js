@@ -428,39 +428,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (!data.success) throw new Error(data.message || "Order creation failed");
 
-        // Razorpay Options
-        const options = {
-          key: data.keyId,
-          amount: data.amountPaise || data.amount * 100,
-          currency: data.currency,
-          name: "Stribble",
-          description: course.title,
-          order_id: data.orderId || data.razorpayOrder.id,
-          handler: async function (response) {
-            try {
-              const verifyData = await safeJsonFetch(`${API_BASE}/api/payment/verify`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  email,
-                  courseTitle: course.title,
-                  courseId: selectedCourseId,
-                  amount: finalAmount,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                })
-              });
+        if (!data.paymentSessionId || !data.orderId) {
+          throw new Error("Cashfree order creation failed");
+        }
 
-              if (verifyData.success) {
-                sessionStorage.removeItem("buyerCoupon");
-                sessionStorage.removeItem("buyerEmail");
+        if (typeof Cashfree !== "function") {
+          throw new Error("Cashfree checkout could not be loaded. Please refresh and try again.");
+        }
 
-                const downloadUrl = verifyData.downloadLink || "#";
+        const cashfree = Cashfree({ mode: data.cashfreeMode || "sandbox" });
+        const checkoutResult = await cashfree.checkout({
+          paymentSessionId: data.paymentSessionId,
+          redirectTarget: "_modal"
+        });
 
-                // Inject Styles + HTML
-                // Inject Styles + HTML
-                const successStyles = `
+        if (checkoutResult?.error) {
+          throw new Error(checkoutResult.error.message || checkoutResult.error || "Payment was not completed");
+        }
+
+        const verifyData = await safeJsonFetch(`${API_BASE}/api/payment/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            courseTitle: course.title,
+            courseId: selectedCourseId,
+            amount: finalAmount,
+            cashfree_order_id: data.orderId,
+          })
+        });
+
+        if (verifyData.success) {
+          sessionStorage.removeItem("buyerCoupon");
+          sessionStorage.removeItem("buyerEmail");
+
+          const downloadUrl = verifyData.downloadLink || "#";
+
+          // Inject Styles + HTML
+          // Inject Styles + HTML
+          const successStyles = `
                   <style>
                     body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
                     .payment-success-wrapper {
@@ -521,8 +527,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                   </style>
                 `;
 
-                // Render the Success Page
-                document.body.innerHTML = successStyles + `
+          // Render the Success Page
+          document.body.innerHTML = successStyles + `
                   <div class="payment-success-wrapper">
                     <div class="success-card">
                       
@@ -552,24 +558,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                   </div>
                 `;
-                
-                // No more download logging required here as it is streaming.
+          
+          // No more download logging required here as it is streaming.
 
-              } else {
-                showError(null, verifyData.message || "Payment verification failed");
-              }
-            } catch (err) {
-              showError(null, err.message || "Payment verification error");
-            }
-          },
-          theme: { color: "#182A42" }
-        };
-
-        const rzp = new Razorpay(options);
-        rzp.on("payment.failed", function (resp) {
-          showError(null, "Payment failed.");
-        });
-        rzp.open();
+        } else {
+          showError(null, verifyData.message || "Payment verification failed");
+        }
 
       } catch (err) {
         showError(null, err.message || "Payment init failed");

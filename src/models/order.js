@@ -12,8 +12,22 @@ const OrderSchema = new mongoose.Schema({
   ebookCreatorCommission: { type: Number, required: true, default: 0 },
   ownerAmount: { type: Number, required: true, default: 0 },
 
-  // Razorpay details
-  razorpayOrderId: { type: String, required: true, index: true },
+  // Payment provider details
+  paymentProvider: { type: String, enum: ["cashfree", "razorpay", "manual"], default: "cashfree", index: true },
+  paymentOrderId: { type: String, index: true },
+
+  // Cashfree details
+  cashfreeOrderId: { type: String, index: true },
+  cashfreeCfOrderId: { type: String },
+  cashfreePaymentSessionId: { type: String },
+  cashfreePaymentId: { type: String },
+  cashfreeOrderStatus: { type: String },
+  cashfreePaymentStatus: { type: String },
+  cashfreeBankReference: { type: String },
+  cashfreePaymentGroup: { type: String },
+
+  // Legacy Razorpay details retained for historical orders
+  razorpayOrderId: { type: String, index: true },
   razorpayPaymentId: { type: String },
   razorpaySignature: { type: String },
 
@@ -48,7 +62,7 @@ const OrderSchema = new mongoose.Schema({
     enum: ["none", "pending", "processed", "failed"], 
     default: "none" 
   },
-  refundId: { type: String }, // Razorpay Refund ID
+  refundId: { type: String },
   refundedAt: { type: Date },
 });
 

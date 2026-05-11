@@ -22,6 +22,17 @@ const cancelCouponBtn = document.getElementById('cancel-coupon-edit');
 const EDIT_THUMBNAIL_HELP_TEXT = "Leave empty to keep existing thumbnail.";
 let editThumbnailObjectUrl = "";
 
+function paymentOrderLabel(order) {
+  return order?.cashfreeOrderId || order?.paymentOrderId || order?.razorpayOrderId || "N/A";
+}
+
+function paymentOrderTotal(order) {
+  const total = Number(order?.ownerAmount || 0) +
+    Number(order?.influencerCommission || 0) +
+    Number(order?.ebookCreatorCommission || 0);
+  return total || Number(order?.price || order?.amount || 0);
+}
+
 function adminIconSvg(name, className = "admin-inline-icon") {
   const icons = {
     success: '<svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -994,7 +1005,7 @@ if (btnSearchUserOrders) {
           <div>
             <div class="refund-result-card__title">${order.courseId?.title || 'Unknown Course'}</div>
             <div class="refund-result-card__meta">
-                Price: ₹${order.price || order.amount} • Ord: <code style="background:#f1f5f9; padding:2px 4px; border-radius:4px;">${order.razorpayOrderId}</code>
+                Price: ₹${paymentOrderTotal(order)} • Ord: <code style="background:#f1f5f9; padding:2px 4px; border-radius:4px;">${paymentOrderLabel(order)}</code>
             </div>
             <div class="refund-result-card__date">
                 Date: ${new Date(order.createdAt).toLocaleDateString()}
@@ -1066,7 +1077,7 @@ async function loadFailedEmails() {
       tr.innerHTML = `
         <td data-label="Email">${order.buyerEmail || "N/A"}</td>
         <td data-label="Course">${order.courseId?.title || "N/A"}</td>
-        <td data-label="Order ID">${order.razorpayOrderId || "N/A"}</td>
+        <td data-label="Order ID">${paymentOrderLabel(order)}</td>
         <td data-label="Paid At">${order.paidAt ? new Date(order.paidAt).toLocaleString() : "N/A"}</td>
         <td data-label="Reason">${order.emailFailReason ? String(order.emailFailReason) : "—"}</td>
         <td data-label="Action"><button class="btn resend-btn" data-id="${order._id}">Resend</button></td>
@@ -1342,7 +1353,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div>
                     <h4 class="audit-card__title">${order.courseId?.title || "Unknown Course"}</h4>
                     <div class="audit-card__meta"><strong>Customer:</strong> ${order.buyerEmail}</div>
-                    <div class="audit-card__order">Order ID: ${order.razorpayOrderId}</div>
+                    <div class="audit-card__order">Order ID: ${paymentOrderLabel(order)}</div>
                 </div>
                 <div class="audit-card__amount">
                     <strong>₹${order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)}</strong>
