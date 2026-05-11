@@ -15,6 +15,7 @@ import {
   createCashfreeRefund,
   normalizeCashfreeError,
 } from "../config/cashfree.js";
+import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer } from "../config/cashfreePayout.js";
 
 const router = express.Router();
 
@@ -487,6 +488,53 @@ router.post("/announcement", upload.array('attachments', 3), async (req, res) =>
       });
     }
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin route to retry a failed/pending payout
+router.post("/payouts/retry/:orderId", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).populate("couponId");
+    if (!order || !order.couponId) {
+      return res.status(404).json({ message: "Order or coupon not found" });
+    }
+
+    const token = await getPayoutToken();
+    const coupon = order.couponId;
+    let results = [];
+
+    // Retry Influencer
+    if (order.influencerCommission > 0 && order.influencerPayoutStatus !== "completed") {
+      const beneId = `inf_${coupon._id}`;
+      await addUpiBeneficiary(token, beneId, coupon.influencerUpi, "Influencer", process.env.ADMIN_EMAIL);
+      const transferId = `tr_inf_${order._id}_retry_${Date.now()}`; // New unique transfer ID for the retry
+      
+      await requestUpiTransfer(token, transferId, beneId, order.influencerCommission);
+      
+      order.influencerTransferId = transferId;
+      order.influencerPayoutStatus = "pending"; // Will be updated to completed by webhook
+      results.push("Influencer payout initiated");
+    }
+
+    // Retry Creator
+    if (order.ebookCreatorCommission > 0 && order.creatorPayoutStatus !== "completed") {
+      const beneId = `crt_${coupon._id}`;
+      await addUpiBeneficiary(token, beneId, coupon.creatorUpi, "Creator", process.env.ADMIN_EMAIL);
+      const transferId = `tr_crt_${order._id}_retry_${Date.now()}`;
+      
+      await requestUpiTransfer(token, transferId, beneId, order.ebookCreatorCommission);
+      
+      order.creatorTransferId = transferId;
+      order.creatorPayoutStatus = "pending";
+      results.push("Creator payout initiated");
+    }
+
+    await order.save();
+    res.json({ success: true, message: "Retries processed", results });
+
+  } catch (error) {
+    console.error("Retry failed:", error?.response?.data || error);
+    res.status(500).json({ success: false, message: "Failed to retry payouts" });
   }
 });
 

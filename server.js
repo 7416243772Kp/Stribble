@@ -28,6 +28,11 @@ import {
   normalizeCashfreeError,
   verifyCashfreeWebhookSignature,
 } from "./src/config/cashfree.js";
+import { 
+  getPayoutToken,
+  addUpiBeneficiary,
+  requestUpiTransfer,
+} from "./src/config/cashfreePayout.js";
 
 // ==== Models ====
 import AdminUser from "./src/models/AdminUser.js";
@@ -345,6 +350,72 @@ async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
     });
   }
 
+  async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
+  // ... existing code (populating course, updating statuses, saving to user purchasedCourses)
+
+  if (order.status !== "completed") {
+    // ... your existing order.status = "completed" and save() code ...
+    // ... your existing Payment.create() code ...
+
+    // --- ADD THIS AT THE VERY END OF THE IF STATEMENT ---
+    // Trigger the automated payout in the background so it doesn't block the webhook response
+    if (order.couponId) {
+      processPayoutsForOrder(order._id).catch(err => console.error(`Background payout failed for Order ${order._id}:`, err));
+    }
+  }
+
+  return order;
+}
+
+// --- ADD THIS NEW FUNCTION BELOW completePaidOrder ---
+async function processPayoutsForOrder(orderId) {
+  const order = await Order.findById(orderId).populate("couponId");
+  if (!order || !order.couponId) return;
+  
+  const coupon = order.couponId;
+  
+  try {
+    const token = await getPayoutToken();
+
+    // 1. Process Influencer Payout
+    if (order.influencerCommission > 0 && order.influencerPayoutStatus === "pending") {
+      const beneId = `inf_${coupon._id}`; // Unique ID for this influencer
+      await addUpiBeneficiary(token, beneId, coupon.influencerUpi, "Influencer Partner", process.env.ADMIN_EMAIL);
+      
+      const transferId = `tr_inf_${order._id}`;
+      await requestUpiTransfer(token, transferId, beneId, order.influencerCommission);
+
+      order.influencerTransferId = transferId;
+      order.influencerPayoutStatus = "completed";
+    } else if (order.influencerCommission === 0) {
+      order.influencerPayoutStatus = "not_applicable";
+    }
+
+    // 2. Process Ebook Creator Payout
+    if (order.ebookCreatorCommission > 0 && order.creatorPayoutStatus === "pending") {
+      const beneId = `crt_${coupon._id}`; // Unique ID for this creator
+      await addUpiBeneficiary(token, beneId, coupon.creatorUpi, "Creator Partner", process.env.ADMIN_EMAIL);
+      
+      const transferId = `tr_crt_${order._id}`;
+      await requestUpiTransfer(token, transferId, beneId, order.ebookCreatorCommission);
+
+      order.creatorTransferId = transferId;
+      order.creatorPayoutStatus = "completed";
+    } else if (order.ebookCreatorCommission === 0) {
+      order.creatorPayoutStatus = "not_applicable";
+    }
+
+    await order.save();
+    console.log(`✅ Payouts processed successfully for order ${order._id}`);
+
+  } catch (error) {
+    console.error(`❌ Payout error for order ${order._id}:`, error?.response?.data || error.message);
+    // Note: If this fails (e.g., due to insufficient balance in the Cashfree Payout account),
+    // the status remains "pending". You can easily build an admin button to hit an endpoint
+    // that calls this `processPayoutsForOrder(order._id)` function again once you add funds.
+  }
+}
+
   return order;
 }
 
@@ -495,6 +566,7 @@ app.post("/api/validate/coupon", async (req, res) => {
 });
 
 // ---- Checkout Validate Routes REMOVED ----
+
 
 // Create order (includes validated referrer)
 app.post("/api/payment/order", paymentLimiter, async (req, res) => {
@@ -660,6 +732,41 @@ app.post("/api/payment/verify", paymentLimiter, async (req, res) => {
   } catch (err) {
     console.error("Payment verification failed:", err?.response?.data || err);
     res.status(500).json({ success: false, message: normalizeCashfreeError(err) || "Server error" });
+  }
+});
+
+// Payout Webhook Listener
+app.post("/api/payment/webhook/cashfree-payout", async (req, res) => {
+  try {
+    const signature = req.get("x-webhook-signature");
+    // Note: Cashfree Payouts might use a slightly different signature logic than PG.
+    // Verify according to Cashfree Payouts documentation.
+    
+    const { event, transferId, referenceId, status } = req.body;
+
+    // Find the order that matches this transfer ID
+    const order = await Order.findOne({
+      $or: [{ influencerTransferId: transferId }, { creatorTransferId: transferId }]
+    });
+
+    if (!order) return res.status(200).send("Order not found, ignored");
+
+    const isInfluencer = order.influencerTransferId === transferId;
+    
+    if (status === "SUCCESS") {
+      if (isInfluencer) order.influencerPayoutStatus = "completed";
+      else order.creatorPayoutStatus = "completed";
+    } else if (status === "FAILED" || status === "REVERSED") {
+      if (isInfluencer) order.influencerPayoutStatus = "failed";
+      else order.creatorPayoutStatus = "failed";
+    }
+
+    await order.save();
+    res.status(200).send("Webhook received");
+
+  } catch (error) {
+    console.error("Payout webhook error:", error);
+    res.status(500).send("Error");
   }
 });
 

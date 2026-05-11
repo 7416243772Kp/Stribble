@@ -32,22 +32,7 @@ window.showAuthError = function(message) {
     }
 };
 
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        
-        let icon = 'i';
-        if(type === 'success') icon = 'OK';
-        if(type === 'error') icon = '!';
 
-        toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-        container.appendChild(toast);
-        
-        // Remove after 3s (animation handles fade out)
-        setTimeout(() => toast.remove(), 3000);
-    };
 
     function setYear() {
         const yearEl = document.getElementById("year");

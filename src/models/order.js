@@ -64,6 +64,19 @@ const OrderSchema = new mongoose.Schema({
   },
   refundId: { type: String },
   refundedAt: { type: Date },
+
+  influencerPayoutStatus: { 
+    type: String, 
+    enum: ["pending", "completed", "failed", "not_applicable"], 
+    default: "pending" 
+  },
+  creatorPayoutStatus: { 
+    type: String, 
+    enum: ["pending", "completed", "failed", "not_applicable"], 
+    default: "pending" 
+  },
+  influencerTransferId: { type: String },
+  creatorTransferId: { type: String },
 });
 
 // Indexes for analytics
