@@ -1,126 +1,128 @@
-// src/config/cashfree.js
-import axios from "axios";
+import { Cashfree, CFEnvironment } from "cashfree-pg";
 import crypto from "crypto";
 
-const DEFAULT_API_VERSION = "2025-01-01";
-
-function cashfreeEnv() {
-  return String(process.env.CASHFREE_ENV || process.env.CASHFREE_MODE || "sandbox")
-    .trim()
-    .toLowerCase();
-}
-
-export function getCashfreeMode() {
-  return cashfreeEnv() === "production" || cashfreeEnv() === "prod"
-    ? "production"
-    : "sandbox";
-}
-
-function getCashfreeBaseUrl() {
-  if (process.env.CASHFREE_BASE_URL) return process.env.CASHFREE_BASE_URL.replace(/\/$/, "");
-  return getCashfreeMode() === "production"
-    ? "https://api.cashfree.com/pg"
-    : "https://sandbox.cashfree.com/pg";
-}
+// ==========================================
+// 1. CONFIG & UTILITIES
+// ==========================================
 
 export function cashfreeConfigReady() {
   return Boolean(process.env.CASHFREE_CLIENT_ID && process.env.CASHFREE_CLIENT_SECRET);
 }
 
-function cashfreeHeaders(idempotencyKey) {
-  if (!cashfreeConfigReady()) {
-    throw new Error("Cashfree credentials are not configured");
-  }
-
-  const headers = {
-    accept: "application/json",
-    "content-type": "application/json",
-    "x-api-version": process.env.CASHFREE_API_VERSION || DEFAULT_API_VERSION,
-    "x-client-id": process.env.CASHFREE_CLIENT_ID,
-    "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
-  };
-
-  if (idempotencyKey) headers["x-idempotency-key"] = idempotencyKey;
-  return headers;
-}
-
-function requestConfig(idempotencyKey) {
-  return {
-    headers: cashfreeHeaders(idempotencyKey),
-    timeout: Number(process.env.CASHFREE_TIMEOUT_MS || 15000),
-  };
-}
-
-export function buildCashfreeOrderId() {
-  return `strb_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+export function getCashfreeMode() {
+  return process.env.CASHFREE_ENV === "production" ? "production" : "sandbox";
 }
 
 export function buildCashfreeIdempotencyKey() {
-  return crypto.randomUUID();
+  return crypto.randomUUID(); 
 }
 
-export function buildCashfreeCustomerId(email) {
-  const digest = crypto.createHash("sha1").update(String(email || "").toLowerCase()).digest("hex");
-  return `cust_${digest.slice(0, 20)}`;
+export function buildCashfreeCustomerId(identifier) {
+  if (!identifier) return `cust_${Date.now()}`;
+  return String(identifier).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
 }
 
-export async function createCashfreeOrder(payload, idempotencyKey) {
-  const { data } = await axios.post(
-    `${getCashfreeBaseUrl()}/orders`,
-    payload,
-    requestConfig(idempotencyKey)
-  );
-  return data;
-}
-
-export async function fetchCashfreeOrder(orderId) {
-  const { data } = await axios.get(
-    `${getCashfreeBaseUrl()}/orders/${encodeURIComponent(orderId)}`,
-    requestConfig()
-  );
-  return data;
-}
-
-export async function fetchCashfreePayments(orderId) {
-  const { data } = await axios.get(
-    `${getCashfreeBaseUrl()}/orders/${encodeURIComponent(orderId)}/payments`,
-    requestConfig()
-  );
-  return Array.isArray(data) ? data : [];
-}
-
-export async function createCashfreeRefund(orderId, payload, idempotencyKey) {
-  const { data } = await axios.post(
-    `${getCashfreeBaseUrl()}/orders/${encodeURIComponent(orderId)}/refunds`,
-    payload,
-    requestConfig(idempotencyKey)
-  );
-  return data;
-}
-
-export function verifyCashfreeWebhookSignature(rawBody, signature, timestamp) {
-  const secret = process.env.CASHFREE_WEBHOOK_SECRET || process.env.CASHFREE_CLIENT_SECRET;
-  if (!secret || !rawBody || !signature || !timestamp) return false;
-
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(`${timestamp}${rawBody}`)
-    .digest("base64");
-
-  const expectedBuffer = Buffer.from(expected);
-  const providedBuffer = Buffer.from(String(signature));
-  return (
-    expectedBuffer.length === providedBuffer.length &&
-    crypto.timingSafeEqual(expectedBuffer, providedBuffer)
-  );
+export function buildCashfreeOrderId() {
+  return `stribble_order_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 }
 
 export function normalizeCashfreeError(error) {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error_description ||
-    error?.response?.data?.error ||
-    error?.message ||
-    "Cashfree request failed"
+  if (error.response && error.response.data) {
+    return error.response.data.message || JSON.stringify(error.response.data);
+  }
+  return error.message || "An unknown Cashfree error occurred";
+}
+
+// cashfree-pg v5: Cashfree is a class — constructor(env, clientId, clientSecret).
+// CFEnvironment is a separate export for SANDBOX / PRODUCTION.
+// XApiVersion must be set explicitly; the SDK defaults to "2025-01-01" which uses
+// a different auth scheme and causes 401 errors with standard PG credentials.
+function getCashfreeClient() {
+  const cashfree = new Cashfree(
+    process.env.CASHFREE_ENV === "production"
+      ? CFEnvironment.PRODUCTION
+      : CFEnvironment.SANDBOX,
+    process.env.CASHFREE_CLIENT_ID,
+    process.env.CASHFREE_CLIENT_SECRET
   );
+  cashfree.XApiVersion = "2023-08-01";
+  return cashfree;
+}
+
+
+// ==========================================
+// 2. CORE SDK API CALLS
+// ==========================================
+
+export async function createCashfreeOrder(payload) {
+  const cashfree = getCashfreeClient();
+  try {
+    const response = await cashfree.PGCreateOrder(payload);
+    return response.data; 
+  } catch (error) {
+    console.error("Cashfree Order Error:", normalizeCashfreeError(error));
+    throw error;
+  }
+}
+
+export async function createCashfreeRefund(orderId, refundPayload) {
+  const cashfree = getCashfreeClient();
+  try {
+    const response = await cashfree.PGOrderCreateRefund(orderId, refundPayload);
+    return response.data;
+  } catch (error) {
+    console.error("Cashfree Refund Error:", normalizeCashfreeError(error));
+    throw error;
+  }
+}
+
+export async function fetchCashfreeOrder(orderId) {
+  const cashfree = getCashfreeClient();
+  try {
+    const response = await cashfree.PGFetchOrder(orderId);
+    return response.data;
+  } catch (error) {
+    console.error("Cashfree Fetch Order Error:", normalizeCashfreeError(error));
+    throw error;
+  }
+}
+
+export async function fetchCashfreePayments(orderId) {
+  const cashfree = getCashfreeClient();
+  try {
+    // Fetches all payment attempts for a specific order to check if one succeeded
+    const response = await cashfree.PGOrderFetchPayments(orderId);
+    return response.data;
+  } catch (error) {
+    console.error("Cashfree Fetch Payments Error:", normalizeCashfreeError(error));
+    throw error;
+  }
+}
+
+
+// ==========================================
+// 3. WEBHOOK VERIFICATION
+// ==========================================
+
+export function verifyCashfreeWebhookSignature(signature, rawBody, timestamp) {
+  try {
+    const cashfree = getCashfreeClient();
+    // Use the official SDK's built-in webhook signature verifier
+    cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
+    return true; // If it doesn't throw an error, it is valid
+  } catch (error) {
+    // Fallback to manual crypto verification just in case the payload formats slightly differently
+    try {
+      const secret = process.env.CASHFREE_CLIENT_SECRET;
+      const bodyToHash = (timestamp || "") + (rawBody || "");
+      const expectedSignature = crypto
+        .createHmac("sha256", secret)
+        .update(bodyToHash)
+        .digest("base64");
+      
+      return expectedSignature === signature;
+    } catch (fallbackError) {
+      return false;
+    }
+  }
 }

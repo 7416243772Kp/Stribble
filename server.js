@@ -1,7 +1,6 @@
 // C:\Ebook\server.js
 // = Environment & Core Imports =
-import dotenv from "dotenv";
-dotenv.config();
+import 'dotenv/config'; // This MUST be the very first line
 
 import express from "express";
 import mongoose from "mongoose";
@@ -622,26 +621,21 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
     const cashfreeOrderId = buildCashfreeOrderId();
     const orderAmount = Number(finalAmount.toFixed(2));
 
-    const cashfreeOrder = await createCashfreeOrder({
-      order_id: cashfreeOrderId,
+    const orderPayload = {
       order_amount: orderAmount,
       order_currency: "INR",
+      order_id: cashfreeOrderId,
       customer_details: {
         customer_id: buildCashfreeCustomerId(email),
-        customer_email: email,
         customer_phone: process.env.CASHFREE_DEFAULT_CUSTOMER_PHONE || "9999999999",
+        customer_email: email,
       },
       order_meta: {
-        return_url: `${baseUrl}/checkout/${courseId}?cashfree_order_id=${encodeURIComponent(cashfreeOrderId)}`,
+        return_url: `${baseUrl}/checkout/${courseId}?order_id={order_id}`,
         notify_url: process.env.CASHFREE_NOTIFY_URL || `${baseUrl}/api/payment/webhook/cashfree`,
-      },
-      order_note: `Stribble course purchase: ${String(course.title || courseId).slice(0, 120)}`,
-      order_tags: {
-        courseId: String(courseId),
-        couponCode: coupon ? coupon.code : "",
-        referrer: referrer || "",
-      },
-    }, buildCashfreeIdempotencyKey());
+      }
+    };
+    const cashfreeOrder = await createCashfreeOrder(orderPayload);
 
     await Order.create({
       courseId,
