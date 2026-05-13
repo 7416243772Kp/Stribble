@@ -230,9 +230,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==== Static Files ====
-app.use(['/admin-login', '/admin.html', '/course.html'], (req, res) => {
+app.use(['/admin-login', '/admin.html', '/course.html'], (req, res, next) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-  res.status(404).send('Not found');
+  next();
 });
 
 app.use(express.static(path.join(__dirname, "public")));
