@@ -15,7 +15,7 @@ import {
   createCashfreeRefund,
   normalizeCashfreeError,
 } from "../config/cashfree.js";
-import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer } from "../config/cashfreePayout.js";
+import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer, addBankBeneficiary, requestBankTransfer } from "../config/cashfreePayout.js";
 
 const router = express.Router();
 
@@ -535,6 +535,48 @@ router.post("/payouts/retry/:orderId", async (req, res) => {
   } catch (error) {
     console.error("Retry failed:", error?.response?.data || error);
     res.status(500).json({ success: false, message: "Failed to retry payouts" });
+  }
+});
+
+// --- SECURE: WITHDRAW FUNDS FROM VIRTUAL WALLET ---
+router.post("/withdraw", async (req, res) => {
+  try {
+    const { amount } = req.body; 
+    
+    // Securely pull the Bank details from the server environment
+    const bankAccount = process.env.BUSINESS_BANK_ACCOUNT;
+    const ifsc = process.env.BUSINESS_BANK_IFSC;
+
+    // Safety checks
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid withdrawal amount" });
+    }
+    if (!bankAccount || !ifsc) {
+        return res.status(500).json({ success: false, message: "Business Bank details are not configured in server settings." });
+    }
+
+    const token = await getPayoutToken();
+    const beneId = "stribble_business_ac"; 
+    const transferId = `withdraw_${Date.now()}`;
+
+    // 1. Ensure your business bank account is registered as a beneficiary
+    await addBankBeneficiary(token, beneId, "Stribble Corporate", process.env.ADMIN_EMAIL, bankAccount, ifsc);
+
+    // 2. Request the Bank Transfer using IMPS
+    await requestBankTransfer(token, transferId, beneId, amount, "imps");
+
+    res.json({
+        success: true,
+        message: `Successfully requested withdrawal of ₹${amount} to registered corporate bank account.`,
+        transferId: transferId
+    });
+
+  } catch (error) {
+    console.error("Withdrawal error:", error?.response?.data || error);
+    res.status(500).json({ 
+        success: false, 
+        message: error?.response?.data?.message || "Failed to initiate withdrawal" 
+    });
   }
 });
 

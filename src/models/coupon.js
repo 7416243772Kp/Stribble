@@ -7,9 +7,16 @@ const couponSchema = new mongoose.Schema({
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
   
   // Automated Payout Fields
-  influencerUpi: { type: String, required: true },
-  creatorUpi: { type: String, required: true },
+  influencerPayoutMethod: { type: String, enum: ['upi', 'bank'], default: 'upi' },
+  influencerUpi: { type: String }, 
+  influencerBankAccount: { type: String },
+  influencerIFSC: { type: String },
   influencerCommission: { type: Number, required: true }, // Amount in ₹
+  
+  creatorPayoutMethod: { type: String, enum: ['upi', 'bank'], default: 'upi' },
+  creatorUpi: { type: String }, 
+  creatorBankAccount: { type: String },
+  creatorIFSC: { type: String },
   creatorCommission: { type: Number, required: true },    // Amount in ₹
 
   usageCount: { type: Number, default: 0 },

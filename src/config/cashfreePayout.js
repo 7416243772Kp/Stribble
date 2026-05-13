@@ -66,3 +66,43 @@ export async function requestUpiTransfer(token, transferId, beneId, amount) {
   });
   return data;
 }
+
+// 4. Add Bank Beneficiary
+export async function addBankBeneficiary(token, beneId, name, email, bankAccount, ifsc) {
+  try {
+    await axios.post(`${getPayoutBaseUrl()}/addBeneficiary`, {
+      beneId: beneId,
+      name: name || "Stribble Partner",
+      email: email || process.env.ADMIN_EMAIL || "admin@stribble.site",
+      phone: "9999999999", // Placeholder required by API
+      bankAccount: bankAccount, // The actual bank account number
+      ifsc: ifsc,               // The bank branch IFSC code
+      address1: "India",
+      city: "City",
+      state: "State",
+      pincode: "000000"
+    }, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    return true;
+  } catch (error) {
+    // subCode 409 means the Beneficiary ID already exists, which is fine.
+    if (error.response?.data?.subCode === '409') return true; 
+    throw error;
+  }
+}
+
+// 5. Execute Bank Transfer
+export async function requestBankTransfer(token, transferId, beneId, amount, mode = "imps") {
+  // mode can be "imps", "neft", or "rtgs". 
+  // IMPS is instant (up to ₹5L). NEFT takes a few hours (no limit).
+  const { data } = await axios.post(`${getPayoutBaseUrl()}/requestTransfer`, {
+    transferId: transferId,
+    beneId: beneId,
+    amount: Number(amount).toFixed(2),
+    transferMode: mode 
+  }, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  return data;
+}

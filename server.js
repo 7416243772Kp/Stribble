@@ -31,6 +31,8 @@ import {
   getPayoutToken,
   addUpiBeneficiary,
   requestUpiTransfer,
+  addBankBeneficiary,
+  requestBankTransfer
 } from "./src/config/cashfreePayout.js";
 
 // ==== Models ====
@@ -40,7 +42,6 @@ import Payment from "./src/models/payment.js";
 import Course from "./src/models/course.js";
 import Order from "./src/models/order.js";
 import Contact from "./src/models/Contact.js";
-import Promoter from "./src/models/promoter.js";
 import User from "./src/models/User.js";
 import Unsubscribe from "./src/models/Unsubscribe.js";
 
@@ -51,7 +52,6 @@ import adminAuthRoutes from "./src/routes/adminAuthRoutes.js";
 import couponRoutes from "./src/routes/couponRoutes.js";
 import courseRoutes from "./src/routes/courseRoutes.js";
 import authAdmin from "./src/middleware/authAdmin.js";
-import promoterAdminRoutes from "./src/routes/adminPromoterRoutes.js";
 import reviewRoutes from "./src/routes/reviewRoutes.js"; // Added this line
 
 import helmet from "helmet";
@@ -318,8 +318,6 @@ async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
     order.paidAt = new Date();
     await order.save();
 
-    // Update stats (Promoter, Coupon, Course Sold Count)
-    if (order.referrer) { /* ... (Keep your existing promoter logic here if needed) ... */ }
     if (order.couponId) await Coupon.findByIdAndUpdate(order.couponId, { $inc: { uses: 1 } }).catch(() => { });
     if (order.courseId?._id) await Course.findByIdAndUpdate(order.courseId._id, { $inc: { soldCount: 1 } }).catch(() => { });
 
@@ -347,17 +345,8 @@ async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
       status: "success",
       createdAt: new Date(),
     });
-  }
 
-  async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
-  // ... existing code (populating course, updating statuses, saving to user purchasedCourses)
-
-  if (order.status !== "completed") {
-    // ... your existing order.status = "completed" and save() code ...
-    // ... your existing Payment.create() code ...
-
-    // --- ADD THIS AT THE VERY END OF THE IF STATEMENT ---
-    // Trigger the automated payout in the background so it doesn't block the webhook response
+    // --- TRIGGER PAYOUT QUEUE ---
     if (order.couponId) {
       processPayoutsForOrder(order._id).catch(err => console.error(`Background payout failed for Order ${order._id}:`, err));
     }
@@ -366,56 +355,73 @@ async function completePaidOrder(order, cashfreeOrder, cashfreePayment) {
   return order;
 }
 
-// --- ADD THIS NEW FUNCTION BELOW completePaidOrder ---
 async function processPayoutsForOrder(orderId) {
   const order = await Order.findById(orderId).populate("couponId");
   if (!order || !order.couponId) return;
   
   const coupon = order.couponId;
   
+  // Default status mapping to ensure clean tracking
+  if (!order.influencerPayoutStatus) order.influencerPayoutStatus = "pending";
+  if (!order.creatorPayoutStatus) order.creatorPayoutStatus = "pending";
+
   try {
     const token = await getPayoutToken();
 
     // 1. Process Influencer Payout
     if (order.influencerCommission > 0 && order.influencerPayoutStatus === "pending") {
-      const beneId = `inf_${coupon._id}`; // Unique ID for this influencer
-      await addUpiBeneficiary(token, beneId, coupon.influencerUpi, "Influencer Partner", process.env.ADMIN_EMAIL);
-      
+      const beneId = `inf_${coupon._id}`; 
       const transferId = `tr_inf_${order._id}`;
-      await requestUpiTransfer(token, transferId, beneId, order.influencerCommission);
+
+      if (coupon.influencerPayoutMethod === 'bank') {
+        await addBankBeneficiary(
+          token, beneId, "Influencer Partner", process.env.ADMIN_EMAIL, 
+          coupon.influencerBankAccount, coupon.influencerIFSC
+        );
+        await requestBankTransfer(token, transferId, beneId, order.influencerCommission, "imps");
+      } else {
+        await addUpiBeneficiary(
+          token, beneId, coupon.influencerUpi, "Influencer Partner", process.env.ADMIN_EMAIL
+        );
+        await requestUpiTransfer(token, transferId, beneId, order.influencerCommission);
+      }
 
       order.influencerTransferId = transferId;
-      order.influencerPayoutStatus = "completed";
+      order.influencerPayoutStatus = "processing"; // Kept in processing until settlement webhook fires
     } else if (order.influencerCommission === 0) {
       order.influencerPayoutStatus = "not_applicable";
     }
 
     // 2. Process Ebook Creator Payout
     if (order.ebookCreatorCommission > 0 && order.creatorPayoutStatus === "pending") {
-      const beneId = `crt_${coupon._id}`; // Unique ID for this creator
-      await addUpiBeneficiary(token, beneId, coupon.creatorUpi, "Creator Partner", process.env.ADMIN_EMAIL);
-      
+      const beneId = `crt_${coupon._id}`; 
       const transferId = `tr_crt_${order._id}`;
-      await requestUpiTransfer(token, transferId, beneId, order.ebookCreatorCommission);
+
+      if (coupon.creatorPayoutMethod === 'bank') {
+        await addBankBeneficiary(
+          token, beneId, "Creator Partner", process.env.ADMIN_EMAIL, 
+          coupon.creatorBankAccount, coupon.creatorIFSC
+        );
+        await requestBankTransfer(token, transferId, beneId, order.ebookCreatorCommission, "imps");
+      } else {
+        await addUpiBeneficiary(
+          token, beneId, coupon.creatorUpi, "Creator Partner", process.env.ADMIN_EMAIL
+        );
+        await requestUpiTransfer(token, transferId, beneId, order.ebookCreatorCommission);
+      }
 
       order.creatorTransferId = transferId;
-      order.creatorPayoutStatus = "completed";
+      order.creatorPayoutStatus = "processing"; // Kept in processing until settlement webhook fires
     } else if (order.ebookCreatorCommission === 0) {
       order.creatorPayoutStatus = "not_applicable";
     }
 
     await order.save();
-    console.log(`✅ Payouts processed successfully for order ${order._id}`);
+    console.log(`✅ Payouts Queued successfully for order ${order._id}`);
 
   } catch (error) {
     console.error(`❌ Payout error for order ${order._id}:`, error?.response?.data || error.message);
-    // Note: If this fails (e.g., due to insufficient balance in the Cashfree Payout account),
-    // the status remains "pending". You can easily build an admin button to hit an endpoint
-    // that calls this `processPayoutsForOrder(order._id)` function again once you add funds.
   }
-}
-
-  return order;
 }
 
 // ==== AWS SES Setup (REMOVED) ====
@@ -510,8 +516,7 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin", authAdmin, adminRoutes);
 app.use("/api/admin/coupons", couponRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
-app.use("/api/admin/promoters", authAdmin, promoterAdminRoutes);
+
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactLimiter, contactRoutes);
 
@@ -594,25 +599,6 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
     const ownerAmount = finalAmount - influencerCommission - ebookCreatorCommission;
     if (ownerAmount < 0) return res.status(400).json({ success: false, message: "Commission exceeds price after discount" });
 
-    // decide referrer: prefer cookie (promo_ref) then body.ref (explicit)
-    let referrer = req.cookies?.promo_ref || req.body?.ref || null;
-
-    let promoterCommission = 0;
-    // If a referrer exists and is valid, fetch the promoter's specific commission
-    if (referrer) {
-      try {
-         const promoter = await Promoter.findOne({ refId: referrer, active: true });
-         if (promoter) {
-            promoterCommission = promoter.promoterCommission || 0;
-         } else {
-            referrer = null; // Invalid or inactive promoter
-         }
-      } catch (e) { 
-           // promoter lookup failed silently
-          referrer = null;
-      }
-    }
-
     if (!cashfreeConfigReady()) {
       return res.status(500).json({ success: false, message: "Cashfree credentials are not configured" });
     }
@@ -644,8 +630,6 @@ app.post("/api/payment/order", paymentLimiter, async (req, res) => {
       influencerCommission,
       ebookCreatorCommission,
       ownerAmount,
-      promoterCommission,
-      referrer,
       paymentProvider: "cashfree",
       paymentOrderId: cashfreeOrder.order_id,
       cashfreeOrderId: cashfreeOrder.order_id,

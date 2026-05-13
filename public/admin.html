@@ -168,26 +168,51 @@
           </div>
         </div>
         <h4 style="margin: 8px 0 4px; font-size: 0.9rem; color: var(--text-muted);">Commission Settings</h4>
-        <div class="admin-modal-row" style="display:flex; gap:16px;">
-          <div class="field" style="flex:2;">
-            <label for="edit-inf-upi">Influencer UPI</label>
-            <input type="text" id="edit-inf-upi" placeholder="user@bank" />
+        
+        <div class="payout-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; gap:10px; align-items:center; width:100%;">
+              <strong style="font-size:0.9rem; color:#475569; width: 80px;">Influencer</strong>
+              <input type="number" id="edit-inf-comm" placeholder="₹" style="max-width:80px; padding: 4px;" />
+              <select id="edit-inf-payout-method" class="payout-method-select" data-target="edit-inf-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #cbd5e1;">
+                <option value="upi">UPI</option>
+                <option value="bank">Bank</option>
+              </select>
+            </div>
           </div>
-          <div class="field" style="flex:1;">
-            <label for="edit-inf-comm">Comm. (₹)</label>
-            <input type="number" id="edit-inf-comm" />
+          
+          <div id="edit-inf-payout-fields-upi" style="display:block;">
+            <input type="text" id="edit-inf-upi" placeholder="Influencer UPI (user@bank)" style="width:100%;" />
+          </div>
+
+          <div id="edit-inf-payout-fields-bank" style="display:none; gap:10px;">
+            <input type="text" id="edit-inf-bank-account" placeholder="Bank Account No." style="flex:1;" />
+            <input type="text" id="edit-inf-ifsc" placeholder="IFSC Code" style="flex:1;" />
           </div>
         </div>
-        <div class="admin-modal-row" style="display:flex; gap:16px;">
-          <div class="field" style="flex:2;">
-            <label for="edit-cre-upi">Creator UPI</label>
-            <input type="text" id="edit-cre-upi" placeholder="creator@bank" />
+
+        <div class="payout-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; gap:10px; align-items:center; width:100%;">
+              <strong style="font-size:0.9rem; color:#475569; width: 80px;">Creator</strong>
+              <input type="number" id="edit-crt-comm" placeholder="₹" style="max-width:80px; padding: 4px;" />
+              <select id="edit-crt-payout-method" class="payout-method-select" data-target="edit-crt-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #cbd5e1;">
+                <option value="upi">UPI</option>
+                <option value="bank">Bank</option>
+              </select>
+            </div>
           </div>
-          <div class="field" style="flex:1;">
-            <label for="edit-cre-comm">Comm. (₹)</label>
-            <input type="number" id="edit-cre-comm" />
+
+          <div id="edit-crt-payout-fields-upi" style="display:block;">
+            <input type="text" id="edit-crt-upi" placeholder="Creator UPI (user@bank)" style="width:100%;" />
+          </div>
+
+          <div id="edit-crt-payout-fields-bank" style="display:none; gap:10px;">
+            <input type="text" id="edit-crt-bank-account" placeholder="Bank Account No." style="flex:1;" />
+            <input type="text" id="edit-crt-ifsc" placeholder="IFSC Code" style="flex:1;" />
           </div>
         </div>
+
         <div class="admin-modal-actions" style="display:flex; gap:12px; margin-top:16px;">
           <button type="button" class="btn btn--ghost" id="cancel-coupon-edit" style="flex:1;">Cancel</button>
           <button type="submit" class="btn btn--primary" style="flex:1;">Save Changes</button>
@@ -239,7 +264,7 @@
         <a href="#" data-section="courses" id="nav-courses"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5V6.5Z"></path><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5"></path></svg></span><span class="admin-nav-label">Courses</span></a>
         <a href="#" data-section="coupons" id="nav-coupons"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4.5a2.5 2.5 0 0 0 0-5Z"></path><path d="M12 4v16"></path></svg></span><span class="admin-nav-label">Coupons</span></a>
         <a href="#" data-section="sales" id="nav-sales"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span><span class="admin-nav-label">Sales</span></a>
-        <a href="#" data-section="promoters" id="nav-promoters"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="3"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="admin-nav-label">Promoters</span></a>
+
         <a href="#" data-section="announcements" id="nav-announcements"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5V8a2 2 0 0 1 2-2h3l7-3v18l-7-3H5a2 2 0 0 1-2-2v-3.5Z"></path><path d="M18.5 8.5a4 4 0 0 1 0 7"></path></svg></span><span class="admin-nav-label">Announcements</span></a>
         <a href="#" data-section="analytics" id="nav-analytics"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20v-3"></path></svg></span><span class="admin-nav-label">Engagement</span></a>
         <a href="#" data-section="disputes" id="nav-disputes"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18"></path><path d="M6 7h12"></path><path d="M7.5 7 4 13h7L7.5 7Z"></path><path d="M16.5 7 13 13h7l-3.5-6Z"></path><path d="M8 17h8"></path></svg></span><span class="admin-nav-label">Disputes</span></a>
@@ -307,12 +332,51 @@
             <input type="number" name="discount" placeholder="Discount (₹)" required style="flex:1" />
           </div>
           <h4>Commission Settings (Optional)</h4>
-          <div class="admin-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <input type="text" name="influencerUPI" placeholder="Influencer UPI" />
-            <input type="number" name="influencerCommission" placeholder="Influencer Comm. (₹)" />
-            <input type="text" name="ebookCreatorUPI" placeholder="Creator UPI" />
-            <input type="number" name="ebookCreatorCommission" placeholder="Creator Comm. (₹)" />
+          
+          <div class="payout-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; gap:10px; align-items:center; width:100%;">
+                <strong style="font-size:0.95rem; color:#0f172a; width: 120px;">Influencer</strong>
+                <input type="number" name="influencerCommission" placeholder="Comm. (₹)" style="max-width:120px; padding: 6px;" />
+                <select name="influencerPayoutMethod" class="payout-method-select" data-target="inf-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
+                  <option value="upi">UPI</option>
+                  <option value="bank">Bank</option>
+                </select>
+              </div>
+            </div>
+            
+            <div id="inf-payout-fields-upi" style="display:block;">
+              <input type="text" name="influencerUPI" placeholder="Influencer UPI (user@bank)" style="width:100%;" />
+            </div>
+
+            <div id="inf-payout-fields-bank" style="display:none; gap:10px;">
+              <input type="text" name="influencerBankAccount" placeholder="Bank Account No." style="flex:1;" />
+              <input type="text" name="influencerIFSC" placeholder="IFSC Code" style="flex:1;" />
+            </div>
           </div>
+
+          <div class="payout-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top:10px; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; gap:10px; align-items:center; width:100%;">
+                <strong style="font-size:0.95rem; color:#0f172a; width: 120px;">Creator</strong>
+                <input type="number" name="ebookCreatorCommission" placeholder="Comm. (₹)" style="max-width:120px; padding: 6px;" />
+                <select name="creatorPayoutMethod" class="payout-method-select" data-target="crt-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
+                  <option value="upi">UPI</option>
+                  <option value="bank">Bank</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="crt-payout-fields-upi" style="display:block;">
+              <input type="text" name="ebookCreatorUPI" placeholder="Creator UPI (user@bank)" style="width:100%;" />
+            </div>
+
+            <div id="crt-payout-fields-bank" style="display:none; gap:10px;">
+              <input type="text" name="creatorBankAccount" placeholder="Bank Account No." style="flex:1;" />
+              <input type="text" name="creatorIFSC" placeholder="IFSC Code" style="flex:1;" />
+            </div>
+          </div>
+
           <button type="submit" class="btn btn--primary">Create Coupon</button>
         </form>
         <div id="coupon-list" style="margin-top:24px"></div>
@@ -320,6 +384,16 @@
 
       <section id="sales" class="content-section hidden">
         <h2>Sales Reports</h2>
+        <div class="admin-panel" style="margin-top:20px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:24px;">
+          <h3 style="color:#0f172a; margin-bottom: 8px;">Withdraw Wallet Balance</h3>
+          <p style="color:#64748b; margin-bottom: 16px; font-size: 0.95rem;">
+            Transfer remaining profit directly to your securely registered Business Account.
+          </p>
+          <form id="withdraw-form" class="admin-form" style="display:flex; gap:12px; max-width: 400px;">
+            <input type="number" id="withdraw-amount" placeholder="Amount to withdraw (₹)" required style="flex:1;" />
+            <button type="submit" class="btn btn--primary" style="white-space: nowrap;">Withdraw Funds</button>
+          </form>
+        </div>
         <div class="chart-container admin-panel chart-panel" style="margin-top:20px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
           <h3>Daily Sales (Last 7 Days)</h3>
           <canvas id="salesChart" width="600" height="300"></canvas>
@@ -351,54 +425,8 @@
         </div>
       </section>
 
-      <section id="promoters" class="content-section hidden">
-        <h2>Promoters</h2>
-        <div class="admin-two-col" style="display:flex; gap:24px; flex-wrap:wrap;">
-          <div class="admin-panel" style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
-            <h3>Add Promoter</h3>
-            <form id="createPromoterForm" class="admin-form" style="display:flex; flex-direction:column; gap:10px;">
-              <input name="name" placeholder="Name" required />
-              <input name="email" placeholder="Email" />
-              <input name="upi" placeholder="UPI ID" />
-              <div class="admin-form-row" style="display:flex; gap:10px;">
-                <input name="defaultCoupon" placeholder="Coupon Code" style="flex:1" />
-                <input name="refId" placeholder="Ref ID" style="flex:1" />
-              </div>
-              <button type="submit" class="btn btn--primary">Create</button>
-            </form>
-          </div>
-          <div class="admin-panel" style="flex:1; min-width:300px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
-            <h3>Record Payout</h3>
-            <form id="promoterPayoutForm" class="admin-form" style="display:flex; flex-direction:column; gap:10px;">
-              <input name="refId" placeholder="Promoter Ref ID" required />
-              <input name="amount" type="number" placeholder="Amount (₹)" required />
-              <select name="method">
-                <option value="manual">Manual Transfer</option>
-                <option value="cashfree">Cashfree Payout</option>
-                <option value="bank">Bank Transfer</option>
-              </select>
-              <button type="submit" class="btn btn--primary">Record Payment</button>
-            </form>
-          </div>
-        </div>
-        <div class="table-wrap" style="margin-top:30px; overflow-x:auto;">
-          <table id="promoterTable" class="admin-table">
-            <thead>
-              <tr>
-                <th>Ref</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>UPI</th>
-                <th>Balance</th>
-                <th>Sales</th>
-                <th>Active</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
+
+
 
       <section id="messagesSection" class="content-section hidden">
         <h2>Customer Inquiries</h2>
