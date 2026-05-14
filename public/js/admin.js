@@ -1162,90 +1162,6 @@ if (resendAllBtn) {
   });
 }
 
-// public/js/admin.js
-
-// 1. Single, Correct Load Function
-async function loadMessages() {
-    const list = document.getElementById('messagesList');
-    if (!list) return;
-
-    try {
-        const res = await authFetch(`${window.API_BASE}/api/admin/messages`);
-        console.log("Admin messages fetch status:", res.status);
-        
-        // Safety check to prevent the "Unexpected token <" error
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            const text = await res.text();
-            console.error("Server returned non-JSON:", text.slice(0, 100));
-            throw new TypeError("Server returned HTML instead of JSON. Check backend logs.");
-        }
-
-        const messages = await res.json();
-        console.log("Admin messages data:", messages);
-
-        if (!messages || messages.length === 0) {
-            list.innerHTML = '<p style="text-align:center; padding:20px;">No messages received yet. (DB is empty)</p>';
-            return;
-        }
-
-        list.innerHTML = messages.map(msg => `
-            <div class="message-card">
-                <div class="message-card__header">
-                    <strong style="color: #2c3e50;">From: ${msg.email}</strong>
-                    <span style="font-size:0.85em; color:#7f8c8d;">${new Date(msg.createdAt).toLocaleString()}</span>
-                </div>
-                <p class="message-card__body">${msg.message}</p>
-                <div class="message-card__reply">
-                    <a href="mailto:${msg.email}" class="btn-action-edit" style="text-decoration:none; font-size: 0.9em; display: inline-flex; align-items: center;">${adminIconSvg("mail", "admin-btn-icon")}<span>Reply via Email</span></a>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading messages:', error);
-        list.innerHTML = `<p style="color:red; text-align:center;">Failed to load messages. ${error.message}</p>`;
-    }
-}
-
-// 2. Correct Navigation Listener
-document.addEventListener("DOMContentLoaded", () => {
-    // Look for the "Inquiries" link in your sidebar
-    const inquiriesLink = document.getElementById("nav-inquiries") || document.getElementById("inquiriesBtn");
-    
-    if (inquiriesLink) {
-        inquiriesLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            // Use your existing section switcher
-            if (typeof window.adminShowSection === 'function') {
-                window.adminShowSection('messagesSection');
-                loadMessages(); 
-            }
-        });
-    }
-});
-
-// Update your existing showSection function to trigger the load
-function showSection(sectionId) {
-    document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
-    document.getElementById(sectionId).style.display = 'block';
-    
-    if (sectionId === 'messagesSection') {
-        loadMessages();
-    }
-}
-
-// Wrap in DOMContentLoaded to ensure the button exists before searching for it
-document.addEventListener('DOMContentLoaded', () => {
-    const inquiriesBtn = document.getElementById('inquiriesBtn');
-
-    if (inquiriesBtn) {
-        inquiriesBtn.addEventListener('click', () => {
-            // Call the existing function manually
-            showSection('messagesSection');
-        });
-    }
-});
-
 
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -1857,18 +1773,11 @@ document.getElementById('btn-admin-resolve-ticket').addEventListener('click', as
 
 // 5. Hook into the sidebar navigation
 document.addEventListener("DOMContentLoaded", () => {
-    // Add 'tickets' to the sections array so the generic navigation handles hiding/showing
-    if (typeof sections !== 'undefined') {
-        sections.push('ticketsSection'); 
-    }
-
     const navTickets = document.getElementById('nav-tickets');
+    
     if (navTickets) {
-        navTickets.addEventListener('click', () => {
-            // Use the global function defined in your admin.js
-            if (typeof window.adminShowSection === 'function') {
-                window.adminShowSection('ticketsSection');
-            }
+        navTickets.addEventListener('click', (e) => {
+            e.preventDefault();
             loadAdminTickets();
         });
     }

@@ -5,7 +5,6 @@ import fs from "fs";
 import Order from "../models/order.js";
 import Course from "../models/course.js";
 import Coupon from "../models/coupon.js";
-import Contact from '../models/Contact.js';
 import CourseProgress from "../models/CourseProgress.js";
 import Unsubscribe from "../models/Unsubscribe.js";
 import { sendCourseEmail } from "../utils/email.js";
@@ -18,6 +17,7 @@ import {
 
 import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer, addBankBeneficiary, requestBankTransfer } from "../config/cashfreePayout.js";
 import Ticket from "../models/Ticket.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 
@@ -305,20 +305,9 @@ router.get("/analytics/dropoff", async (req, res) => {
   }
 });
 
-router.get('/messages', async (req, res) => {
-    try {
-        const messages = await Contact.find().sort({ createdAt: -1 });
-        res.json(messages);
-    } catch (error) {
-        console.error("Error fetching messages:", error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
 // ===============================
 // Refund Logic
 // ===============================
-import User from "../models/User.js";
 
 // 1. GET /api/admin/user-orders-by-email?email=...
 // Retrieves all completed courses for a specific email
@@ -342,7 +331,9 @@ router.get("/user-orders-by-email", async (req, res) => {
 router.post("/process-refund", async (req, res) => {
   try {
     const { orderId } = req.body; // The Mongo ID
-    const order = await Order.findById(orderId);
+    
+    // We populate the courseId so we can include the Course Title in the email
+    const order = await Order.findById(orderId).populate('courseId', 'title');
 
     if (!order || order.status !== "completed") {
       return res.status(404).json({ success: false, message: "Valid order not found" });
@@ -356,7 +347,7 @@ router.post("/process-refund", async (req, res) => {
     if (order.buyerEmail) {
         await User.findOneAndUpdate(
             { email: order.buyerEmail },
-            { $pull: { purchasedCourses: order.courseId } }
+            { $pull: { purchasedCourses: order.courseId._id } }
         );
     }
 
@@ -372,13 +363,14 @@ router.post("/process-refund", async (req, res) => {
     const refundAmount = Number((Number(order.ownerAmount || 0) + Number(order.influencerCommission || 0) + Number(order.ebookCreatorCommission || 0)).toFixed(2));
     const refundId = `rfnd${order._id.toString().slice(-12)}${Date.now().toString().slice(-6)}`;
 
+    // 1. Process Refund with Cashfree
     const refund = await createCashfreeRefund(cashfreeOrderId, {
       refund_id: refundId,
       refund_amount: refundAmount,
       refund_note: "Refund requested by student via email",
     }, buildCashfreeIdempotencyKey());
 
-    // Update order status
+    // 2. Update order status in DB
     order.refundStatus = "processed";
     order.refundId = refund.refund_id || refundId;
     order.refundedAt = new Date();
@@ -386,7 +378,48 @@ router.post("/process-refund", async (req, res) => {
 
     await order.save();
 
-    res.json({ success: true, message: "Refund processed and access revoked", refundId: order.refundId });
+    // 3. Send Professional HTML Email to the Buyer
+    const courseTitle = order.courseId?.title || "your course";
+    
+    const refundEmailHtml = `
+      <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+          <h2 style="color: #0f172a; margin: 0; font-size: 22px;">Refund Initiated</h2>
+        </div>
+        <div style="padding: 32px;">
+          <p style="font-size: 16px;">Hello,</p>
+          <p style="font-size: 16px;">This email is to confirm that a refund of <strong>₹${refundAmount}</strong> has been successfully initiated for your purchase of <strong>${courseTitle}</strong>.</p>
+          
+          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; color: #1e3a8a; font-size: 15px;">
+              <strong>Timeline:</strong> The funds have been routed back to your original payment method. Please allow <strong>5-7 business days</strong> for the amount to reflect in your account, depending on your bank's processing times.
+            </p>
+          </div>
+          
+          <p style="font-size: 16px;">As part of this refund process, your access to the course materials on Stribble has been automatically revoked.</p>
+          <p style="font-size: 16px; margin-top: 32px;">If you have any questions or if the refund does not appear after 7 business days, please reach out to our support team.</p>
+          
+          <p style="font-size: 16px; color: #64748b; margin-bottom: 0; margin-top: 30px;">
+            Best regards,<br>
+            <strong style="color: #0f172a;">The Stribble Team</strong>
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+        await sendCourseEmail({
+            to: order.buyerEmail,
+            subject: `Refund Initiated: ${courseTitle}`,
+            html: refundEmailHtml,
+            text: `Your refund of ₹${refundAmount} for ${courseTitle} has been initiated. It will take 5-7 business days to reflect in your account. Your course access has been revoked.`
+        });
+    } catch (emailErr) {
+        // We log the error but do not fail the request, because the financial refund was already successful
+        console.error("Failed to send refund confirmation email:", emailErr);
+    }
+
+    res.json({ success: true, message: "Refund processed, access revoked, and email sent.", refundId: order.refundId });
   } catch (err) {
     console.error("Refund error:", err?.response?.data || err);
     res.status(500).json({ success: false, message: normalizeCashfreeError(err) });
