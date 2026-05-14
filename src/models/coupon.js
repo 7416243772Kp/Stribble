@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const couponSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
-  discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+  discountType: { type: String, enum: ['fixed'], default: 'fixed' },
   discountValue: { type: Number, required: true },
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
   
@@ -11,13 +11,13 @@ const couponSchema = new mongoose.Schema({
   influencerUpi: { type: String }, 
   influencerBankAccount: { type: String },
   influencerIFSC: { type: String },
-  influencerCommission: { type: Number, required: true }, // Amount in ₹
+  influencerCommission: { type: Number, required: true },
   
   creatorPayoutMethod: { type: String, enum: ['upi', 'bank'], default: 'upi' },
   creatorUpi: { type: String }, 
   creatorBankAccount: { type: String },
   creatorIFSC: { type: String },
-  creatorCommission: { type: Number, required: true },    // Amount in ₹
+  creatorCommission: { type: Number, required: true },
 
   usageCount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },

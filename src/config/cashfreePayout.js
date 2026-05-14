@@ -54,7 +54,7 @@ export async function addUpiBeneficiary(token, beneId, upiId, name, email) {
   }
 }
 
-// 3. Execute the Transfer
+// 3. Request UPI Transfer
 export async function requestUpiTransfer(token, transferId, beneId, amount) {
   const { data } = await axios.post(`${getPayoutBaseUrl()}/requestTransfer`, {
     transferId: transferId,
@@ -64,6 +64,13 @@ export async function requestUpiTransfer(token, transferId, beneId, amount) {
   }, {
     headers: { "Authorization": `Bearer ${token}` }
   });
+
+  // CRITICAL FIX: Catch silent errors (like INSUFFICIENT_BALANCE)
+  if (data.status === "ERROR") {
+    console.error("Cashfree Transfer Rejected:", data.message);
+    throw new Error(`Transfer Failed: ${data.message}`);
+  }
+
   return data;
 }
 
@@ -94,8 +101,6 @@ export async function addBankBeneficiary(token, beneId, name, email, bankAccount
 
 // 5. Execute Bank Transfer
 export async function requestBankTransfer(token, transferId, beneId, amount, mode = "imps") {
-  // mode can be "imps", "neft", or "rtgs". 
-  // IMPS is instant (up to ₹5L). NEFT takes a few hours (no limit).
   const { data } = await axios.post(`${getPayoutBaseUrl()}/requestTransfer`, {
     transferId: transferId,
     beneId: beneId,
@@ -104,5 +109,12 @@ export async function requestBankTransfer(token, transferId, beneId, amount, mod
   }, {
     headers: { "Authorization": `Bearer ${token}` }
   });
+
+  // CRITICAL FIX: Catch silent errors
+  if (data.status === "ERROR") {
+    console.error("Cashfree Transfer Rejected:", data.message);
+    throw new Error(`Transfer Failed: ${data.message}`);
+  }
+
   return data;
 }

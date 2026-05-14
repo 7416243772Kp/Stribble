@@ -67,12 +67,12 @@ const OrderSchema = new mongoose.Schema({
 
   influencerPayoutStatus: { 
     type: String, 
-    enum: ["pending", "completed", "failed", "not_applicable"], 
+    enum: ["pending", "processing", "completed", "failed", "not_applicable"], 
     default: "pending" 
   },
   creatorPayoutStatus: { 
     type: String, 
-    enum: ["pending", "completed", "failed", "not_applicable"], 
+    enum: ["pending", "processing", "completed", "failed", "not_applicable"], 
     default: "pending" 
   },
   influencerTransferId: { type: String },

@@ -1338,69 +1338,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Render Audit Cards
+                // Render Minimal Dispute Cards (Date Paid Only)
                 disputeResults.innerHTML = data.orders.map(order => {
-
-                    // 1. Format Download Logs
-                    let downloadLogsHtml = `<span style="color:#94a3b8; font-style:italic;">No downloads recorded</span>`;
-                    if (order.downloadHistory && order.downloadHistory.length > 0) {
-                        downloadLogsHtml = `
-                <ul style="margin:0; padding-left:20px; font-size:0.9rem; color:#475569;">
-                ${order.downloadHistory.map(log => `
-                    <li>
-                    <strong>${new Date(log.timestamp).toLocaleString()}</strong> 
-                    <span style="color:#64748b; font-size:0.85em;">(IP: ${log.ip || 'Unknown'})</span>
-                    </li>
-                `).join('')}
-                </ul>`;
-                    }
-
-                    // 2. Format Email Status (UPDATED LOGIC)
-                    // Only show "Not Sent" warning if the payment was actually completed.
-                    let emailStatusHtml;
-                    if (order.status === 'completed') {
-                        emailStatusHtml = order.emailSent
-                            ? `${adminStatusPill("success", "Sent")}<span> at ${order.emailSentAt ? new Date(order.emailSentAt).toLocaleString() : "Unknown Time"}</span>`
-                            : adminStatusPill("error", "Not Sent");
-                    } else {
-                        // If payment failed/pending, email is not expected
-                        emailStatusHtml = adminStatusPill("muted", `N/A (Payment ${order.status})`);
-                    }
-
-                    // 3. Format Payment Status Color
-                    const payStatusColor = order.status === 'completed' ? '#10b981' : (order.status === 'failed' ? '#ef4444' : '#f59e0b');
-
+                    // Fallback to createdAt if paidAt isn't set yet
+                    const paidDate = order.paidAt ? new Date(order.paidAt).toLocaleDateString() : new Date(order.createdAt).toLocaleDateString();
+                    
                     return `
-            <div class="audit-card">
-                <div class="audit-card__header">
+            <div class="audit-card" style="padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #fff;">
                 <div>
-                    <h4 class="audit-card__title">${order.courseId?.title || "Unknown Course"}</h4>
-                    <div class="audit-card__meta"><strong>Customer:</strong> ${order.buyerEmail}</div>
-                    <div class="audit-card__order">Order ID: ${paymentOrderLabel(order)}</div>
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">${order.courseId?.title || "Unknown Course"}</h4>
+                    <div style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">${order.buyerEmail}</div>
                 </div>
-                <div class="audit-card__amount">
-                    <strong>₹${order.ownerAmount + (order.influencerCommission || 0) + (order.ebookCreatorCommission || 0)}</strong>
-                    <div class="audit-card__status" style="color:${payStatusColor};">${order.status}</div>
-                    <div class="audit-card__date">${new Date(order.createdAt).toLocaleDateString()}</div>
-                </div>
-                </div>
-
-                <div class="audit-card__grid">
-                
-                <div class="audit-card__section">
-                    <h5>${adminIconSvg("mail", "admin-inline-icon")}<span>Email Delivery</span></h5>
-                    <div class="audit-card__box">
-                    ${emailStatusHtml}
-                    </div>
-                </div>
-
-                <div class="audit-card__section">
-                    <h5>${adminIconSvg("download", "admin-inline-icon")}<span>Download Attempts</span></h5>
-                    <div class="audit-card__box">
-                    ${downloadLogsHtml}
-                    </div>
-                </div>
-
+                <div style="text-align: right;">
+                    <div style="color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Date Paid</div>
+                    <strong style="color: #10b981; font-size: 1.1rem;">${paidDate}</strong>
                 </div>
             </div>
             `;
@@ -1669,47 +1620,256 @@ async function loadAnnouncements() {
         console.error("Failed to load courses for announcements", err);
     }
 }
-/ /   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
- / /   S E C U R E   W I T H D R A W   F U N D S   L O G I C 
- / /   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
- d o c u m e n t . a d d E v e n t L i s t e n e r ( " D O M C o n t e n t L o a d e d " ,   ( )   = >   { 
-         c o n s t   w i t h d r a w F o r m   =   d o c u m e n t . g e t E l e m e n t B y I d ( " w i t h d r a w - f o r m " ) ; 
-         
-         i f   ( w i t h d r a w F o r m )   { 
-                 w i t h d r a w F o r m . a d d E v e n t L i s t e n e r ( " s u b m i t " ,   a s y n c   ( e )   = >   { 
-                         e . p r e v e n t D e f a u l t ( ) ; 
-                         c o n s t   b t n   =   w i t h d r a w F o r m . q u e r y S e l e c t o r ( " b u t t o n [ t y p e = ' s u b m i t ' ] " ) ; 
-                         c o n s t   o r i g i n a l T e x t   =   b t n . t e x t C o n t e n t ; 
-                         
-                         b t n . t e x t C o n t e n t   =   " P r o c e s s i n g . . . " ; 
-                         b t n . d i s a b l e d   =   t r u e ; 
- 
-                         c o n s t   a m o u n t   =   d o c u m e n t . g e t E l e m e n t B y I d ( " w i t h d r a w - a m o u n t " ) . v a l u e ; 
- 
-                         t r y   { 
-                                 / /   P o i n t i n g   t o   t h e   n e w   a d m i n   r o u t e ,   s e n d i n g   O N L Y   t h e   a m o u n t 
-                                 c o n s t   r e s   =   a w a i t   a u t h F e t c h ( ` $ { w i n d o w . A P I _ B A S E } / a p i / a d m i n / w i t h d r a w ` ,   { 
-                                         m e t h o d :   " P O S T " , 
-                                         h e a d e r s :   {   " C o n t e n t - T y p e " :   " a p p l i c a t i o n / j s o n "   } , 
-                                         b o d y :   J S O N . s t r i n g i f y ( {   a m o u n t :   N u m b e r ( a m o u n t )   } ) 
-                                 } ) ; 
-                                 
-                                 c o n s t   d a t a   =   a w a i t   r e s . j s o n ( ) ; 
- 
-                                 i f   ( d a t a . s u c c e s s )   { 
-                                         s h o w N o t i f i c a t i o n ( " s u c c e s s " ,   d a t a . m e s s a g e ) ; 
-                                         w i t h d r a w F o r m . r e s e t ( ) ; 
-                                 }   e l s e   { 
-                                         s h o w N o t i f i c a t i o n ( " e r r o r " ,   d a t a . m e s s a g e ) ; 
-                                 } 
-                         }   c a t c h   ( e r r )   { 
-                                 c o n s o l e . e r r o r ( " W i t h d r a w a l   E r r o r : " ,   e r r ) ; 
-                                 s h o w N o t i f i c a t i o n ( " e r r o r " ,   " F a i l e d   t o   p r o c e s s   w i t h d r a w a l . " ) ; 
-                         }   f i n a l l y   { 
-                                 b t n . t e x t C o n t e n t   =   o r i g i n a l T e x t ; 
-                                 b t n . d i s a b l e d   =   f a l s e ; 
-                         } 
-                 } ) ; 
-         } 
- } ) ;  
- 
+
+// ===============================
+// SECURE WITHDRAW FUNDS LOGIC
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+    const withdrawForm = document.getElementById("withdraw-form");
+    
+    if (withdrawForm) {
+        withdrawForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = withdrawForm.querySelector("button[type='submit']");
+            const originalText = btn.textContent;
+            
+            btn.textContent = "Processing...";
+            btn.disabled = true;
+
+            const amount = document.getElementById("withdraw-amount").value;
+
+            try {
+                // Pointing to the new admin route, sending ONLY the amount
+                const res = await authFetch(`${window.API_BASE}/api/admin/withdraw`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ amount: Number(amount) })
+                });
+                
+                const data = await res.json();
+
+                if (data.success) {
+                    showNotification("success", data.message);
+                    withdrawForm.reset();
+                } else {
+                    showNotification("error", data.message || "Withdrawal failed");
+                }
+            } catch (err) {
+                console.error("Withdrawal fetch error:", err);
+                showNotification("error", "Server error processing withdrawal");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+});
+
+// ===============================
+// DYNAMIC PAYOUT FIELD TOGGLER
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+    function setupPayoutToggle(selectId, upiContainerId, bankContainerId) {
+        const selectEl = document.getElementById(selectId);
+        const upiBox   = document.getElementById(upiContainerId);
+        const bankBox  = document.getElementById(bankContainerId);
+
+        if (!selectEl || !upiBox || !bankBox) return;
+
+        selectEl.addEventListener("change", (e) => {
+            if (e.target.value === "bank") {
+                upiBox.style.display  = "none";
+                bankBox.style.display = "flex"; // Shows Account and IFSC side-by-side
+            } else {
+                upiBox.style.display  = "block";
+                bankBox.style.display = "none";
+            }
+        });
+
+        // Trigger once on load to set the correct initial state
+        selectEl.dispatchEvent(new Event("change"));
+    }
+
+    // Attach to the Add Coupon Form
+    setupPayoutToggle("inf-payout-method", "inf-upi-container", "inf-bank-container");
+    setupPayoutToggle("crt-payout-method", "crt-upi-container", "crt-bank-container");
+
+    // Attach to the Edit Coupon Modal
+    setupPayoutToggle("edit-inf-payout-method", "edit-inf-upi-container", "edit-inf-bank-container");
+    setupPayoutToggle("edit-crt-payout-method", "edit-crt-upi-container", "edit-crt-bank-container");
+});
+
+// ===============================
+// Admin Support Tickets Logic
+// ===============================
+
+let currentAdminTicketId = null;
+
+// 1. Fetch and Load Tickets
+async function loadAdminTickets() {
+    const list = document.getElementById('admin-tickets-list');
+    if (!list) return;
+
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/tickets`);
+        const data = await res.json();
+
+        if (!data.success) throw new Error("Failed to load tickets");
+
+        if (data.tickets.length === 0) {
+            list.innerHTML = `<tr><td colspan="6" style="text-align:center;">No support tickets found.</td></tr>`;
+            return;
+        }
+
+        list.innerHTML = data.tickets.map(t => {
+            const statusClass = 
+                t.status === 'Resolved' ? 'admin-status-chip--success' : 
+                t.status === 'Waiting for Response' ? 'admin-status-chip--muted' : 
+                'admin-status-chip--error'; // Using error color for 'Requested' to grab attention
+
+            return `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="font-family: monospace;">${t.ticketId}</td>
+                <td>${t.user?.email || 'Unknown User'}</td>
+                <td style="text-transform: capitalize;">${t.category}</td>
+                <td><span class="admin-status-chip ${statusClass}" style="font-size: 0.75rem;">${t.status}</span></td>
+                <td>${new Date(t.createdAt).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn--ghost" style="padding: 4px 10px; font-size: 0.8rem;" onclick='openAdminTicketModal(${JSON.stringify(t).replace(/'/g, "&#39;")})'>View</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Error loading tickets.</td></tr>`;
+    }
+}
+
+// 2. Open Ticket Modal
+window.openAdminTicketModal = function(ticket) {
+    currentAdminTicketId = ticket._id;
+    
+    document.getElementById('admin-modal-ticket-id').innerText = ticket.ticketId;
+    document.getElementById('admin-modal-ticket-subject').innerText = ticket.subject;
+    document.getElementById('admin-modal-ticket-desc').innerText = ticket.description;
+    
+    // Status Badge
+    const statusEl = document.getElementById('admin-modal-ticket-status');
+    statusEl.innerText = ticket.status;
+    statusEl.className = 'admin-status-chip ' + (ticket.status === 'Resolved' ? 'admin-status-chip--success' : 'admin-status-chip--muted');
+
+    // Attachments
+    const attachContainer = document.getElementById('admin-modal-ticket-attachments');
+    if (ticket.attachments && ticket.attachments.length > 0) {
+        attachContainer.innerHTML = ticket.attachments.map(att => 
+            `<a href="${att}" target="_blank" style="background:#cbd5e1; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; color: black;">View Attachment</a>`
+        ).join('');
+    } else {
+        attachContainer.innerHTML = '';
+    }
+
+    // Notes
+    const notesContainer = document.getElementById('admin-modal-notes-list');
+    if (ticket.notes && ticket.notes.length > 0) {
+        notesContainer.innerHTML = ticket.notes.map(note => {
+            const isUser = note.addedBy === 'User';
+            const align = isUser ? 'flex-start' : 'flex-end';
+            const bg = isUser ? '#f1f5f9' : '#dbeafe'; // Blue for Admin, Grey for User
+            return `
+            <div style="align-self: ${align}; background: ${bg}; padding: 10px; border-radius: 8px; max-width: 80%;">
+                <strong style="font-size: 0.8rem; color: #64748b;">${note.addedBy} - ${new Date(note.createdAt).toLocaleString()}</strong>
+                <div style="margin-top: 4px;">${note.message}</div>
+            </div>`;
+        }).join('');
+    } else {
+        notesContainer.innerHTML = '<span style="color:#94a3b8; font-style:italic;">No notes yet.</span>';
+    }
+
+    // Hide actions if resolved
+    const actionsDiv = document.getElementById('admin-new-note').parentElement;
+    actionsDiv.style.display = ticket.status === 'Resolved' ? 'none' : 'block';
+
+    document.getElementById('admin-ticket-overlay').classList.remove('hidden');
+};
+
+// 3. Add Note to Ticket
+document.getElementById('btn-admin-add-note').addEventListener('click', async () => {
+    const input = document.getElementById('admin-new-note');
+    if (!input.value.trim()) return;
+
+    const btn = document.getElementById('btn-admin-add-note');
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/tickets/${currentAdminTicketId}/note`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: input.value })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            input.value = '';
+            showNotification("success", "Note added to ticket");
+            openAdminTicketModal(data.ticket); // refresh modal with new note
+            loadAdminTickets(); // refresh table in background
+        } else {
+            showNotification("error", data.message);
+        }
+    } catch (err) {
+        showNotification("error", "Failed to add note");
+    } finally {
+        btn.innerText = "Send Note to Customer";
+        btn.disabled = false;
+    }
+});
+
+// 4. Resolve Ticket
+document.getElementById('btn-admin-resolve-ticket').addEventListener('click', async () => {
+    if (!confirm("Are you sure you want to mark this ticket as resolved?")) return;
+
+    const btn = document.getElementById('btn-admin-resolve-ticket');
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+
+    try {
+        const res = await authFetch(`${window.API_BASE}/api/admin/tickets/${currentAdminTicketId}/resolve`, {
+            method: 'PUT'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification("success", "Ticket Resolved");
+            document.getElementById('admin-ticket-overlay').classList.add('hidden');
+            loadAdminTickets();
+        } else {
+            showNotification("error", data.message);
+        }
+    } catch (err) {
+        showNotification("error", "Failed to resolve ticket");
+    } finally {
+        btn.innerText = "Mark as Resolved";
+        btn.disabled = false;
+    }
+});
+
+// 5. Hook into the sidebar navigation
+document.addEventListener("DOMContentLoaded", () => {
+    // Add 'tickets' to the sections array so the generic navigation handles hiding/showing
+    if (typeof sections !== 'undefined') {
+        sections.push('ticketsSection'); 
+    }
+
+    const navTickets = document.getElementById('nav-tickets');
+    if (navTickets) {
+        navTickets.addEventListener('click', () => {
+            // Use the global function defined in your admin.js
+            if (typeof window.adminShowSection === 'function') {
+                window.adminShowSection('ticketsSection');
+            }
+            loadAdminTickets();
+        });
+    }
+});

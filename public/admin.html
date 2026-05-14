@@ -181,11 +181,11 @@
             </div>
           </div>
           
-          <div id="edit-inf-payout-fields-upi" style="display:block;">
+          <div id="edit-inf-upi-container" style="display:block;">
             <input type="text" id="edit-inf-upi" placeholder="Influencer UPI (user@bank)" style="width:100%;" />
           </div>
 
-          <div id="edit-inf-payout-fields-bank" style="display:none; gap:10px;">
+          <div id="edit-inf-bank-container" style="display:none; gap:10px;">
             <input type="text" id="edit-inf-bank-account" placeholder="Bank Account No." style="flex:1;" />
             <input type="text" id="edit-inf-ifsc" placeholder="IFSC Code" style="flex:1;" />
           </div>
@@ -203,11 +203,11 @@
             </div>
           </div>
 
-          <div id="edit-crt-payout-fields-upi" style="display:block;">
+          <div id="edit-crt-upi-container" style="display:block;">
             <input type="text" id="edit-crt-upi" placeholder="Creator UPI (user@bank)" style="width:100%;" />
           </div>
 
-          <div id="edit-crt-payout-fields-bank" style="display:none; gap:10px;">
+          <div id="edit-crt-bank-container" style="display:none; gap:10px;">
             <input type="text" id="edit-crt-bank-account" placeholder="Bank Account No." style="flex:1;" />
             <input type="text" id="edit-crt-ifsc" placeholder="IFSC Code" style="flex:1;" />
           </div>
@@ -269,6 +269,7 @@
         <a href="#" data-section="analytics" id="nav-analytics"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20v-3"></path></svg></span><span class="admin-nav-label">Engagement</span></a>
         <a href="#" data-section="disputes" id="nav-disputes"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18"></path><path d="M6 7h12"></path><path d="M7.5 7 4 13h7L7.5 7Z"></path><path d="M16.5 7 13 13h7l-3.5-6Z"></path><path d="M8 17h8"></path></svg></span><span class="admin-nav-label">Disputes</span></a>
         <a href="#" data-section="messagesSection" id="nav-inquiries"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path></svg></span><span class="admin-nav-label">Inquiries</span></a>
+        <a href="#" data-section="ticketsSection" id="nav-tickets"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span><span class="admin-nav-label">Support Tickets</span></a>
         <a href="#" data-section="refundSection" id="nav-refund"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 7h18v10H3z"></path><path d="M7 12h.01"></path><path d="M3 10h18"></path><path d="M8 17h8"></path></svg></span><span class="admin-nav-label">Refunds</span></a>
         <a href="#" id="nav-logout"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg></span><span class="admin-nav-label">Logout</span></a>
       </nav>
@@ -338,18 +339,18 @@
               <div style="display:flex; gap:10px; align-items:center; width:100%;">
                 <strong style="font-size:0.95rem; color:#0f172a; width: 120px;">Influencer</strong>
                 <input type="number" name="influencerCommission" placeholder="Comm. (₹)" style="max-width:120px; padding: 6px;" />
-                <select name="influencerPayoutMethod" class="payout-method-select" data-target="inf-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
+                <select id="inf-payout-method" name="influencerPayoutMethod" class="payout-method-select" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
                   <option value="upi">UPI</option>
                   <option value="bank">Bank</option>
                 </select>
               </div>
             </div>
             
-            <div id="inf-payout-fields-upi" style="display:block;">
+            <div id="inf-upi-container" style="display:block;">
               <input type="text" name="influencerUPI" placeholder="Influencer UPI (user@bank)" style="width:100%;" />
             </div>
 
-            <div id="inf-payout-fields-bank" style="display:none; gap:10px;">
+            <div id="inf-bank-container" style="display:none; gap:10px;">
               <input type="text" name="influencerBankAccount" placeholder="Bank Account No." style="flex:1;" />
               <input type="text" name="influencerIFSC" placeholder="IFSC Code" style="flex:1;" />
             </div>
@@ -360,18 +361,18 @@
               <div style="display:flex; gap:10px; align-items:center; width:100%;">
                 <strong style="font-size:0.95rem; color:#0f172a; width: 120px;">Creator</strong>
                 <input type="number" name="ebookCreatorCommission" placeholder="Comm. (₹)" style="max-width:120px; padding: 6px;" />
-                <select name="creatorPayoutMethod" class="payout-method-select" data-target="crt-payout-fields" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
+                <select id="crt-payout-method" name="creatorPayoutMethod" class="payout-method-select" style="margin-left:auto; padding:4px 8px; font-size:0.85rem; border-radius:4px; border:1px solid #cbd5e1;">
                   <option value="upi">UPI</option>
                   <option value="bank">Bank</option>
                 </select>
               </div>
             </div>
 
-            <div id="crt-payout-fields-upi" style="display:block;">
+            <div id="crt-upi-container" style="display:block;">
               <input type="text" name="ebookCreatorUPI" placeholder="Creator UPI (user@bank)" style="width:100%;" />
             </div>
 
-            <div id="crt-payout-fields-bank" style="display:none; gap:10px;">
+            <div id="crt-bank-container" style="display:none; gap:10px;">
               <input type="text" name="creatorBankAccount" placeholder="Bank Account No." style="flex:1;" />
               <input type="text" name="creatorIFSC" placeholder="IFSC Code" style="flex:1;" />
             </div>
@@ -432,6 +433,27 @@
         <h2>Customer Inquiries</h2>
         <div id="messagesList" class="messages-grid" aria-live="polite">
           <p>Loading inquiries...</p>
+        </div>
+      </section>
+
+      <section id="ticketsSection" class="content-section hidden">
+        <h2 class="admin-title-row"><span>Support Tickets</span></h2>
+        <div class="table-wrap" style="margin-top:12px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px;">
+          <table class="failed-emails-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Customer Email</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-tickets-list">
+               <tr><td colspan="6" style="text-align:center;">Loading tickets...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -520,6 +542,41 @@
 
     </main>
   </div>
+
+  <div id="admin-ticket-overlay" class="login-overlay hidden" aria-hidden="true">
+    <div class="login-box admin-modal-dialog" role="dialog" aria-modal="true" style="max-width: 700px; display: flex; flex-direction: column; max-height: 90vh;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
+        <div>
+          <span id="admin-modal-ticket-id" style="font-family: monospace; color: #64748b;">TKT-XXXX</span>
+          <h3 id="admin-modal-ticket-subject" style="margin: 5px 0 0; font-size: 1.3rem;">Ticket Subject</h3>
+          <span id="admin-modal-ticket-status" class="admin-status-chip" style="margin-top: 8px; display: inline-block;">Status</span>
+        </div>
+        <button onclick="document.getElementById('admin-ticket-overlay').classList.add('hidden')" style="background:none; border:none; font-size: 1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="overflow-y: auto; flex: 1; padding-right: 10px;">
+        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <strong style="display: block; margin-bottom: 5px;">Original Description:</strong>
+            <p id="admin-modal-ticket-desc" style="font-size: 0.95rem; color: #334155; margin: 0; white-space: pre-wrap;"></p>
+            <div id="admin-modal-ticket-attachments" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+               </div>
+        </div>
+
+        <h4 style="margin-bottom: 10px;">Note History</h4>
+        <div id="admin-modal-notes-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            </div>
+      </div>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 10px;">
+          <textarea id="admin-new-note" rows="3" placeholder="Write a response to the customer..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 10px;"></textarea>
+          <div style="display: flex; gap: 10px;">
+             <button id="btn-admin-add-note" class="btn btn--primary" style="flex: 1;">Send Note to Customer</button>
+             <button id="btn-admin-resolve-ticket" class="btn" style="flex: 1; background-color: #10b981; color: white;">Mark as Resolved</button>
+          </div>
+      </div>
+    </div>
+  </div> 
 
   <div id="reset-overlay" class="login-overlay hidden" aria-hidden="true">
     <div class="login-box" role="dialog" aria-modal="true">

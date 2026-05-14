@@ -15,7 +15,9 @@ import {
   createCashfreeRefund,
   normalizeCashfreeError,
 } from "../config/cashfree.js";
-import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer, addBankBeneficiary, requestBankTransfer } from "../config/cashfreePayout.js";
+
+import { getPayoutToken, addUpiBeneficiary, requestUpiTransfer, addBankBeneficiary, requestBankTransfer } from "../config/cashfreePayout.js";
+import Ticket from "../models/Ticket.js";
 
 const router = express.Router();
 
@@ -578,6 +580,59 @@ router.post("/withdraw", async (req, res) => {
         message: error?.response?.data?.message || "Failed to initiate withdrawal" 
     });
   }
+});
+
+// ===============================
+// Support Tickets System
+// ===============================
+
+// 1. Get all tickets
+router.get("/tickets", async (req, res) => {
+    try {
+        // Populate the user to get their email address
+        const tickets = await Ticket.find()
+            .populate('user', 'email name')
+            .sort({ createdAt: -1 }); // Newest first
+            
+        res.json({ success: true, tickets });
+    } catch (error) {
+        console.error("Error fetching admin tickets:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// 2. Add an Admin Note to a ticket
+router.post("/tickets/:id/note", async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ success: false, message: "Ticket not found" });
+
+        ticket.notes.push({ message: req.body.message, addedBy: 'Admin' });
+        
+        // If an admin replies, automatically change status to 'Waiting for Response' from the user
+        if (ticket.status === 'Requested') {
+            ticket.status = 'Waiting for Response';
+        }
+        
+        await ticket.save();
+        res.json({ success: true, ticket });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// 3. Mark Ticket as Resolved
+router.put("/tickets/:id/resolve", async (req, res) => {
+    try {
+        const ticket = await Ticket.findByIdAndUpdate(
+            req.params.id, 
+            { status: 'Resolved' }, 
+            { new: true }
+        );
+        res.json({ success: true, ticket });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 });
 
 export default router;
