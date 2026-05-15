@@ -1019,9 +1019,23 @@ if (btnSearchUserOrders) {
 
       userPurchaseList.innerHTML = data.orders.map(order => {
         const isRefunded = (order.refundStatus === "processed");
-        const refundBtn = isRefunded 
-            ? `<span class="refund-status">Refunded</span>`
-            : `<button onclick="processRefund('${order._id}')" class="refund-btn" type="button">Refund</button>`;
+        
+        // --- NEW: Calculate if 7 days have passed ---
+        const purchaseDate = new Date(order.paidAt || order.createdAt);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const isExpired = purchaseDate < sevenDaysAgo;
+
+        let actionHtml = "";
+        if (isRefunded) {
+            actionHtml = `<span class="refund-status" style="color: #10b981; font-weight: bold;">Refunded</span>`;
+        } else if (isExpired) {
+            // Show a red "Period Over" badge instead of the button
+            actionHtml = `<span class="refund-status" style="color: #ef4444; background: #fee2e2; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">Period Over</span>`;
+        } else {
+            actionHtml = `<button onclick="processRefund('${order._id}')" class="refund-btn" type="button">Refund</button>`;
+        }
+        // --------------------------------------------
 
         return `
         <div class="refund-result-card">
@@ -1031,10 +1045,10 @@ if (btnSearchUserOrders) {
                 Price: ₹${paymentOrderTotal(order)} • Ord: <code style="background:#f1f5f9; padding:2px 4px; border-radius:4px;">${paymentOrderLabel(order)}</code>
             </div>
             <div class="refund-result-card__date">
-                Date: ${new Date(order.createdAt).toLocaleDateString()}
+                Date: ${purchaseDate.toLocaleDateString()}
             </div>
           </div>
-          <div class="refund-result-card__action">${refundBtn}</div>
+          <div class="refund-result-card__action">${actionHtml}</div>
         </div>
       `}).join('');
       

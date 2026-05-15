@@ -343,6 +343,18 @@ router.post("/process-refund", async (req, res) => {
         return res.status(400).json({ success: false, message: "Order already refunded" });
     }
 
+    // --- NEW: 7-DAY REFUND EXPIRATION CHECK ---
+    const purchaseDate = new Date(order.paidAt || order.createdAt);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    if (purchaseDate < sevenDaysAgo) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "The 7-day refund period has expired for this purchase." 
+        });
+    }
+
     // Revoke course access from User model
     if (order.buyerEmail) {
         await User.findOneAndUpdate(

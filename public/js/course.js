@@ -67,69 +67,72 @@ async function loadCourseDetails(courseId) {
       : `${API_BASE}${course.thumbnail || "/images/placeholder-course.png"}`;
 
     courseDetailsContainer.innerHTML = `
-      <div class="course-container course-container--compact">
-        <div class="course-content course-content--single" id="course-content-area">
-          <section class="course-section course-section--summary">
-            <span class="course-summary__eyebrow">Course</span>
-            <h1 class="course-summary__title">${course.title}</h1>
+      <div class="course-content" id="course-content-area">
+        <section class="course-section course-section--summary">
+          <span class="course-summary__eyebrow">Course</span>
+          <h1 class="course-summary__title">${course.title}</h1>
 
-            <div class="course-summary__detail-card">
-              <div class="course-summary__media-card">
-                <img src="${thumb}" alt="${course.title}">
-              </div>
-
-              <div class="course-rich-text course-summary__description">
-                <p>${courseDescription.replace(/\n/g, "<br>")}</p>
-              </div>
+          <div class="course-summary__detail-card">
+            <div class="course-summary__media-card">
+              <img src="${thumb}" alt="${course.title}">
             </div>
 
-            <div class="course-summary__purchase">
-              <div class="pricing-price course-summary__price">&#8377;${course.price}</div>
-              ${isOwned
-                ? `<a href="/read?id=${course._id}" class="btn btn--primary btn--block pricing-card__cta pricing-card__cta--owned course-summary__cta">Read Now</a>`
-                : `<button id="buy-btn" class="btn btn--primary btn--block pricing-card__cta course-summary__cta" type="button">Buy Now</button>`
-              }
+            <div class="course-rich-text course-summary__description">
+              <p>${courseDescription.replace(/\n/g, "<br>")}</p>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section class="course-section course-section--reviews">
-            <h2 class="course-section__heading">Course Reviews</h2>
-            <div id="reviews-container" class="course-reviews-shell">
-              <p class="course-loading-copy">Loading reviews...</p>
-            </div>
-          </section>
+        <section class="course-section course-section--reviews">
+          <h2 class="course-section__heading">Course Reviews</h2>
+          <div id="reviews-container" class="course-reviews-shell">
+            <p class="course-loading-copy">Loading reviews...</p>
+          </div>
+        </section>
 
-          <section class="course-section course-section--share">
-            <div id="share-bar" class="course-share-card">
-              <div class="course-share-header">
-                <h3>Share this course</h3>
-                <p>Send it to someone who would enjoy it.</p>
-              </div>
-              <div class="course-share-actions">
-                <button id="copy-link" class="course-share-action course-share-action--copy" type="button">Copy Link</button>
-                <a id="whatsapp-link" class="course-share-action" target="_blank" rel="noopener" href="#">WhatsApp</a>
-                <a id="facebook-link" class="course-share-action" target="_blank" rel="noopener" href="#">Facebook</a>
-                <a id="x-link" class="course-share-action" target="_blank" rel="noopener" href="#">X</a>
-                <a id="linkedin-link" class="course-share-action" target="_blank" rel="noopener" href="#">LinkedIn</a>
-              </div>
+        <section class="course-section course-section--share">
+          <div id="share-bar" class="course-share-card">
+            <div class="course-share-header">
+              <h3>Share this course</h3>
+              <p>Send it to someone who would enjoy it.</p>
             </div>
-          </section>
-        </div>
+            <div class="course-share-actions">
+              <button id="copy-link" class="course-share-action course-share-action--copy" type="button">Copy Link</button>
+              <a id="whatsapp-link" class="course-share-action" target="_blank" rel="noopener" href="#">WhatsApp</a>
+              <a id="facebook-link" class="course-share-action" target="_blank" rel="noopener" href="#">Facebook</a>
+              <a id="x-link" class="course-share-action" target="_blank" rel="noopener" href="#">X</a>
+              <a id="linkedin-link" class="course-share-action" target="_blank" rel="noopener" href="#">LinkedIn</a>
+            </div>
+          </div>
+        </section>
       </div>
     `;
 
-    loadCourseReviews(courseId);
-    updateShareLinks(course, window.location.href);
+    // Update Pricing Card
+    const courseImg = document.getElementById("course-image");
+    const coursePrice = document.getElementById("course-price");
+    const buyBtn = document.getElementById("btn-buy");
 
-    if (!isOwned) {
-      const buyBtn = document.getElementById("buy-btn");
-      if (buyBtn) {
-        buyBtn.addEventListener("click", () => {
+    if (courseImg) courseImg.src = thumb;
+    if (coursePrice) coursePrice.textContent = `₹${course.price}`;
+
+    if (buyBtn) {
+      if (isOwned) {
+        buyBtn.textContent = "Read Now";
+        buyBtn.onclick = () => {
+          window.location.href = `/read?id=${course._id}`;
+        };
+      } else {
+        buyBtn.textContent = "Enroll Now";
+        buyBtn.onclick = () => {
           localStorage.setItem("selectedCourse", JSON.stringify(course));
           window.location.href = `/checkout/${course._id}`;
-        });
+        };
       }
     }
+
+    loadCourseReviews(courseId);
+    updateShareLinks(course, window.location.href);
   } catch (error) {
     console.error("Error loading course:", error);
     courseDetailsContainer.innerHTML = "<p style='text-align:center; color:red;'>Failed to load course details.</p>";
