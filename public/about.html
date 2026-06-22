@@ -1,89 +1,618 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us</title>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 30px;
-            background: #ffffff;
-            border-radius: 6px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
-        h1 {
-            color: #222;
-            margin-bottom: 20px;
-        }
-        p {
-            margin-bottom: 15px;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="index, follow"/>
+  <title>About Us | Stribble</title>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      background:#f8fafc;
+      color:#1e293b;
+      line-height:1.8;
+    }
+
+    .hero{
+      background:linear-gradient(135deg,#0f172a,#1e293b);
+      color:white;
+      padding:80px 20px;
+    }
+
+    .hero-container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    .hero h1{
+      font-size:48px;
+      margin-bottom:18px;
+    }
+
+    .hero p{
+      max-width:850px;
+      color:#cbd5e1;
+      font-size:17px;
+    }
+
+    .last-updated{
+      margin-top:20px;
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    .wrapper{
+      max-width:1200px;
+      margin:40px auto;
+      padding:0 20px;
+      display:grid;
+      grid-template-columns:300px 1fr;
+      gap:30px;
+    }
+
+    .toc{
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:25px;
+      max-height:85vh;
+      overflow:auto;
+    }
+
+    .toc h3{
+      margin-bottom:18px;
+      color:#0f172a;
+      font-size:20px;
+    }
+
+    .toc a{
+      display:block;
+      text-decoration:none;
+      color:#475569;
+      margin-bottom:12px;
+      transition:0.2s;
+      font-size:15px;
+    }
+
+    .toc a:hover{
+      color:#2563eb;
+      transform:translateX(3px);
+    }
+
+    .content{
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:40px;
+    }
+
+    section{
+      margin-bottom:55px;
+    }
+
+    section h2{
+      font-size:32px;
+      margin-bottom:20px;
+      border-bottom:2px solid #e2e8f0;
+      padding-bottom:10px;
+      color:#0f172a;
+    }
+
+    section h3{
+      margin-top:25px;
+      margin-bottom:12px;
+      font-size:21px;
+      color:#1e293b;
+    }
+
+    p{
+      margin-bottom:16px;
+      color:#334155;
+    }
+
+    ul{
+      padding-left:20px;
+      margin-bottom:20px;
+    }
+
+    li{
+      margin-bottom:10px;
+      color:#334155;
+    }
+
+    .highlight{
+      background:#eff6ff;
+      border-left:4px solid #2563eb;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .placeholder{
+      background:#f8fafc;
+      border:2px dashed #94a3b8;
+      padding:20px;
+      border-radius:10px;
+      margin:20px 0;
+      color:#475569;
+      font-style:italic;
+    }
+
+    .security-box{
+      background:#ecfeff;
+      border-left:4px solid #0891b2;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .footer{
+      background:#0f172a;
+      color:#cbd5e1;
+      padding:50px 20px;
+      margin-top:60px;
+    }
+
+    .footer-container{
+      max-width:1200px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:30px;
+    }
+
+    .footer h4{
+      color:white;
+      margin-bottom:15px;
+    }
+
+    .footer a{
+      display:block;
+      color:#94a3b8;
+      text-decoration:none;
+      margin-bottom:10px;
+    }
+
+    .footer a:hover{
+      color:white;
+    }
+
+    .footer-bottom{
+      text-align:center;
+      margin-top:40px;
+      padding-top:20px;
+      border-top:1px solid #334155;
+      color:#64748b;
+      font-size:14px;
+    }
+
+    @media(max-width:900px){
+
+      .wrapper{
+        grid-template-columns:1fr;
+      }
+
+      .toc{
+        position:relative;
+        top:0;
+        max-height:none;
+      }
+
+      .hero h1{
+        font-size:36px;
+      }
+
+      .content{
+        padding:25px;
+      }
+    }
+
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>About Us</h1>
+  <div class="hero">
 
-    <p>
-        <strong>Stribble</strong> is an educational platform that offers
-        digital courses, designed to help learners gain practical,
-        real-world knowledge and skills.
-    </p>
+    <div class="hero-container">
 
-    <p>
-        Our goal is to provide clear, actionable, and high-quality educational content
-        in a simple and accessible manner. All of our courses are delivered digitally,
-        allowing users to receive instant access after successful payment.
-    </p>
+      <h1>About Stribble</h1>
 
-    <p>
-        We believe in transparency, ethical practices, and building trust with our users.
-        We are committed to respecting user privacy and delivering only value-driven,
-        relevant educational content.
-    </p>
+      <p>
+        Stribble is a digital educational platform focused on delivering secure, 
+        accessible, and professionally structured learning experiences through a modern streaming-based course system.
+      </p>
 
-    <p>
-        <strong>We respond to all support queries within 24–48 hours.</strong>
-    </p>
+      <div class="last-updated">
+        Last Updated: [Insert Date]
+      </div>
 
-</div>
-
-<!-- Footer -->
-<div style="background: #1e293b; color: #cbd5e1; padding: 40px 20px; margin-top: 40px;">
-    <div style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px;">
-        <div>
-            <h4 style="color: white; margin-bottom: 15px;">Legal</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="/privacy" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a>
-                <a href="/terms" style="color: #94a3b8; text-decoration: none;">Terms of Service</a>
-                <a href="/refund" style="color: #94a3b8; text-decoration: none;">Refund Policy</a>
-                <a href="/delivery-policy" style="color: #94a3b8; text-decoration: none;">Delivery Policy</a>
-            </div>
-        </div>
-        <div>
-            <h4 style="color: white; margin-bottom: 15px;">Platform</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
-                <a href="/about" style="color: #94a3b8; text-decoration: none;">About Us</a>
-                <a href="/contact" style="color: #94a3b8; text-decoration: none;">Contact</a>
-            </div>
-        </div>
     </div>
-    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155; color: #64748b; font-size: 14px;">
-        &copy; 2026 Stribble. All rights reserved.
+
+  </div>
+
+  <div class="wrapper">
+
+    <aside class="toc">
+
+      <h3>Quick Navigation</h3>
+
+      <a href="#who">1. Who We Are</a>
+      <a href="#mission">2. Our Mission</a>
+      <a href="#vision">3. Founder Vision</a>
+      <a href="#platform">4. What We Provide</a>
+      <a href="#security">5. Security & Protection</a>
+      <a href="#learning">6. Learning Experience</a>
+      <a href="#anti-piracy">7. Anti-Piracy Commitment</a>
+      <a href="#support">8. Support Commitment</a>
+      <a href="#future">9. Future Goals</a>
+      <a href="#contact">10. Contact Information</a>
+
+    </aside>
+
+    <main class="content">
+
+      <section id="who">
+
+        <h2>1. Who We Are</h2>
+
+        <p>
+          Stribble is an educational e-commerce platform that provides digital learning experiences through a secure streaming-based access system.
+        </p>
+
+        <p>
+          Our platform focuses on providing educational courses across multiple categories including:
+        </p>
+
+        <ul>
+          <li>Programming & Development</li>
+          <li>Artificial Intelligence</li>
+          <li>Social Media Learning</li>
+          <li>Creative Skills</li>
+          <li>Graphic Design</li>
+          <li>Video Editing</li>
+          <li>Personal Development</li>
+          <li>And other educational subjects</li>
+        </ul>
+
+        <p>
+          All educational content available on Stribble is created exclusively by the platform owner/admin and is protected under intellectual property and copyright laws.
+        </p>
+
+      </section>
+
+      <section id="mission">
+
+        <h2>2. Our Mission</h2>
+
+        <div class="placeholder">
+          [Add Mission Statement Here]
+        </div>
+
+        <p>
+          Our mission section can describe:
+        </p>
+
+        <ul>
+          <li>The educational purpose of Stribble</li>
+          <li>Your long-term goals for learners</li>
+          <li>Your platform values</li>
+          <li>Your vision for digital education</li>
+        </ul>
+
+      </section>
+
+      <section id="vision">
+
+        <h2>3. Founder Vision</h2>
+
+        <div class="placeholder">
+          [Add Founder Vision Here]
+        </div>
+
+        <p>
+          This section can include:
+        </p>
+
+        <ul>
+          <li>Why Stribble was created</li>
+          <li>Your inspiration behind the platform</li>
+          <li>Your educational philosophy</li>
+          <li>Your long-term vision for learners and creators</li>
+        </ul>
+
+      </section>
+
+      <section id="platform">
+
+        <h2>4. What We Provide</h2>
+
+        <p>
+          Stribble provides secure digital educational access through a streaming-based course platform.
+        </p>
+
+        <p>
+          Instead of downloadable PDFs or public file sharing systems, our platform focuses on:
+        </p>
+
+        <ul>
+          <li>Secure online course access</li>
+          <li>Structured reading experience</li>
+          <li>Protected educational delivery</li>
+          <li>Account-based learning access</li>
+          <li>Progress-based learning systems</li>
+        </ul>
+
+        <div class="highlight">
+          Users receive secure educational access rights to purchased content while intellectual property ownership remains protected by the platform.
+        </div>
+
+      </section>
+
+      <section id="security">
+
+        <h2>5. Security & Protection Systems</h2>
+
+        <div class="placeholder">
+          [Add Security & Trust Commitment Here]
+        </div>
+
+        <p>
+          Stribble prioritizes platform security, infrastructure stability, and educational content protection.
+        </p>
+
+        <div class="security-box">
+
+          Our platform may implement systems including:
+
+          <ul style="margin-top:15px;">
+            <li>Encrypted authentication systems</li>
+            <li>Session protection mechanisms</li>
+            <li>DDoS protection</li>
+            <li>Secure payment integrations</li>
+            <li>Anti-piracy controls</li>
+            <li>Rate limiting & abuse prevention</li>
+          </ul>
+
+        </div>
+
+        <p>
+          We continuously work to improve platform safety and maintain a secure learning environment.
+        </p>
+
+      </section>
+
+      <section id="learning">
+
+        <h2>6. Learning Experience</h2>
+
+        <div class="placeholder">
+          [Add Educational Philosophy Here]
+        </div>
+
+        <p>
+          Stribble aims to provide:
+        </p>
+
+        <ul>
+          <li>Simple and structured learning</li>
+          <li>Accessible educational content</li>
+          <li>Modern reading experiences</li>
+          <li>Long-term course accessibility</li>
+          <li>User-friendly navigation systems</li>
+        </ul>
+
+        <p>
+          Our goal is to create a platform where learners can focus on education without unnecessary complexity.
+        </p>
+
+      </section>
+
+      <section id="anti-piracy">
+
+        <h2>7. Anti-Piracy & Content Protection Commitment</h2>
+
+        <div class="placeholder">
+          [Add Anti-Piracy Commitment Here]
+        </div>
+
+        <p>
+          Every course available on Stribble is professionally created and protected under copyright law.
+        </p>
+
+        <p>
+          To protect educational content quality and platform integrity, Stribble may implement:
+        </p>
+
+        <ul>
+          <li>Session restrictions</li>
+          <li>Watermark visibility systems</li>
+          <li>Right-click disabling</li>
+          <li>Text selection prevention</li>
+          <li>Inactive tab blur protection</li>
+        </ul>
+
+        <p>
+          Unauthorized sharing, redistribution, piracy, or commercial misuse of educational content is strictly prohibited.
+        </p>
+
+      </section>
+
+      <section id="support">
+
+        <h2>8. Support Commitment</h2>
+
+        <div class="placeholder">
+          [Add Support Commitment Here]
+        </div>
+
+        <p>
+          Stribble provides support assistance for:
+        </p>
+
+        <ul>
+          <li>Course access issues</li>
+          <li>Payment-related problems</li>
+          <li>Technical difficulties</li>
+          <li>Account-related support</li>
+          <li>Refund assistance</li>
+        </ul>
+
+        <div class="highlight">
+          Support requests may be submitted 24/7 through our support systems. Active monitoring generally occurs between 6:00 AM and 10:00 PM IST.
+        </div>
+
+      </section>
+
+      <section id="future">
+
+        <h2>9. Future Goals & Platform Growth</h2>
+
+        <div class="placeholder">
+          [Add Future Goals Here]
+        </div>
+
+        <p>
+          This section may later include:
+        </p>
+
+        <ul>
+          <li>Future platform plans</li>
+          <li>Educational expansion goals</li>
+          <li>Technology improvements</li>
+          <li>Community vision</li>
+          <li>Long-term roadmap</li>
+        </ul>
+
+      </section>
+
+      <section id="contact">
+
+        <h2>10. Contact Information</h2>
+
+        <p>
+          Platform Name:
+          <strong>Stribble</strong>
+        </p>
+
+        <p>
+          Support Email:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <p>
+          Business Address:
+        </p>
+
+        <p>
+          Palivela Village, Pujaripalem,<br>
+          Kotthapeta Mandal,<br>
+          Dr. B.R. Ambedkar Konaseema District,<br>
+          Andhra Pradesh, India - 533229
+        </p>
+
+        <div class="highlight">
+
+          In accordance with the Consumer Protection (E-Commerce) Rules, 2020:
+
+          <br><br>
+
+          Grievance Officer Name:
+          [Insert Grievance Officer Name]
+
+          <br><br>
+
+          Grievance Officer Email:
+          [Insert Grievance Officer Email]
+
+          <br><br>
+
+          Phone:
+          [Insert Phone Number]
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <footer class="footer">
+
+    <div class="footer-container">
+
+      <div>
+
+        <h4>Legal</h4>
+
+        <a href="/terms.html">Terms & Conditions</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/refund.html">Refund Policy</a>
+        <a href="/delivery-policy.html">Delivery Policy</a>
+
+      </div>
+
+      <div>
+
+        <h4>Platform</h4>
+
+        <a href="/">Home</a>
+        <a href="/about.html">About Us</a>
+        <a href="/contact.html">Contact</a>
+
+      </div>
+
+      <div>
+
+        <h4>Support</h4>
+
+        <p style="color:#94a3b8;">
+
+          Support Hours:
+          <br><br>
+
+          6:00 AM – 10:00 PM IST
+
+          <br><br>
+
+          Typical Response Time:
+          <br>
+
+          2–30 Minutes
+
+          <br><br>
+
+          Maximum Delay:
+          <br>
+
+          Up to 4 Days
+
+        </p>
+
+      </div>
+
     </div>
-</div>
+
+    <div class="footer-bottom">
+      &copy; 2026 Stribble. All rights reserved.
+    </div>
+
+  </footer>
 
 </body>
 </html>

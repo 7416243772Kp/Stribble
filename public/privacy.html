@@ -1,94 +1,847 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy | Stribble</title>
-    <link rel="stylesheet" href="/css/theme.css">
-    <style>
-        .container { max-width: 900px; margin: 40px auto; padding: 40px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); color: #333; line-height: 1.6; }
-        h1 { color: var(--primary); margin-bottom: 10px; }
-        h2 { margin-top: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
-        ul { margin-left: 20px; }
-        li { margin-bottom: 8px; }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="index, follow"/>
+  <title>Privacy Policy | Stribble</title>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      background:#f8fafc;
+      color:#1e293b;
+      line-height:1.8;
+    }
+
+    .hero{
+      background:linear-gradient(135deg,#0f172a,#1e293b);
+      color:white;
+      padding:60px 20px;
+    }
+
+    .hero-container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    .hero h1{
+      font-size:42px;
+      margin-bottom:15px;
+    }
+
+    .hero p{
+      max-width:850px;
+      color:#cbd5e1;
+      font-size:16px;
+    }
+
+    .last-updated{
+      margin-top:20px;
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    .wrapper{
+      max-width:1200px;
+      margin:40px auto;
+      padding:0 20px;
+      display:grid;
+      grid-template-columns:300px 1fr;
+      gap:30px;
+    }
+
+    .toc{
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:25px;
+      max-height:85vh;
+      overflow:auto;
+    }
+
+    .toc h3{
+      margin-bottom:18px;
+      color:#0f172a;
+      font-size:20px;
+    }
+
+    .toc a{
+      display:block;
+      text-decoration:none;
+      color:#475569;
+      margin-bottom:12px;
+      transition:0.2s;
+      font-size:15px;
+    }
+
+    .toc a:hover{
+      color:#2563eb;
+      transform:translateX(3px);
+    }
+
+    .content{
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:40px;
+    }
+
+    section{
+      margin-bottom:50px;
+    }
+
+    section h2{
+      font-size:30px;
+      margin-bottom:20px;
+      border-bottom:2px solid #e2e8f0;
+      padding-bottom:10px;
+      color:#0f172a;
+    }
+
+    section h3{
+      margin-top:25px;
+      margin-bottom:12px;
+      font-size:21px;
+      color:#1e293b;
+    }
+
+    p{
+      margin-bottom:16px;
+      color:#334155;
+    }
+
+    ul{
+      padding-left:20px;
+      margin-bottom:20px;
+    }
+
+    li{
+      margin-bottom:10px;
+      color:#334155;
+    }
+
+    .highlight{
+      background:#eff6ff;
+      border-left:4px solid #2563eb;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .warning{
+      background:#fff7ed;
+      border-left:4px solid #ea580c;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .notice{
+      background:#fee2e2;
+      border:1px solid #fecaca;
+      color:#991b1b;
+      padding:18px;
+      border-radius:10px;
+      margin-bottom:35px;
+      font-weight:bold;
+    }
+
+    .footer{
+      background:#0f172a;
+      color:#cbd5e1;
+      padding:50px 20px;
+      margin-top:60px;
+    }
+
+    .footer-container{
+      max-width:1200px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:30px;
+    }
+
+    .footer h4{
+      color:white;
+      margin-bottom:15px;
+    }
+
+    .footer a{
+      display:block;
+      color:#94a3b8;
+      text-decoration:none;
+      margin-bottom:10px;
+    }
+
+    .footer a:hover{
+      color:white;
+    }
+
+    .footer-bottom{
+      text-align:center;
+      margin-top:40px;
+      padding-top:20px;
+      border-top:1px solid #334155;
+      color:#64748b;
+      font-size:14px;
+    }
+
+    @media(max-width:900px){
+
+      .wrapper{
+        grid-template-columns:1fr;
+      }
+
+      .toc{
+        position:relative;
+        top:0;
+        max-height:none;
+      }
+
+      .hero h1{
+        font-size:34px;
+      }
+
+      .content{
+        padding:25px;
+      }
+    }
+
+  </style>
 </head>
 <body>
 
-<nav class="navbar">
-    <div class="logo">Stribble</div>
+  <div class="hero">
 
-</nav>
+    <div class="hero-container">
 
-<div class="container">
-    <h1>Privacy Policy</h1>
-    <p><strong>Last updated:</strong> 6 February 2026</p>
+      <h1>Privacy Policy</h1>
 
-    <p>Welcome to <strong>Stribble</strong>. We are committed to protecting your personal data. This policy explains how we handle your information when you use our course platform.</p>
+      <p>
+        This Privacy Policy explains how Stribble collects, uses, protects, stores, 
+        and shares your personal information when you access or use our platform, 
+        services, applications, educational content, and related systems.
+      </p>
 
-    <h2>1. Information We Collect</h2>
-    <p>We collect the following types of information:</p>
-    <ul>
-        <li><strong>Account Information:</strong> When you login via Google, we collect your Name, Email Address, and Google Profile ID.</li>
-        <li><strong>Transaction Data:</strong> We store Order IDs and payment status. We do <strong>not</strong> store card numbers or UPI PINs.</li>
-        <li><strong>Usage Data:</strong> We log IP addresses and login timestamps to enforce our "Single Session" security policy.</li>
-    </ul>
+      <div class="last-updated">
+        Last Updated: [Insert Date]
+      </div>
 
-    <h2>2. How We Use Your Information</h2>
-    <ul>
-        <li><strong>Access Control:</strong> To verify your purchase and grant access to the secure course reader.</li>
-        <li><strong>Security & Watermarking:</strong> Your Email Address and purchased date are used to generate a dynamic, personal watermark on the course pages you view. This is a security feature to prevent piracy.</li>
-        <li><strong>Communication:</strong> To send payment receipts, refund notifications, and important account updates.</li>
-    </ul>
-
-    <h2>3. Cookies & Session Storage</h2>
-    <p>We use HTTP cookies to manage your login session.</p>
-    <ul>
-        <li><strong>Essential Cookies:</strong> These are required to keep you logged in securely and prevent concurrent sessions on multiple devices.</li>
-        <li><strong>Analytics:</strong> We may use anonymous analytics to improve platform performance.</li>
-    </ul>
-
-    <h2>4. Data Sharing</h2>
-    <p>We do not sell your personal data. We only share data with:</p>
-    <ul>
-        <li><strong>Payment Processors:</strong> Strictly for processing payments and refunds.</li>
-        <li><strong>Legal Authorities:</strong> If required by law or to protect our rights in cases of fraud or piracy.</li>
-    </ul>
-
-    <h2>5. Your Rights</h2>
-    <p>You have the right to request the deletion of your account. However, please note that deleting your account will result in the permanent loss of access to all purchased courses.</p>
-
-    <h2>6. Contact Us</h2>
-    <p>If you have questions about this Privacy Policy, please contact:</p>
-    <p>Email: <a href="mailto:support@stribble.site">support@stribble.site</a></p>
-
-</div>
-
-<!-- Footer -->
-<div style="background: #1e293b; color: #cbd5e1; padding: 40px 20px; margin-top: 40px;">
-    <div style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px;">
-        <div>
-            <h4 style="color: white; margin-bottom: 15px;">Legal</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="/privacy" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a>
-                <a href="/terms" style="color: #94a3b8; text-decoration: none;">Terms of Service</a>
-                <a href="/refund" style="color: #94a3b8; text-decoration: none;">Refund Policy</a>
-                <a href="/delivery-policy" style="color: #94a3b8; text-decoration: none;">Delivery Policy</a>
-            </div>
-        </div>
-        <div>
-            <h4 style="color: white; margin-bottom: 15px;">Platform</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
-                <a href="/about" style="color: #94a3b8; text-decoration: none;">About Us</a>
-                <a href="/contact" style="color: #94a3b8; text-decoration: none;">Contact</a>
-            </div>
-        </div>
     </div>
-    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155; color: #64748b; font-size: 14px;">
-        &copy; 2026 Stribble. All rights reserved.
+
+  </div>
+
+  <div class="wrapper">
+
+    <aside class="toc">
+
+      <h3>Table of Contents</h3>
+
+      <a href="#acceptance">1. Acceptance of Privacy Policy</a>
+      <a href="#collection">2. Information We Collect</a>
+      <a href="#usage">3. How We Use Your Data</a>
+      <a href="#cookies">4. Cookies & Tracking</a>
+      <a href="#analytics">5. Analytics & Monitoring</a>
+      <a href="#payments">6. Payment Information</a>
+      <a href="#security">7. Data Security & Encryption</a>
+      <a href="#sharing">8. Third-Party Data Sharing</a>
+      <a href="#emails">9. Emails & Communications</a>
+      <a href="#retention">10. Data Retention</a>
+      <a href="#rights">11. User Rights</a>
+      <a href="#children">12. Children's Privacy</a>
+      <a href="#reviews">13. Reviews & User Submissions</a>
+      <a href="#piracy">14. Security & Anti-Piracy Systems</a>
+      <a href="#changes">15. Policy Updates</a>
+      <a href="#contact">16. Contact Information</a>
+
+    </aside>
+
+    <main class="content">
+
+      <div class="notice">
+        By using Stribble, you acknowledge that you have read and understood this Privacy Policy and consent to the collection and use of your information as described below.
+      </div>
+
+      <section id="acceptance">
+
+        <h2>1. Acceptance of Privacy Policy</h2>
+
+        <p>
+          This Privacy Policy applies to all users, visitors, customers, affiliates, and anyone interacting with the Stribble platform.
+        </p>
+
+        <p>
+          By accessing or using Stribble, you agree to the practices described in this Privacy Policy.
+        </p>
+
+      </section>
+
+      <section id="collection">
+
+        <h2>2. Information We Collect</h2>
+
+        <p>
+          Stribble may collect personal and technical information including:
+        </p>
+
+        <ul>
+          <li>Full name</li>
+          <li>Email address</li>
+          <li>Encrypted authentication credentials</li>
+          <li>Course purchase history</li>
+          <li>Course reading progress</li>
+          <li>Support tickets and messages</li>
+          <li>Review submissions</li>
+          <li>Uploaded support attachments/images</li>
+          <li>Login session information</li>
+          <li>Payment transaction references</li>
+          <li>OTP verification data</li>
+        </ul>
+
+        <p>
+          We may also collect technical and usage-related information necessary for maintaining platform functionality, security, and performance.
+        </p>
+
+        <div class="highlight">
+          Stribble does NOT directly store raw credit card numbers, debit card information, or sensitive banking credentials.
+        </div>
+
+      </section>
+
+      <section id="usage">
+
+        <h2>3. How We Use Your Data</h2>
+
+        <p>
+          We use collected information to:
+        </p>
+
+        <ul>
+          <li>Create and manage user accounts</li>
+          <li>Provide course access</li>
+          <li>Process purchases and refunds</li>
+          <li>Authenticate users securely</li>
+          <li>Monitor course engagement and reading progress</li>
+          <li>Respond to support requests</li>
+          <li>Improve platform stability and user experience</li>
+          <li>Protect against fraud, abuse, and piracy</li>
+          <li>Send transactional and marketing communications</li>
+          <li>Maintain legal and financial records</li>
+        </ul>
+
+      </section>
+
+      <section id="cookies">
+
+        <h2>4. Cookies & Tracking Technologies</h2>
+
+        <p>
+          Stribble uses cookies and similar technologies to improve functionality, maintain sessions, and enhance user experience.
+        </p>
+
+        <p>
+          Cookies may be used for:
+        </p>
+
+        <ul>
+          <li>User authentication</li>
+          <li>Session management</li>
+          <li>Security verification</li>
+          <li>Platform preferences</li>
+          <li>Analytics and performance monitoring</li>
+        </ul>
+
+        <p>
+          Users may disable cookies through browser settings; however, certain platform features may stop functioning properly.
+        </p>
+
+      </section>
+
+      <section id="analytics">
+
+        <h2>5. Analytics & Performance Monitoring</h2>
+
+        <p>
+          Stribble uses analytics and infrastructure monitoring systems to understand:
+        </p>
+
+        <ul>
+          <li>Website traffic</li>
+          <li>Page performance</li>
+          <li>Platform speed</li>
+          <li>General user interaction</li>
+          <li>Website stability</li>
+        </ul>
+
+        <p>
+          We currently use services such as:
+        </p>
+
+        <ul>
+          <li>Google Analytics</li>
+          <li>Cloudflare</li>
+        </ul>
+
+        <p>
+          These tools help improve platform performance, content delivery, caching efficiency, and protection against malicious traffic.
+        </p>
+
+      </section>
+
+      <section id="payments">
+
+        <h2>6. Payment Information</h2>
+
+        <p>
+          All payments are processed securely through Cashfree and its supported payment systems.
+        </p>
+
+        <p>
+          Stribble does not directly process or store:
+        </p>
+
+        <ul>
+          <li>Card numbers</li>
+          <li>CVV details</li>
+          <li>Net banking credentials</li>
+          <li>UPI PINs</li>
+        </ul>
+
+        <p>
+          Payment processors handle these details within their own secure environments.
+        </p>
+
+        <p>
+          We may store limited transactional references such as:
+        </p>
+
+        <ul>
+          <li>Order IDs</li>
+          <li>Payment status</li>
+          <li>Transaction references</li>
+          <li>Purchase timestamps</li>
+        </ul>
+
+      </section>
+
+      <section id="security">
+
+        <h2>7. Data Security & Encryption</h2>
+
+        <p>
+          Stribble implements multiple security measures to protect platform data and user information.
+        </p>
+
+        <h3>Password Protection</h3>
+
+        <p>
+          User passwords are never stored in plain text. Passwords are irreversibly hashed before storage.
+        </p>
+
+        <h3>Encrypted Financial Information</h3>
+
+        <p>
+          Sensitive payout routing information used for promoter commission systems is encrypted at the application level.
+        </p>
+
+        <h3>Authentication Protection</h3>
+
+        <p>
+          Session data, OTP systems, and authentication mechanisms are secured using cryptographic protections.
+        </p>
+
+        <h3>Infrastructure Security</h3>
+
+        <p>
+          Stribble uses security systems including:
+        </p>
+
+        <ul>
+          <li>DDoS protection</li>
+          <li>Rate limiting</li>
+          <li>NoSQL injection prevention</li>
+          <li>Script injection protection</li>
+          <li>Session validation systems</li>
+        </ul>
+
+        <div class="warning">
+          While we implement strong security practices, no online platform can guarantee absolute security against every possible cyber threat.
+        </div>
+
+      </section>
+
+      <section id="sharing">
+
+        <h2>8. Third-Party Data Sharing & Disclosure</h2>
+
+        <p>
+          Stribble does not sell, rent, or trade your personal information.
+        </p>
+
+        <p>
+          However, certain limited information may be shared with trusted third-party providers for platform operation purposes.
+        </p>
+
+        <h3>Payment Processors</h3>
+
+        <p>
+          Necessary transactional information may be securely shared with Cashfree for payment processing, refund handling, and promoter payout systems.
+        </p>
+
+        <h3>Email Infrastructure Providers</h3>
+
+        <p>
+          We use SMTP2GO for sending transactional and marketing emails including:
+        </p>
+
+        <ul>
+          <li>Password reset emails</li>
+          <li>Purchase confirmations</li>
+          <li>Refund notifications</li>
+          <li>Platform announcements</li>
+        </ul>
+
+        <h3>Analytics Providers</h3>
+
+        <p>
+          Cloudflare and Google Analytics may receive limited technical or aggregated analytical information to improve platform performance.
+        </p>
+
+        <h3>Legal Authorities</h3>
+
+        <p>
+          We may disclose information if legally required by:
+        </p>
+
+        <ul>
+          <li>Court orders</li>
+          <li>Government authorities</li>
+          <li>Law enforcement agencies</li>
+          <li>Legal investigations</li>
+        </ul>
+
+        <p>
+          We may also disclose information to investigate fraud, piracy, abuse, or violations of our Terms & Conditions.
+        </p>
+
+      </section>
+
+      <section id="emails">
+
+        <h2>9. Emails & Communications</h2>
+
+        <p>
+          Stribble sends two categories of emails:
+        </p>
+
+        <h3>Transactional Emails</h3>
+
+        <ul>
+          <li>OTP verification</li>
+          <li>Password resets</li>
+          <li>Purchase confirmations</li>
+          <li>Refund notifications</li>
+          <li>Security notifications</li>
+        </ul>
+
+        <p>
+          These emails are necessary for platform operation and cannot generally be unsubscribed from while using the service.
+        </p>
+
+        <h3>Marketing & Promotional Emails</h3>
+
+        <ul>
+          <li>Learning tips</li>
+          <li>Course-related educational suggestions</li>
+          <li>Platform announcements</li>
+          <li>Educational updates</li>
+        </ul>
+
+        <p>
+          Users may unsubscribe from marketing communications using the unsubscribe link provided in those emails.
+        </p>
+
+      </section>
+
+      <section id="retention">
+
+        <h2>10. Data Retention</h2>
+
+        <p>
+          Stribble may retain user information for as long as the platform continues operating or as required for:
+        </p>
+
+        <ul>
+          <li>Legal compliance</li>
+          <li>Tax obligations</li>
+          <li>Fraud prevention</li>
+          <li>Dispute handling</li>
+          <li>Security investigations</li>
+          <li>Financial auditing</li>
+        </ul>
+
+        <p>
+          Certain transactional records may be retained even after account deletion where legally required.
+        </p>
+
+      </section>
+
+      <section id="rights">
+
+        <h2>11. User Rights Regarding Personal Data</h2>
+
+        <h3>Data Access Requests</h3>
+
+        <p>
+          Users may request a copy of their stored personal data including:
+        </p>
+
+        <ul>
+          <li>Account information</li>
+          <li>Course history</li>
+          <li>Interaction records</li>
+        </ul>
+
+        <p>
+          Requests can be made by contacting:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <h3>Account & Data Deletion Requests</h3>
+
+        <p>
+          Users may request account deletion by contacting:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <p>
+          Subject Line:
+          <strong>Data Deletion Request</strong>
+        </p>
+
+        <p>
+          Upon deletion:
+        </p>
+
+        <ul>
+          <li>Course access may be permanently revoked</li>
+          <li>General profile information may be removed or anonymized</li>
+          <li>Certain legal and financial records may still be retained</li>
+        </ul>
+
+        <div class="warning">
+          Certain records such as transaction logs, purchase history, payout records, and legal documentation may be retained for tax compliance, anti-fraud protection, and auditing obligations.
+        </div>
+
+      </section>
+
+      <section id="children">
+
+        <h2>12. Children's Privacy</h2>
+
+        <p>
+          Users under 18 years of age may use the platform only with parental or guardian consent.
+        </p>
+
+        <p>
+          Parents or guardians are responsible for monitoring the minor’s use of the platform.
+        </p>
+
+      </section>
+
+      <section id="reviews">
+
+        <h2>13. Reviews, Support Messages & Attachments</h2>
+
+        <p>
+          Users may voluntarily submit:
+        </p>
+
+        <ul>
+          <li>Course reviews</li>
+          <li>Support tickets</li>
+          <li>Contact form submissions</li>
+          <li>Images and attachments</li>
+        </ul>
+
+        <p>
+          Users are responsible for ensuring that submitted content:
+        </p>
+
+        <ul>
+          <li>Does not violate laws</li>
+          <li>Does not contain malware</li>
+          <li>Does not infringe copyrights</li>
+          <li>Does not contain abusive or illegal content</li>
+        </ul>
+
+      </section>
+
+      <section id="piracy">
+
+        <h2>14. Security & Anti-Piracy Monitoring</h2>
+
+        <p>
+          To protect educational content and platform integrity, Stribble may implement security measures including:
+        </p>
+
+        <ul>
+          <li>Session restriction systems</li>
+          <li>Inactive tab detection</li>
+          <li>Blur protection on inactive windows</li>
+          <li>Text selection restrictions</li>
+          <li>Right-click disabling</li>
+          <li>Watermark/email visibility systems</li>
+        </ul>
+
+        <p>
+          These systems are intended solely for platform protection, copyright enforcement, and anti-piracy monitoring.
+        </p>
+
+      </section>
+
+      <section id="changes">
+
+        <h2>15. Policy Updates</h2>
+
+        <p>
+          Stribble reserves the right to modify or update this Privacy Policy at any time.
+        </p>
+
+        <p>
+          Continued use of the platform after changes are published constitutes acceptance of the updated policy.
+        </p>
+
+      </section>
+
+      <section id="contact">
+
+        <h2>16. Contact Information</h2>
+
+        <p>
+          Platform Name:
+          <strong>Stribble</strong>
+        </p>
+
+        <p>
+          Support Email:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <p>
+          Business Address:
+        </p>
+
+        <p>
+          Palivela Village, Pujaripalem,<br>
+          Kotthapeta Mandal,<br>
+          Dr. B.R. Ambedkar Konaseema District,<br>
+          Andhra Pradesh, India - 533229
+        </p>
+
+        <div class="highlight">
+
+          In accordance with the Consumer Protection (E-Commerce) Rules, 2020:
+
+          <br><br>
+
+          Grievance Officer Name:
+          [Insert Grievance Officer Name]
+
+          <br><br>
+
+          Grievance Officer Email:
+          [Insert Grievance Officer Email]
+
+          <br><br>
+
+          Phone:
+          [Insert Phone Number]
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <footer class="footer">
+
+    <div class="footer-container">
+
+      <div>
+
+        <h4>Legal</h4>
+
+        <a href="/terms.html">Terms & Conditions</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/refund.html">Refund Policy</a>
+        <a href="/delivery-policy.html">Delivery Policy</a>
+
+      </div>
+
+      <div>
+
+        <h4>Platform</h4>
+
+        <a href="/">Home</a>
+        <a href="/about.html">About Us</a>
+        <a href="/contact.html">Contact</a>
+
+      </div>
+
+      <div>
+
+        <h4>Support</h4>
+
+        <p style="color:#94a3b8;">
+
+          Support Hours:
+          <br><br>
+
+          6:00 AM – 10:00 PM IST
+
+          <br><br>
+
+          Typical Response Time:
+          <br>
+
+          2–30 Minutes
+
+          <br><br>
+
+          Maximum Delay:
+          <br>
+
+          Up to 4 Days
+
+        </p>
+
+      </div>
+
     </div>
-</div>
+
+    <div class="footer-bottom">
+      &copy; 2026 Stribble. All rights reserved.
+    </div>
+
+  </footer>
 
 </body>
 </html>

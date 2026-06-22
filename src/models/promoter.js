@@ -1,6 +1,7 @@
 // src/models/promoter.js
 import mongoose from "mongoose";
 import crypto from "crypto";
+import { encrypt, decrypt } from "../utils/crypto.js";
 
 const promoterSchema = new mongoose.Schema({
   refId: { type: String, required: true, unique: true, index: true }, // The Coupon Code
@@ -8,8 +9,8 @@ const promoterSchema = new mongoose.Schema({
   email: { type: String, required: true },
   
   // Commission logic pulled from Admin Panel setup
-  promoterUpi: { type: String, required: true }, 
-  creatorUpi: { type: String, required: true }, 
+  promoterUpi: { type: String, required: true, set: encrypt, get: decrypt }, 
+  creatorUpi: { type: String, required: true, set: encrypt, get: decrypt }, 
   promoterCommission: { type: Number, default: 0 }, // Amount in Rupees per sale
   creatorCommission: { type: Number, default: 0 },  // Amount in Rupees per sale
 
@@ -19,6 +20,9 @@ const promoterSchema = new mongoose.Schema({
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+}, {
+  toJSON: { getters: true },
+  toObject: { getters: true },
 });
 
 promoterSchema.statics.generateRefId = function(prefix = "SAVE") {

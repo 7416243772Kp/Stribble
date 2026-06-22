@@ -14,12 +14,12 @@ window.showAuthError = function(message) {
 
     // Find active form to highlight its inputs
     const activeForm = [
-        document.getElementById('login-form'),
-        document.getElementById('signup-form'),
-        document.getElementById('otp-form'),
-        document.getElementById('forgot-form'),
-        document.getElementById('reset-form')
-    ].find(f => f && f.style.display !== 'none');
+           document.getElementById('login-form'),
+           document.getElementById('signup-form'),
+           document.getElementById('forgotPasswordContainer'),
+           document.getElementById('reset-form'),
+           document.getElementById('otp-form')
+       ].find(f => f && f.style.display !== 'none');
 
     if (activeForm) {
         activeForm.querySelectorAll('input').forEach(input => {
@@ -108,11 +108,6 @@ window.showAuthError = function(message) {
     }
 
     if (searchInput) searchInput.addEventListener("input", applySearch);
-
-    if (new URLSearchParams(window.location.search).get('openLogin') === '1') {
-        window.openLoginModal();
-        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    }
 
     async function loadCourses() {
         try {
@@ -420,16 +415,21 @@ window.showForgotForm = function() {
    // Hide all main forms
    document.getElementById('login-form').style.display = 'none';
    document.getElementById('signup-form').style.display = 'none';
-   document.getElementById('forgot-form').style.display = 'block';
+   document.getElementById('forgotPasswordContainer').style.display = 'block';
    
-   // Hide Footer specific elements if needed
+   // Hide common auth elements
+   if(document.getElementById('auth-separator')) document.getElementById('auth-separator').style.display = 'none';
+   if(document.getElementById('google-auth-btn')) document.getElementById('google-auth-btn').style.display = 'none';
+   if(document.getElementById('auth-footer')) document.getElementById('auth-footer').style.display = 'none';
+
+   // Update Title
    document.getElementById('auth-title').innerText = "Reset Password";
 }
 
 window.switchAuthMode = function(mode) {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
-    const forgotForm = document.getElementById('forgot-form');
+    const forgotForm = document.getElementById('forgotPasswordContainer');
     const resetForm = document.getElementById('reset-form');
     const otpForm = document.getElementById('otp-form');
     
@@ -448,12 +448,31 @@ window.switchAuthMode = function(mode) {
         if(title) title.innerText = "Log In";
         if(loginFooter) loginFooter.style.display = 'flex';
         if(signupFooter) signupFooter.style.display = 'none';
+        
+        // Show common auth elements
+        if(document.getElementById('auth-separator')) document.getElementById('auth-separator').style.display = 'flex';
+        if(document.getElementById('google-auth-btn')) document.getElementById('google-auth-btn').style.display = 'flex';
+        if(document.getElementById('auth-footer')) document.getElementById('auth-footer').style.display = 'block';
     } else if (mode === 'signup') {
         signupForm.style.display = 'block';
         if(title) title.innerText = "Create Account";
         if(loginFooter) loginFooter.style.display = 'none';
         if(signupFooter) signupFooter.style.display = 'block';
+        
+        // Show common auth elements
+        if(document.getElementById('auth-separator')) document.getElementById('auth-separator').style.display = 'flex';
+        if(document.getElementById('google-auth-btn')) document.getElementById('google-auth-btn').style.display = 'flex';
+        if(document.getElementById('auth-footer')) document.getElementById('auth-footer').style.display = 'block';
     }
+}
+
+const authParams = new URLSearchParams(window.location.search);
+const authError = authParams.get('authError');
+
+if (authParams.get('openLogin') === '1') {
+    window.openLoginModal();
+    if (authError) showAuthError(authError);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
 }
 
 // === FORM HANDLERS === //
@@ -462,7 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
-    const forgotForm = document.getElementById('forgot-form');
     const resetForm = document.getElementById('reset-form');
     
     let resetEmail = ""; // Store for reset flow
@@ -581,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // FORGOT PASSWORD HANDLERS
+    const forgotForm = document.getElementById('forgotPasswordForm');
     if (forgotForm) {
         forgotForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -602,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     resetEmail = email;
                     document.getElementById('reset-email-display').textContent = `Code sent to ${email}`;
-                    forgotForm.style.display = 'none';
+                    document.getElementById('forgotPasswordContainer').style.display = 'none';
                     resetForm.style.display = 'block';
                 } else {
                     showAuthError(data.message || "Failed to send code");

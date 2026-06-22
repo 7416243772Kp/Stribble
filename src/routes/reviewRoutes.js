@@ -10,14 +10,8 @@ const router = express.Router();
 // Middleware to check if user is logged in (using JWT token from cookie)
 const isAuthenticated = async (req, res, next) => {
 
-  
-  // First check for Passport session
-  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-
-    return next();
-  }
-  
-  // Fallback to JWT token from cookie
+  // Check the active JWT session. Passport sessions alone do not enforce the
+  // single-device lock.
   const token = req.cookies?.user_token;
 
   
@@ -28,7 +22,10 @@ const isAuthenticated = async (req, res, next) => {
       
       if (user) {
         // Check if this token matches the active session token
-        if (user.activeSessionToken === token) {
+        if (
+          user.activeSessionToken === User.hashSessionToken(token) &&
+          User.isDeviceLockMatch(user, req.cookies?.device_id)
+        ) {
           req.user = user;
 
           return next();

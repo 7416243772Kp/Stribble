@@ -7,8 +7,167 @@ import Review from '../models/Review.js'; // Import Review Model
 import bcrypt from 'bcrypt';
 import validator from 'validator';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 const router = express.Router();
+
+const USER_TOKEN_COOKIE = 'user_token';
+const DEVICE_ID_COOKIE = 'device_id';
+const USER_SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const DEVICE_ID_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+const DEVICE_LOCK_DAYS = 10;
+
+class DeviceLockError extends Error {
+    constructor(lockedUntil) {
+        const availableDate = new Intl.DateTimeFormat('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(lockedUntil);
+
+        super(`Account is locked to a different device. You cannot login here until ${availableDate}.`);
+        this.name = 'DeviceLockError';
+        this.lockedUntil = lockedUntil;
+    }
+}
+
+function authCookieOptions(maxAge) {
+    return {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge,
+    };
+}
+
+function clearAuthCookieOptions() {
+    return {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+    };
+}
+
+function getOrCreateDeviceId(req, res) {
+    const existingDeviceId = req.cookies?.[DEVICE_ID_COOKIE];
+
+    if (
+        typeof existingDeviceId === 'string' &&
+        existingDeviceId.length >= 16 &&
+        existingDeviceId.length <= 128
+    ) {
+        return existingDeviceId;
+    }
+
+    const deviceId = crypto.randomUUID();
+    res.cookie(DEVICE_ID_COOKIE, deviceId, authCookieOptions(DEVICE_ID_MAX_AGE_MS));
+    return deviceId;
+}
+
+function getDeviceName(req) {
+    return String(req.headers['user-agent'] || 'Unknown Device').slice(0, 255);
+}
+
+function applyDeviceLock(user, req, res) {
+    const currentDeviceId = getOrCreateDeviceId(req, res);
+    const currentDeviceHash = User.hashDeviceId(currentDeviceId);
+    const now = new Date();
+    const lockedUntil = user.deviceLock?.lockedUntil ? new Date(user.deviceLock.lockedUntil) : null;
+    const storedDeviceId = user.deviceLock?.deviceId;
+
+    if (lockedUntil && lockedUntil > now && storedDeviceId) {
+        if (storedDeviceId !== currentDeviceHash && storedDeviceId !== currentDeviceId) {
+            throw new DeviceLockError(lockedUntil);
+        }
+
+        if (storedDeviceId === currentDeviceId) {
+            user.deviceLock.deviceId = currentDeviceHash;
+        }
+
+        return;
+    }
+
+    user.deviceLock = {
+        deviceId: currentDeviceHash,
+        deviceName: getDeviceName(req),
+        lockedUntil: new Date(now.getTime() + DEVICE_LOCK_DAYS * 24 * 60 * 60 * 1000),
+    };
+}
+
+function setUserTokenCookie(res, sessionToken) {
+    res.cookie(USER_TOKEN_COOKIE, sessionToken, authCookieOptions(USER_SESSION_MAX_AGE_MS));
+}
+
+async function issueUserSession(user, req, res) {
+    applyDeviceLock(user, req, res);
+
+    const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    user.activeSessionToken = sessionToken;
+    await user.save();
+    setUserTokenCookie(res, sessionToken);
+
+    return sessionToken;
+}
+
+async function clearActiveSession(req) {
+    const token = req.cookies?.[USER_TOKEN_COOKIE];
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findById(decoded.id).select('activeSessionToken deviceLock');
+            if (
+                user &&
+                user.activeSessionToken === User.hashSessionToken(token) &&
+                User.isDeviceLockMatch(user, req.cookies?.[DEVICE_ID_COOKIE])
+            ) {
+                await User.updateOne(
+                    { _id: user._id, activeSessionToken: User.hashSessionToken(token) },
+                    { $unset: { activeSessionToken: 1 } }
+                );
+            }
+            return;
+        } catch (e) {}
+    }
+
+    if (req.user?._id) {
+        const user = await User.findById(req.user._id).select('deviceLock');
+        if (user && User.isDeviceLockMatch(user, req.cookies?.[DEVICE_ID_COOKIE])) {
+            await User.findByIdAndUpdate(req.user._id, { $unset: { activeSessionToken: 1 } });
+        }
+    }
+}
+
+async function findActiveSessionUser(req, populatePath) {
+    const token = req.cookies?.[USER_TOKEN_COOKIE];
+    if (!token) return null;
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        let query = User.findById(decoded.id);
+        if (populatePath) query = query.populate(populatePath);
+
+        const user = await query;
+        if (
+            !user ||
+            user.activeSessionToken !== User.hashSessionToken(token) ||
+            !User.isDeviceLockMatch(user, req.cookies?.[DEVICE_ID_COOKIE])
+        ) {
+            return null;
+        }
+
+        return user;
+    } catch (e) {
+        return null;
+    }
+}
+
+function handleDeviceLockError(res, err) {
+    return res.status(403).json({
+        success: false,
+        message: err.message,
+        lockedUntil: err.lockedUntil,
+    });
+}
 
 // Passport Config is now in src/config/passport.js
 
@@ -37,23 +196,18 @@ router.get('/google/callback', (req, res, next) => {
     })(req, res, next);
 }, async (req, res) => {
     try {
-        // Generate Session Token
-        const sessionToken = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        
-        // 🔒 SAVE TOKEN TO DB (Invalidates previous sessions)
-        req.user.activeSessionToken = sessionToken;
-        await req.user.save();
+        await issueUserSession(req.user, req, res);
 
-        // Send as HttpOnly Cookie
-        res.cookie('user_token', sessionToken, { 
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-        });
-        
         // Redirect to Home
         res.redirect('/'); 
     } catch (err) {
+        if (err instanceof DeviceLockError) {
+            res.clearCookie(USER_TOKEN_COOKIE, clearAuthCookieOptions());
+            return req.logout(() => {
+                res.redirect(`/?openLogin=1&authError=${encodeURIComponent(err.message)}`);
+            });
+        }
+
         console.error("Auth callback error:", err);
         res.redirect('/login');
     }
@@ -177,19 +331,14 @@ router.post('/verify-otp', async (req, res) => {
         // Clear OTP
         otpStore.delete(email);
 
-        // Auto-login
-        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        user.activeSessionToken = sessionToken;
-        await user.save();
-
-        res.cookie('user_token', sessionToken, { 
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-        });
+        await issueUserSession(user, req, res);
         res.json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
 
     } catch (err) {
+        if (err instanceof DeviceLockError) {
+            return handleDeviceLockError(res, err);
+        }
+
         console.error("OTP Verification Error:", err);
         res.status(500).json({ success: false, message: "Server error" });
     }
@@ -302,34 +451,40 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid credentials" });
         }
 
-        // Generate Token & Enforce Single Session
-        const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        
-        user.activeSessionToken = sessionToken;
-        await user.save();
-
-        res.cookie('user_token', sessionToken, { 
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-        });
+        await issueUserSession(user, req, res);
         res.json({ success: true, user: { id: user._id, name: user.name, email: user.email } });
 
     } catch (err) {
+        if (err instanceof DeviceLockError) {
+            return handleDeviceLockError(res, err);
+        }
+
         console.error("Login error:", err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
 // Logout
-router.post('/logout', (req, res) => { // Changed to POST for better security practice
-    res.clearCookie('user_token');
+router.post('/logout', async (req, res) => { // Changed to POST for better security practice
+    try {
+        await clearActiveSession(req);
+    } catch (e) {
+        console.error("Logout DB clear error:", e);
+    }
+
+    res.clearCookie(USER_TOKEN_COOKIE, clearAuthCookieOptions());
     req.logout(() => {
         res.json({ success: true, message: "Logged out" });
     });
 });
-router.get('/logout', (req, res) => { // Keep GET for legacy/link support
-    res.clearCookie('user_token');
+router.get('/logout', async (req, res) => { // Keep GET for legacy/link support
+    try {
+        await clearActiveSession(req);
+    } catch (e) {
+        console.error("Logout DB clear error:", e);
+    }
+
+    res.clearCookie(USER_TOKEN_COOKIE, clearAuthCookieOptions());
     req.logout(() => {
         res.redirect('/');
     });
@@ -339,24 +494,12 @@ import Order from '../models/order.js';
 
 // Get User Orders (History)
 router.get('/orders', async (req, res) => {
-    // 1. Get User ID (from Passport or Token)
-    let userId = req.user?._id;
-    if (!userId) {
-        const token = req.cookies.user_token;
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch (e) {}
-        }
-    }
-
-    if (!userId) return res.status(401).json({ success: false });
-
-    // 2. Fetch Orders
     try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(401).json({ success: false });
+        const user = await findActiveSessionUser(req);
+        if (!user) {
+            res.clearCookie(USER_TOKEN_COOKIE, clearAuthCookieOptions());
+            return res.status(401).json({ success: false });
+        }
 
         const orders = await Order.find({ buyerEmail: user.email, status: 'completed' })
             .sort({ createdAt: -1 })
@@ -372,32 +515,12 @@ router.get('/orders', async (req, res) => {
 
 // Get Current User (Helper for frontend)
 router.get('/me', async (req, res) => {
-    // Check for passport user or custom JWT middleware user
-    // Note: protectUser middleware should ideally be used here if not using passport session
-    // But since we use hybrid, we need to manually check if req.user is populated by passport
-    // OR we reuse the token verification logic if specific to this route.
-    
-    // Simplest way: Check if we have a user from Passport (session)
-    // If not, we might need to verify the JWT cookie manually if the middleware isn't applied globally.
-    // For now, let's assume this is protected or we double check the cookie.
-    
-    let userId = req.user?._id;
-
-    if (!userId) {
-        const token = req.cookies.user_token;
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch (e) {}
-        }
-    }
-
-    if (!userId) return res.status(401).json({ success: false });
-
     try {
-        const user = await User.findById(userId).populate('purchasedCourses');
-        if (!user) return res.status(401).json({ success: false });
+        const user = await findActiveSessionUser(req, 'purchasedCourses');
+        if (!user) {
+            res.clearCookie(USER_TOKEN_COOKIE, clearAuthCookieOptions());
+            return res.status(401).json({ success: false });
+        }
 
         // Fetch user reviews
         const reviews = await Review.find({ userId: user._id }).select('courseId');

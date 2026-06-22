@@ -1,138 +1,813 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery Policy - Stribble</title>
-    <style>
-        [data-custom-class='body'], [data-custom-class='body'] * {
-            background: transparent !important;
-        }
-        [data-custom-class='title'], [data-custom-class='title'] * {
-            font-family: Arial !important;
-            font-size: 26px !important;
-            color: #000000 !important;
-        }
-        [data-custom-class='subtitle'], [data-custom-class='subtitle'] * {
-            font-family: Arial !important;
-            color: #595959 !important;
-            font-size: 14px !important;
-        }
-        [data-custom-class='heading_1'], [data-custom-class='heading_1'] * {
-            font-family: Arial !important;
-            font-size: 19px !important;
-            color: #000000 !important;
-        }
-        [data-custom-class='heading_2'], [data-custom-class='heading_2'] * {
-            font-family: Arial !important;
-            font-size: 17px !important;
-            color: #000000 !important;
-        }
-        [data-custom-class='body_text'], [data-custom-class='body_text'] * {
-            color: #595959 !important;
-            font-size: 14px !important;
-            font-family: Arial !important;
-        }
-        [data-custom-class='link'], [data-custom-class='link'] * {
-            color: #3030F1 !important;
-            font-size: 14px !important;
-            font-family: Arial !important;
-            word-break: break-word !important;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        ul {
-            list-style-type: square;
-        }
-        a {
-            color: #3030F1;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="index, follow"/>
+  <title>Delivery Policy | Stribble</title>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      background:#f8fafc;
+      color:#1e293b;
+      line-height:1.8;
+    }
+
+    .hero{
+      background:linear-gradient(135deg,#0f172a,#1e293b);
+      color:white;
+      padding:60px 20px;
+    }
+
+    .hero-container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    .hero h1{
+      font-size:42px;
+      margin-bottom:15px;
+    }
+
+    .hero p{
+      max-width:850px;
+      color:#cbd5e1;
+      font-size:16px;
+    }
+
+    .last-updated{
+      margin-top:20px;
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    .wrapper{
+      max-width:1200px;
+      margin:40px auto;
+      padding:0 20px;
+      display:grid;
+      grid-template-columns:300px 1fr;
+      gap:30px;
+    }
+
+    .toc{
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:25px;
+      max-height:85vh;
+      overflow:auto;
+    }
+
+    .toc h3{
+      margin-bottom:18px;
+      color:#0f172a;
+      font-size:20px;
+    }
+
+    .toc a{
+      display:block;
+      text-decoration:none;
+      color:#475569;
+      margin-bottom:12px;
+      transition:0.2s;
+      font-size:15px;
+    }
+
+    .toc a:hover{
+      color:#2563eb;
+      transform:translateX(3px);
+    }
+
+    .content{
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:40px;
+    }
+
+    section{
+      margin-bottom:50px;
+    }
+
+    section h2{
+      font-size:30px;
+      margin-bottom:20px;
+      border-bottom:2px solid #e2e8f0;
+      padding-bottom:10px;
+      color:#0f172a;
+    }
+
+    section h3{
+      margin-top:25px;
+      margin-bottom:12px;
+      font-size:21px;
+      color:#1e293b;
+    }
+
+    p{
+      margin-bottom:16px;
+      color:#334155;
+    }
+
+    ul{
+      padding-left:20px;
+      margin-bottom:20px;
+    }
+
+    li{
+      margin-bottom:10px;
+      color:#334155;
+    }
+
+    .highlight{
+      background:#eff6ff;
+      border-left:4px solid #2563eb;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .warning{
+      background:#fff7ed;
+      border-left:4px solid #ea580c;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .danger{
+      background:#fee2e2;
+      border-left:4px solid #dc2626;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .notice{
+      background:#dcfce7;
+      border:1px solid #86efac;
+      color:#166534;
+      padding:18px;
+      border-radius:10px;
+      margin-bottom:35px;
+      font-weight:bold;
+    }
+
+    .footer{
+      background:#0f172a;
+      color:#cbd5e1;
+      padding:50px 20px;
+      margin-top:60px;
+    }
+
+    .footer-container{
+      max-width:1200px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:30px;
+    }
+
+    .footer h4{
+      color:white;
+      margin-bottom:15px;
+    }
+
+    .footer a{
+      display:block;
+      color:#94a3b8;
+      text-decoration:none;
+      margin-bottom:10px;
+    }
+
+    .footer a:hover{
+      color:white;
+    }
+
+    .footer-bottom{
+      text-align:center;
+      margin-top:40px;
+      padding-top:20px;
+      border-top:1px solid #334155;
+      color:#64748b;
+      font-size:14px;
+    }
+
+    @media(max-width:900px){
+
+      .wrapper{
+        grid-template-columns:1fr;
+      }
+
+      .toc{
+        position:relative;
+        top:0;
+        max-height:none;
+      }
+
+      .hero h1{
+        font-size:34px;
+      }
+
+      .content{
+        padding:25px;
+      }
+    }
+
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div data-custom-class="body">
-            <div style="text-align: left;">
-                <h1 data-custom-class="title">DELIVERY POLICY</h1>
-                <p data-custom-class="subtitle"><strong>Last updated</strong> <strong>February 07, 2026</strong></p>
 
-                <h2 data-custom-class="heading_1">INSTANT DIGITAL DELIVERY</h2>
-                <p data-custom-class="body_text">At Stribble, all our products are digital educational courses. Upon successful completion of your payment, you will receive <strong>instant access</strong> to your purchased course(s). There is no physical shipping involved, and no waiting period for delivery.</p>
+  <div class="hero">
 
-                <h2 data-custom-class="heading_1">HOW IT WORKS</h2>
-                <p data-custom-class="body_text">Once your payment is processed and confirmed:</p>
-                <ul>
-                    <li data-custom-class="body_text">Your purchased course will be immediately available in your account dashboard.</li>
-                    <li data-custom-class="body_text">You can access the course content directly through our secure, streaming-based viewer on the Stribble platform.</li>
-                    <li data-custom-class="body_text">Course access is available 24/7 from any device with an internet connection.</li>
-                    <li data-custom-class="body_text">There is no download required—all content is streamed securely within the website.</li>
-                </ul>
+    <div class="hero-container">
 
-                <h2 data-custom-class="heading_1">ACCESS DURATION</h2>
-                <p data-custom-class="body_text">All course purchases on Stribble include <strong>lifetime access</strong>. Once you purchase a course, you can revisit and review the content at any time, as many times as you need, without any additional fees or time restrictions.</p>
+      <h1>Delivery Policy</h1>
 
-                <h2 data-custom-class="heading_1">DELIVERY ISSUES</h2>
-                <p data-custom-class="body_text">If you experience any issues accessing your purchased course after payment confirmation, please contact our support team immediately at <a data-custom-class="link" href="mailto:support@stribble.site">support@stribble.site</a>. We respond to all support queries within 24–48 hours and will work promptly to resolve any access-related concerns.</p>
+      <p>
+        This Delivery Policy explains how digital educational content is delivered, 
+        accessed, managed, secured, and maintained on the Stribble platform after successful payment.
+      </p>
 
-                <h2 data-custom-class="heading_1">REFUND & RETURN POLICY</h2>
-                <p data-custom-class="body_text">We understand that sometimes a course may not meet your expectations. That's why we offer a comprehensive refund policy to ensure your satisfaction. Please review our complete Refund Policy for details on eligibility, process, and timelines:</p>
-                <p data-custom-class="body_text"><a data-custom-class="link" href="https://www.stribble.site/refund">https://www.stribble.site/refund</a></p>
+      <div class="last-updated">
+        Last Updated: [Insert Date]
+      </div>
 
-                <h2 data-custom-class="heading_1">CONTACT US</h2>
-                <p data-custom-class="body_text">If you have any questions about our Delivery Policy, please contact us at:</p>
-                <p data-custom-class="body_text">
-                    <strong>Stribble</strong><br>
-                    Door No: 9-73d, Pujaripalem<br>
-                    Kottapeta, Andhra Pradesh 533229<br>
-                    India<br>
-                    <strong>Phone:</strong> +91 7416243772<br>
-                    <strong>Email:</strong> <a data-custom-class="link" href="mailto:support@stribble.site">support@stribble.site</a>
-                </p>
-            </div>
-        </div>
     </div>
 
-    <!-- Footer -->
-    <div style="background: #1e293b; color: #cbd5e1; padding: 40px 20px; margin-top: 40px;">
-        <div style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px;">
-            <div>
-                <h4 style="color: white; margin-bottom: 15px;">Legal</h4>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/privacy" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a>
-                    <a href="/terms" style="color: #94a3b8; text-decoration: none;">Terms of Service</a>
-                    <a href="/refund" style="color: #94a3b8; text-decoration: none;">Refund Policy</a>
-                    <a href="/delivery-policy" style="color: #94a3b8; text-decoration: none;">Delivery Policy</a>
-                </div>
-            </div>
-            <div>
-                <h4 style="color: white; margin-bottom: 15px;">Platform</h4>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
-                    <a href="/about" style="color: #94a3b8; text-decoration: none;">About Us</a>
-                    <a href="/contact" style="color: #94a3b8; text-decoration: none;">Contact</a>
-                </div>
-            </div>
+  </div>
+
+  <div class="wrapper">
+
+    <aside class="toc">
+
+      <h3>Table of Contents</h3>
+
+      <a href="#overview">1. Delivery Overview</a>
+      <a href="#method">2. Delivery Method</a>
+      <a href="#access">3. Course Access</a>
+      <a href="#timing">4. Delivery Timing</a>
+      <a href="#dashboard">5. User Dashboard Access</a>
+      <a href="#streaming">6. Secure Streaming System</a>
+      <a href="#restrictions">7. Access Restrictions</a>
+      <a href="#multi-device">8. Multi-Device Access Policy</a>
+      <a href="#technical">9. Technical Requirements</a>
+      <a href="#security">10. Platform Security Protections</a>
+      <a href="#delays">11. Delivery Delays</a>
+      <a href="#support">12. Delivery Support</a>
+      <a href="#revocation">13. Access Revocation</a>
+      <a href="#limitations">14. Service Limitations</a>
+      <a href="#contact">15. Contact Information</a>
+
+    </aside>
+
+    <main class="content">
+
+      <div class="notice">
+        All products sold on Stribble are delivered digitally through a secure streaming-based educational access system. No physical shipping or downloadable PDF delivery is provided.
+      </div>
+
+      <section id="overview">
+
+        <h2>1. Delivery Overview</h2>
+
+        <p>
+          Stribble is a digital educational platform that provides secure access to educational courses after successful payment confirmation.
+        </p>
+
+        <p>
+          All course materials are delivered electronically through the Stribble platform itself and are accessible through the user account dashboard.
+        </p>
+
+        <p>
+          We do NOT provide:
+        </p>
+
+        <ul>
+          <li>Physical product shipping</li>
+          <li>Printed materials</li>
+          <li>Downloadable PDFs</li>
+          <li>Email downloadable attachments</li>
+          <li>USB/DVD deliveries</li>
+        </ul>
+
+      </section>
+
+      <section id="method">
+
+        <h2>2. Delivery Method</h2>
+
+        <p>
+          Courses are delivered exclusively through a secure streaming-based reading system integrated within the Stribble platform.
+        </p>
+
+        <p>
+          After successful payment:
+        </p>
+
+        <ul>
+          <li>The purchased course is linked to the user's account</li>
+          <li>The course becomes available inside the dashboard</li>
+          <li>The user may access the course through the "My Courses" section</li>
+        </ul>
+
+        <p>
+          Users must login using their registered account credentials to access purchased courses.
+        </p>
+
+      </section>
+
+      <section id="access">
+
+        <h2>3. Course Access Duration</h2>
+
+        <p>
+          Purchased courses are generally accessible for the lifetime of the platform unless:
+        </p>
+
+        <ul>
+          <li>The user violates platform policies</li>
+          <li>Refunds are processed</li>
+          <li>Accounts are suspended</li>
+          <li>Access is revoked for legal or security reasons</li>
+        </ul>
+
+        <div class="highlight">
+          "Lifetime access" means access remains available as long as the Stribble platform and related services continue operating.
         </div>
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155; color: #64748b; font-size: 14px;">
-            &copy; 2026 Stribble. All rights reserved.
+
+      </section>
+
+      <section id="timing">
+
+        <h2>4. Delivery Timing</h2>
+
+        <p>
+          Course access is generally granted instantly after successful payment confirmation.
+        </p>
+
+        <p>
+          In most situations:
+        </p>
+
+        <ul>
+          <li>Access is activated immediately</li>
+          <li>Users may start reading instantly</li>
+          <li>No manual approval is required</li>
+        </ul>
+
+        <p>
+          However, delays may occasionally occur due to:
+        </p>
+
+        <ul>
+          <li>Payment gateway verification</li>
+          <li>Bank settlement delays</li>
+          <li>Server maintenance</li>
+          <li>Fraud review systems</li>
+          <li>Unexpected technical issues</li>
+        </ul>
+
+      </section>
+
+      <section id="dashboard">
+
+        <h2>5. User Dashboard & My Courses Access</h2>
+
+        <p>
+          Users can access purchased courses through their dedicated dashboard section commonly referred to as:
+        </p>
+
+        <div class="highlight">
+          "My Courses"
         </div>
+
+        <p>
+          The dashboard may display:
+        </p>
+
+        <ul>
+          <li>Purchased courses</li>
+          <li>Reading progress</li>
+          <li>Course continuation status</li>
+          <li>Recent activity</li>
+        </ul>
+
+        <p>
+          Users are responsible for maintaining access to their registered email account and login credentials.
+        </p>
+
+      </section>
+
+      <section id="streaming">
+
+        <h2>6. Secure Streaming-Based Course System</h2>
+
+        <p>
+          Stribble uses a secure streaming-style educational access system instead of downloadable course distribution.
+        </p>
+
+        <p>
+          This system is designed to:
+        </p>
+
+        <ul>
+          <li>Protect educational content</li>
+          <li>Reduce piracy</li>
+          <li>Prevent unauthorized sharing</li>
+          <li>Maintain platform integrity</li>
+        </ul>
+
+        <p>
+          Users may fully view and read purchased courses but are not permitted to:
+        </p>
+
+        <ul>
+          <li>Download content</li>
+          <li>Copy platform materials</li>
+          <li>Redistribute content</li>
+          <li>Upload content elsewhere</li>
+          <li>Share protected materials publicly</li>
+        </ul>
+
+        <div class="warning">
+          Purchasing a course grants access rights only and does NOT transfer ownership or intellectual property rights to the user.
+        </div>
+
+      </section>
+
+      <section id="restrictions">
+
+        <h2>7. Access Restrictions & Platform Controls</h2>
+
+        <p>
+          To protect educational content and platform security, Stribble may implement restrictions including:
+        </p>
+
+        <ul>
+          <li>Right-click disabling</li>
+          <li>Text selection prevention</li>
+          <li>Inactive tab blur systems</li>
+          <li>Session-based restrictions</li>
+          <li>Email watermark visibility</li>
+          <li>Unauthorized access monitoring</li>
+        </ul>
+
+        <p>
+          Attempts to bypass these protections may result in:
+        </p>
+
+        <ul>
+          <li>Access suspension</li>
+          <li>Permanent bans</li>
+          <li>Refund denial</li>
+          <li>Legal action</li>
+        </ul>
+
+      </section>
+
+      <section id="multi-device">
+
+        <h2>8. Multi-Device Access Policy</h2>
+
+        <p>
+          Stribble generally allows only one active device or browser session at a time per account.
+        </p>
+
+        <p>
+          If another login attempt is detected:
+        </p>
+
+        <ul>
+          <li>The currently active session information may be displayed</li>
+          <li>Access from the new device may be blocked</li>
+          <li>The user may need to logout from the previously active device manually</li>
+        </ul>
+
+        <p>
+          Repeated unauthorized multi-device access attempts may trigger:
+        </p>
+
+        <ul>
+          <li>Temporary account restrictions</li>
+          <li>Security reviews</li>
+          <li>Suspicious activity investigation</li>
+          <li>Permanent suspension in severe cases</li>
+        </ul>
+
+      </section>
+
+      <section id="technical">
+
+        <h2>9. Technical Requirements</h2>
+
+        <p>
+          To access courses successfully, users generally require:
+        </p>
+
+        <ul>
+          <li>A stable internet connection</li>
+          <li>A supported browser</li>
+          <li>Valid account credentials</li>
+          <li>Access to their registered email address</li>
+        </ul>
+
+        <p>
+          Since courses are streamed digitally, internet access is required for viewing course content.
+        </p>
+
+        <div class="warning">
+          Offline access is currently not supported.
+        </div>
+
+      </section>
+
+      <section id="security">
+
+        <h2>10. Platform Security & Protection Systems</h2>
+
+        <p>
+          Stribble uses infrastructure protection systems to maintain platform stability and security.
+        </p>
+
+        <p>
+          Security systems may include:
+        </p>
+
+        <ul>
+          <li>DDoS protection</li>
+          <li>Rate limiting</li>
+          <li>Session validation</li>
+          <li>Request filtering</li>
+          <li>Access monitoring</li>
+          <li>Anti-abuse systems</li>
+        </ul>
+
+        <p>
+          These systems are intended to protect:
+        </p>
+
+        <ul>
+          <li>User accounts</li>
+          <li>Educational content</li>
+          <li>Payment systems</li>
+          <li>Platform availability</li>
+        </ul>
+
+      </section>
+
+      <section id="delays">
+
+        <h2>11. Delivery Delays & Interruptions</h2>
+
+        <p>
+          Although Stribble aims to provide uninterrupted access, delays or interruptions may occur because of:
+        </p>
+
+        <ul>
+          <li>Server maintenance</li>
+          <li>Internet outages</li>
+          <li>Payment gateway issues</li>
+          <li>Cloud infrastructure problems</li>
+          <li>Cybersecurity incidents</li>
+          <li>Unexpected technical failures</li>
+        </ul>
+
+        <p>
+          Stribble does not guarantee uninterrupted or error-free access at all times.
+        </p>
+
+        <div class="warning">
+          Temporary downtime for maintenance, security upgrades, or infrastructure protection may occur without prior notice.
+        </div>
+
+      </section>
+
+      <section id="support">
+
+        <h2>12. Delivery & Access Support</h2>
+
+        <p>
+          Users experiencing course access issues may contact platform support.
+        </p>
+
+        <p>
+          Support requests may include:
+        </p>
+
+        <ul>
+          <li>Missing course access</li>
+          <li>Payment-related access delays</li>
+          <li>Login issues</li>
+          <li>Dashboard problems</li>
+          <li>OTP delivery issues</li>
+        </ul>
+
+        <p>
+          Support channels currently include:
+        </p>
+
+        <ul>
+          <li>Email support</li>
+          <li>Ticket support system</li>
+        </ul>
+
+        <div class="highlight">
+          Support requests can be submitted 24/7. However, active support monitoring generally occurs between 6:00 AM and 10:00 PM IST.
+        </div>
+
+        <p>
+          Typical response times may range between:
+        </p>
+
+        <ul>
+          <li>2–30 minutes under normal conditions</li>
+          <li>Up to 4 days during high-demand periods or exceptional situations</li>
+        </ul>
+
+      </section>
+
+      <section id="revocation">
+
+        <h2>13. Access Revocation & Enforcement</h2>
+
+        <p>
+          Stribble reserves the right to revoke course access immediately in situations involving:
+        </p>
+
+        <ul>
+          <li>Refund completion</li>
+          <li>Account sharing</li>
+          <li>Fraudulent behavior</li>
+          <li>Piracy attempts</li>
+          <li>Terms & Conditions violations</li>
+          <li>Platform abuse</li>
+          <li>Legal violations</li>
+        </ul>
+
+        <div class="danger">
+          Serious violations involving piracy, unauthorized sharing, defamation, or malicious misuse may lead to legal proceedings and permanent blacklisting.
+        </div>
+
+      </section>
+
+      <section id="limitations">
+
+        <h2>14. Service Limitations & Disclaimer</h2>
+
+        <p>
+          Stribble does not guarantee:
+        </p>
+
+        <ul>
+          <li>Continuous uninterrupted access</li>
+          <li>Compatibility with all devices</li>
+          <li>Error-free performance at all times</li>
+          <li>Permanent availability of every platform feature</li>
+        </ul>
+
+        <p>
+          Platform functionality may evolve over time due to:
+        </p>
+
+        <ul>
+          <li>Security improvements</li>
+          <li>Technical upgrades</li>
+          <li>Infrastructure changes</li>
+          <li>Legal compliance requirements</li>
+        </ul>
+
+      </section>
+
+      <section id="contact">
+
+        <h2>15. Contact Information</h2>
+
+        <p>
+          Platform Name:
+          <strong>Stribble</strong>
+        </p>
+
+        <p>
+          Support Email:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <p>
+          Business Address:
+        </p>
+
+        <p>
+          Palivela Village, Pujaripalem,<br>
+          Kotthapeta Mandal,<br>
+          Dr. B.R. Ambedkar Konaseema District,<br>
+          Andhra Pradesh, India - 533229
+        </p>
+
+        <div class="highlight">
+
+          In accordance with the Consumer Protection (E-Commerce) Rules, 2020:
+
+          <br><br>
+
+          Grievance Officer Name:
+          [Insert Grievance Officer Name]
+
+          <br><br>
+
+          Grievance Officer Email:
+          [Insert Grievance Officer Email]
+
+          <br><br>
+
+          Phone:
+          [Insert Phone Number]
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <footer class="footer">
+
+    <div class="footer-container">
+
+      <div>
+
+        <h4>Legal</h4>
+
+        <a href="/terms.html">Terms & Conditions</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/refund.html">Refund Policy</a>
+        <a href="/delivery-policy.html">Delivery Policy</a>
+
+      </div>
+
+      <div>
+
+        <h4>Platform</h4>
+
+        <a href="/">Home</a>
+        <a href="/about.html">About Us</a>
+        <a href="/contact.html">Contact</a>
+
+      </div>
+
+      <div>
+
+        <h4>Support</h4>
+
+        <p style="color:#94a3b8;">
+
+          Support Hours:
+          <br><br>
+
+          6:00 AM – 10:00 PM IST
+
+          <br><br>
+
+          Typical Response Time:
+          <br>
+
+          2–30 Minutes
+
+          <br><br>
+
+          Maximum Delay:
+          <br>
+
+          Up to 4 Days
+
+        </p>
+
+      </div>
+
     </div>
+
+    <div class="footer-bottom">
+      &copy; 2026 Stribble. All rights reserved.
+    </div>
+
+  </footer>
+
 </body>
 </html>

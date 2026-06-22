@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
         { refId: { $regex: q, $options: "i" } },
       ];
     }
-    const promoters = await Promoter.find(filter).sort({ createdAt: -1 }).lean();
+    const promoters = await Promoter.find(filter).sort({ createdAt: -1 }).lean({ getters: true });
     res.json({ success: true, promoters });
   } catch (err) {
     console.error("Promoter list failed", err);

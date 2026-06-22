@@ -4,17 +4,20 @@ import crypto from "crypto";
 const ENC_PREFIX = "enc:";
 const IV_LENGTH = 12; // recommended for GCM
 
-if (!process.env.TOTP_ENCRYPTION_KEY) {
-  console.warn("Warning: TOTP_ENCRYPTION_KEY not set. TOTP secrets will NOT be encrypted.");
+if (!process.env.APP_ENCRYPTION_KEY) {
+  console.warn("Warning: APP_ENCRYPTION_KEY not set. Secrets will NOT be encrypted.");
 }
 
 function getKey() {
-  const pass = process.env.TOTP_ENCRYPTION_KEY || "";
+  const pass = process.env.APP_ENCRYPTION_KEY || "";
   return crypto.createHash("sha256").update(pass, "utf8").digest();
 }
 
 export function encrypt(plainText) {
-  if (!process.env.TOTP_ENCRYPTION_KEY) return plainText;
+  if (!plainText) return plainText;
+  if (!process.env.APP_ENCRYPTION_KEY) return plainText;
+  if (isEncrypted(plainText)) return plainText;
+
   const key = getKey();
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
@@ -26,7 +29,8 @@ export function encrypt(plainText) {
 
 export function decrypt(storedValue) {
   if (!storedValue) return storedValue;
-  if (!process.env.TOTP_ENCRYPTION_KEY) return storedValue;
+  if (!process.env.APP_ENCRYPTION_KEY) return storedValue;
+  if (typeof storedValue !== "string") return storedValue;
   if (!storedValue.startsWith(ENC_PREFIX)) return storedValue;
 
   const base64 = storedValue.slice(ENC_PREFIX.length);

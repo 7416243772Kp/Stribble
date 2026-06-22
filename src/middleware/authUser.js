@@ -22,7 +22,11 @@ const protectUser = async (req, res, next) => {
 
     // 🔒 CONCURRENCY CHECK:
     // Does the token in the cookie match the one in the database?
-    if (!user || user.activeSessionToken !== token) {
+    if (
+      !user ||
+      user.activeSessionToken !== User.hashSessionToken(token) ||
+      !User.isDeviceLockMatch(user, req.cookies?.device_id)
+    ) {
         // If not, it means someone else logged in on another device
         res.clearCookie('user_token');
         // If API, return 401

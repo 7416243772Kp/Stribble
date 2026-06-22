@@ -1,129 +1,736 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="index, follow"/>
   <title>Refund Policy | Stribble</title>
-  <link rel="stylesheet" href="/css/theme.css">
+
   <style>
-    .policy-container {
-      max-width: 800px;
-      margin: 60px auto;
-      padding: 40px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      line-height: 1.6;
-      color: #333;
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
     }
-    .policy-container h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-      color: var(--primary);
-      text-align: center;
+
+    html{
+      scroll-behavior:smooth;
     }
-    .policy-container h2 {
-      font-size: 1.25rem;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      color: #1a1a1a;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 10px;
+
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      background:#f8fafc;
+      color:#1e293b;
+      line-height:1.8;
     }
-    .policy-container p {
-      margin-bottom: 15px;
+
+    .hero{
+      background:linear-gradient(135deg,#0f172a,#1e293b);
+      color:white;
+      padding:60px 20px;
     }
-    .policy-container ul {
-      margin-bottom: 20px;
-      padding-left: 20px;
+
+    .hero-container{
+      max-width:1200px;
+      margin:auto;
     }
-    .policy-container li {
-      margin-bottom: 10px;
+
+    .hero h1{
+      font-size:42px;
+      margin-bottom:15px;
     }
-    .highlight-box {
-      background: #f8f9fa;
-      border-left: 4px solid var(--primary);
-      padding: 15px;
-      margin: 20px 0;
-      font-size: 0.95rem;
+
+    .hero p{
+      max-width:850px;
+      color:#cbd5e1;
+      font-size:16px;
     }
+
+    .last-updated{
+      margin-top:20px;
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    .wrapper{
+      max-width:1200px;
+      margin:40px auto;
+      padding:0 20px;
+      display:grid;
+      grid-template-columns:300px 1fr;
+      gap:30px;
+    }
+
+    .toc{
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:25px;
+      max-height:85vh;
+      overflow:auto;
+    }
+
+    .toc h3{
+      margin-bottom:18px;
+      color:#0f172a;
+      font-size:20px;
+    }
+
+    .toc a{
+      display:block;
+      text-decoration:none;
+      color:#475569;
+      margin-bottom:12px;
+      transition:0.2s;
+      font-size:15px;
+    }
+
+    .toc a:hover{
+      color:#2563eb;
+      transform:translateX(3px);
+    }
+
+    .content{
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:40px;
+    }
+
+    section{
+      margin-bottom:50px;
+    }
+
+    section h2{
+      font-size:30px;
+      margin-bottom:20px;
+      border-bottom:2px solid #e2e8f0;
+      padding-bottom:10px;
+      color:#0f172a;
+    }
+
+    section h3{
+      margin-top:25px;
+      margin-bottom:12px;
+      font-size:21px;
+      color:#1e293b;
+    }
+
+    p{
+      margin-bottom:16px;
+      color:#334155;
+    }
+
+    ul{
+      padding-left:20px;
+      margin-bottom:20px;
+    }
+
+    li{
+      margin-bottom:10px;
+      color:#334155;
+    }
+
+    .highlight{
+      background:#eff6ff;
+      border-left:4px solid #2563eb;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .warning{
+      background:#fff7ed;
+      border-left:4px solid #ea580c;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .danger{
+      background:#fee2e2;
+      border-left:4px solid #dc2626;
+      padding:18px;
+      border-radius:8px;
+      margin:20px 0;
+    }
+
+    .notice{
+      background:#dcfce7;
+      border:1px solid #86efac;
+      color:#166534;
+      padding:18px;
+      border-radius:10px;
+      margin-bottom:35px;
+      font-weight:bold;
+    }
+
+    .footer{
+      background:#0f172a;
+      color:#cbd5e1;
+      padding:50px 20px;
+      margin-top:60px;
+    }
+
+    .footer-container{
+      max-width:1200px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:30px;
+    }
+
+    .footer h4{
+      color:white;
+      margin-bottom:15px;
+    }
+
+    .footer a{
+      display:block;
+      color:#94a3b8;
+      text-decoration:none;
+      margin-bottom:10px;
+    }
+
+    .footer a:hover{
+      color:white;
+    }
+
+    .footer-bottom{
+      text-align:center;
+      margin-top:40px;
+      padding-top:20px;
+      border-top:1px solid #334155;
+      color:#64748b;
+      font-size:14px;
+    }
+
+    @media(max-width:900px){
+
+      .wrapper{
+        grid-template-columns:1fr;
+      }
+
+      .toc{
+        position:relative;
+        top:0;
+        max-height:none;
+      }
+
+      .hero h1{
+        font-size:34px;
+      }
+
+      .content{
+        padding:25px;
+      }
+    }
+
   </style>
 </head>
 <body>
 
-  <nav class="navbar">
-    <div class="logo">Stribble</div>
-  </nav>
+  <div class="hero">
 
-  <div class="policy-container">
-    <h1>Refund & Cancellation Policy</h1>
-    <p style="text-align:center; color:#666; margin-bottom:40px;">Last Updated: 6 February 2026</p>
+    <div class="hero-container">
 
-    <p>At <strong>Stribble</strong>, we are committed to providing high-quality educational content. We want you to feel comfortable and confident when enrolling in our courses. That is why we offer a comprehensive <strong>7-Day Money-Back Guarantee</strong>.</p>
+      <h1>Refund Policy</h1>
 
-    <h2>1. The 7-Day Guarantee</h2>
-    <p>If you are not satisfied with a course you purchased, you may request a full refund within <strong>7 days</strong> of the purchase date. No complex questions asked—if the content didn't provide the value you expected, we will refund your money.</p>
+      <p>
+        This Refund Policy explains the conditions, eligibility requirements, timelines, 
+        processing methods, restrictions, and refund-related procedures applicable to 
+        purchases made on the Stribble platform.
+      </p>
 
-    <h2>2. Eligibility Conditions</h2>
-    <p>To be eligible for a refund, the following conditions must be met:</p>
-    <ul>
-      <li>The request must be submitted within 7 days of the original purchase date.</li>
-      <li>The purchase must have been made directly through the Stribble website.</li>
-      <li>You must not have violated our Terms of Service (e.g., attempting to share accounts or scrape content).</li>
-    </ul>
+      <div class="last-updated">
+        Last Updated: [Insert Date]
+      </div>
 
-    <div class="highlight-box">
-      <strong>Please Note:</strong> Upon processing your refund, your access to the course content will be <strong>immediately revoked</strong>. You will no longer be able to view or stream the course materials in your dashboard.
     </div>
 
-    <h2>3. How to Request a Refund</h2>
-    <p>To initiate a refund, please contact our support team with your <strong>Email ID</strong> which used for purchase.</p>
-
-    <ul>
-      <li><strong>Email:</strong> support@stribble.site</li>
-      <li><strong>Subject Line:</strong> Refund Request - [Your Email ID]</li>
-    </ul>
-    <p>Our team will review your request and process it within 24-48 hours.</p>
-
-    <h2>4. Refund Processing Timeline</h2>
-    <p>Once your refund is approved/processed by our team:</p>
-    <ul>
-      <li>The funds will be reversed to your original payment method (Credit Card, Debit Card, UPI, etc.).</li>
-      <li>It typically takes <strong>5-7 business days</strong> for the amount to reflect in your bank account, depending on your bank's processing speed.</li>
-    </ul>
-
-    <h2>5. Duplicate Payments</h2>
-    <p>If you were charged twice for the same transaction due to a technical error, the duplicate transaction will be refunded immediately upon verification. Please contact us immediately if you notice a double charge.</p>
-
-    <h2>6. Contact Us</h2>
-    <p>If you have any questions about this policy, please contact us at <a href="mailto:support@stribble.site">support@stribble.site</a>.</p>
   </div>
 
-  <!-- Footer -->
-  <div style="background: #1e293b; color: #cbd5e1; padding: 40px 20px; margin-top: 40px;">
-      <div style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px;">
-          <div>
-              <h4 style="color: white; margin-bottom: 15px;">Legal</h4>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <a href="/privacy" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a>
-                  <a href="/terms" style="color: #94a3b8; text-decoration: none;">Terms of Service</a>
-                  <a href="/refund" style="color: #94a3b8; text-decoration: none;">Refund Policy</a>
-                  <a href="/delivery-policy" style="color: #94a3b8; text-decoration: none;">Delivery Policy</a>
-              </div>
-          </div>
-          <div>
-              <h4 style="color: white; margin-bottom: 15px;">Platform</h4>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
-                  <a href="/about" style="color: #94a3b8; text-decoration: none;">About Us</a>
-                  <a href="/contact" style="color: #94a3b8; text-decoration: none;">Contact</a>
-              </div>
-          </div>
+  <div class="wrapper">
+
+    <aside class="toc">
+
+      <h3>Table of Contents</h3>
+
+      <a href="#overview">1. Refund Policy Overview</a>
+      <a href="#eligibility">2. Refund Eligibility</a>
+      <a href="#window">3. Refund Time Window</a>
+      <a href="#process">4. Refund Process</a>
+      <a href="#access">5. Course Access During Refund</a>
+      <a href="#revocation">6. Access Revocation After Refund</a>
+      <a href="#duplicate">7. Duplicate Payments</a>
+      <a href="#abuse">8. Refund Abuse & Fraud</a>
+      <a href="#processing">9. Refund Processing Time</a>
+      <a href="#method">10. Refund Payment Method</a>
+      <a href="#fees">11. Transaction Fees</a>
+      <a href="#technical">12. Technical Issues</a>
+      <a href="#chargebacks">13. Chargebacks & Disputes</a>
+      <a href="#exceptions">14. Exceptions & Limitations</a>
+      <a href="#contact">15. Contact Information</a>
+
+    </aside>
+
+    <main class="content">
+
+      <div class="notice">
+        Stribble currently offers FULL REFUNDS within 7 days of purchase subject to the conditions outlined in this policy.
       </div>
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155; color: #64748b; font-size: 14px;">
-          &copy; 2026 Stribble. All rights reserved.
-      </div>
+
+      <section id="overview">
+
+        <h2>1. Refund Policy Overview</h2>
+
+        <p>
+          At Stribble, we strive to maintain a fair and transparent refund process for all users.
+        </p>
+
+        <p>
+          Since our platform provides secure streaming-based educational access instead of downloadable products, eligible users may request refunds within the permitted refund period.
+        </p>
+
+        <p>
+          Refunds are governed by:
+        </p>
+
+        <ul>
+          <li>The platform Terms & Conditions</li>
+          <li>Applicable Indian laws</li>
+          <li>Payment gateway regulations</li>
+          <li>Fraud prevention requirements</li>
+        </ul>
+
+      </section>
+
+      <section id="eligibility">
+
+        <h2>2. Refund Eligibility</h2>
+
+        <p>
+          Users are eligible for a full refund if:
+        </p>
+
+        <ul>
+          <li>The refund request is submitted within 7 days from purchase</li>
+          <li>The transaction is valid and verified</li>
+          <li>The request does not violate platform policies</li>
+        </ul>
+
+        <p>
+          Refund requests are generally accepted without requiring detailed explanations during the eligible refund period.
+        </p>
+
+        <div class="highlight">
+          Stribble currently provides full refunds within the approved refund period because courses are streamed securely and are not downloadable.
+        </div>
+
+      </section>
+
+      <section id="window">
+
+        <h2>3. Refund Time Window</h2>
+
+        <p>
+          Refund requests must be submitted within:
+        </p>
+
+        <div class="highlight">
+          7 Days from the original purchase date.
+        </div>
+
+        <p>
+          Refund requests submitted after the 7-day refund window may not be eligible.
+        </p>
+
+        <p>
+          The refund period begins from the exact date and time the successful payment is completed.
+        </p>
+
+      </section>
+
+      <section id="process">
+
+        <h2>4. Refund Request Process</h2>
+
+        <p>
+          To request a refund, users may:
+        </p>
+
+        <ul>
+          <li>Contact platform support via email</li>
+          <li>Submit a support ticket through the platform</li>
+        </ul>
+
+        <p>
+          Refund requests should include:
+        </p>
+
+        <ul>
+          <li>Registered email address</li>
+          <li>Purchase details</li>
+          <li>Order ID if available</li>
+        </ul>
+
+        <p>
+          Stribble may review account activity and transaction records before approving refunds.
+        </p>
+
+      </section>
+
+      <section id="access">
+
+        <h2>5. Course Access During Refund Review</h2>
+
+        <p>
+          Users may continue accessing their purchased courses while the refund request is under review.
+        </p>
+
+        <p>
+          However, access may be temporarily restricted if:
+        </p>
+
+        <ul>
+          <li>Suspicious activity is detected</li>
+          <li>Fraud investigation is initiated</li>
+          <li>Refund abuse is suspected</li>
+          <li>Account sharing violations occur</li>
+        </ul>
+
+      </section>
+
+      <section id="revocation">
+
+        <h2>6. Course Access Revocation After Refund</h2>
+
+        <p>
+          Once a refund is approved and successfully processed:
+        </p>
+
+        <ul>
+          <li>Course access will be permanently revoked</li>
+          <li>Reading progress may be removed</li>
+          <li>Platform access to refunded content may be terminated</li>
+        </ul>
+
+        <p>
+          Refunded users no longer retain rights to continue accessing the refunded educational content.
+        </p>
+
+      </section>
+
+      <section id="duplicate">
+
+        <h2>7. Duplicate Payments & Accidental Transactions</h2>
+
+        <p>
+          If duplicate payments occur due to technical errors or accidental repeated transactions, Stribble may provide refunds even beyond the normal 7-day refund window after verification.
+        </p>
+
+        <p>
+          Verification may include:
+        </p>
+
+        <ul>
+          <li>Payment gateway logs</li>
+          <li>Order records</li>
+          <li>Transaction timestamps</li>
+          <li>Account purchase history</li>
+        </ul>
+
+      </section>
+
+      <section id="abuse">
+
+        <h2>8. Refund Abuse, Fraud & Blacklisting</h2>
+
+        <p>
+          Stribble reserves the right to investigate suspicious refund activity.
+        </p>
+
+        <p>
+          Examples of suspicious activity may include:
+        </p>
+
+        <ul>
+          <li>Repeated purchase-and-refund patterns</li>
+          <li>Fraudulent payment behavior</li>
+          <li>Account sharing during refund periods</li>
+          <li>Content leakage or piracy</li>
+          <li>Abuse of platform systems</li>
+        </ul>
+
+        <div class="danger">
+          Accounts suspected of refund abuse may be temporarily blacklisted, restricted, permanently suspended, or denied future refunds.
+        </div>
+
+        <p>
+          During investigation periods:
+        </p>
+
+        <ul>
+          <li>Course access may be restricted</li>
+          <li>Refund processing may be delayed</li>
+          <li>Additional verification may be requested</li>
+        </ul>
+
+      </section>
+
+      <section id="processing">
+
+        <h2>9. Refund Processing Time</h2>
+
+        <p>
+          After a refund is approved, the processing time depends on:
+        </p>
+
+        <ul>
+          <li>Bank processing systems</li>
+          <li>Payment gateway settlement timelines</li>
+          <li>National holidays</li>
+          <li>UPI/banking infrastructure</li>
+        </ul>
+
+        <p>
+          Estimated refund processing timelines:
+        </p>
+
+        <div class="highlight">
+          Typically 3–7 business days, excluding bank holidays.
+        </div>
+
+        <p>
+          Some financial institutions may require additional time.
+        </p>
+
+      </section>
+
+      <section id="method">
+
+        <h2>10. Refund Payment Method</h2>
+
+        <p>
+          Refunds are generally processed back to the original payment source used during purchase.
+        </p>
+
+        <p>
+          Examples:
+        </p>
+
+        <ul>
+          <li>UPI payments → refunded to same UPI account</li>
+          <li>Credit/Debit cards → refunded to same card</li>
+          <li>Wallet payments → refunded to same wallet provider</li>
+        </ul>
+
+        <p>
+          Stribble does not guarantee alternate refund methods unless required by law or payment gateway restrictions.
+        </p>
+
+      </section>
+
+      <section id="fees">
+
+        <h2>11. Transaction Fees & Charges</h2>
+
+        <p>
+          Stribble currently bears applicable refund-related transaction charges where required.
+        </p>
+
+        <p>
+          Eligible users generally receive the complete approved refund amount unless otherwise required by payment gateway rules or applicable laws.
+        </p>
+
+      </section>
+
+      <section id="technical">
+
+        <h2>12. Technical Issues & Platform Errors</h2>
+
+        <p>
+          Refunds may also be considered for genuine technical issues including:
+        </p>
+
+        <ul>
+          <li>Failed access after successful payment</li>
+          <li>Duplicate transaction errors</li>
+          <li>Payment confirmation failures</li>
+          <li>Severe platform-side delivery problems</li>
+        </ul>
+
+        <p>
+          Users are encouraged to contact support before initiating payment disputes with banks or payment providers.
+        </p>
+
+      </section>
+
+      <section id="chargebacks">
+
+        <h2>13. Chargebacks & Payment Disputes</h2>
+
+        <p>
+          Users may raise legitimate payment disputes through official banking or payment channels where necessary.
+        </p>
+
+        <p>
+          However, fraudulent or abusive chargebacks may result in:
+        </p>
+
+        <ul>
+          <li>Permanent account suspension</li>
+          <li>Restriction from future purchases</li>
+          <li>Investigation for fraud or abuse</li>
+          <li>Legal action where applicable</li>
+        </ul>
+
+        <p>
+          Stribble reserves the right to present transaction logs, access records, platform activity, and usage data during dispute investigations.
+        </p>
+
+      </section>
+
+      <section id="exceptions">
+
+        <h2>14. Exceptions & Limitations</h2>
+
+        <p>
+          Refunds may be denied in situations including but not limited to:
+        </p>
+
+        <ul>
+          <li>Refund request after the 7-day window</li>
+          <li>Fraudulent activity</li>
+          <li>Account sharing violations</li>
+          <li>Piracy or content leakage</li>
+          <li>Abuse of refund systems</li>
+          <li>Violation of Terms & Conditions</li>
+        </ul>
+
+        <div class="warning">
+          Stribble reserves the right to investigate any suspicious behavior before processing refunds.
+        </div>
+
+      </section>
+
+      <section id="contact">
+
+        <h2>15. Contact Information</h2>
+
+        <p>
+          Platform Name:
+          <strong>Stribble</strong>
+        </p>
+
+        <p>
+          Support Email:
+          <strong>support@stribble.site</strong>
+        </p>
+
+        <p>
+          Business Address:
+        </p>
+
+        <p>
+          Palivela Village, Pujaripalem,<br>
+          Kotthapeta Mandal,<br>
+          Dr. B.R. Ambedkar Konaseema District,<br>
+          Andhra Pradesh, India - 533229
+        </p>
+
+        <div class="highlight">
+
+          In accordance with the Consumer Protection (E-Commerce) Rules, 2020:
+
+          <br><br>
+
+          Grievance Officer Name:
+          [Insert Grievance Officer Name]
+
+          <br><br>
+
+          Grievance Officer Email:
+          [Insert Grievance Officer Email]
+
+          <br><br>
+
+          Phone:
+          [Insert Phone Number]
+
+        </div>
+
+      </section>
+
+    </main>
+
   </div>
+
+  <footer class="footer">
+
+    <div class="footer-container">
+
+      <div>
+
+        <h4>Legal</h4>
+
+        <a href="/terms.html">Terms & Conditions</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/refund.html">Refund Policy</a>
+        <a href="/delivery-policy.html">Delivery Policy</a>
+
+      </div>
+
+      <div>
+
+        <h4>Platform</h4>
+
+        <a href="/">Home</a>
+        <a href="/about.html">About Us</a>
+        <a href="/contact.html">Contact</a>
+
+      </div>
+
+      <div>
+
+        <h4>Support</h4>
+
+        <p style="color:#94a3b8;">
+
+          Support Hours:
+          <br><br>
+
+          6:00 AM – 10:00 PM IST
+
+          <br><br>
+
+          Typical Response Time:
+          <br>
+
+          2–30 Minutes
+
+          <br><br>
+
+          Maximum Delay:
+          <br>
+
+          Up to 4 Days
+
+        </p>
+
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      &copy; 2026 Stribble. All rights reserved.
+    </div>
+
+  </footer>
 
 </body>
 </html>

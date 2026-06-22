@@ -540,6 +540,34 @@
       &copy; <span id="year"></span> Stribble. All rights reserved.
     </div>
   </footer>
+  <div id="payment-success-screen" class="success-screen hidden">
+    <div class="success-card">
+      <div class="success-icon-wrapper">
+        <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h2 class="success-title">Payment Successful!</h2>
+      <p class="success-message">Thank you for your purchase. Your course is now unlocked and ready for you to start learning.</p>
+      
+      <div class="success-details">
+        <div class="detail-row">
+          <span>Order ID</span>
+          <strong id="success-order-id">#ORD-12345</strong>
+        </div>
+        <div class="detail-row">
+          <span>Status</span>
+          <strong style="color: #10b981;">Verified</strong>
+        </div>
+      </div>
+
+      <div class="success-actions">
+        <button id="btn-access-course" class="btn btn--primary btn--block">Access Course Now</button>
+        <a href="/my-courses" class="btn btn--ghost btn--block mt-10">Go to Dashboard</a>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

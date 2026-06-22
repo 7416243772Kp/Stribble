@@ -1,6 +1,6 @@
 // C:\Ebook\server.js
 // = Environment & Core Imports =
-import 'dotenv/config'; // This MUST be the very first line
+import 'dotenv/config';
 
 import express from "express";
 import mongoose from "mongoose";
@@ -57,7 +57,6 @@ import reviewRoutes from "./src/routes/reviewRoutes.js"; // Added this line
 import helmet from "helmet";
 // ==== Utilities ====
 import contactRoutes from "./src/routes/contactroutes.js";
-// Email utils removed
 
 // ==== Path Setup ====
 const __filename = fileURLToPath(import.meta.url);
@@ -436,9 +435,13 @@ async function requireUserPage(req, res, next) {
     if (!token) return res.redirect('/?openLogin=1');
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('activeSessionToken');
+    const user = await User.findById(decoded.id).select('activeSessionToken deviceLock');
 
-    if (!user || user.activeSessionToken !== token) {
+    if (
+      !user ||
+      user.activeSessionToken !== User.hashSessionToken(token) ||
+      !User.isDeviceLockMatch(user, req.cookies?.device_id)
+    ) {
       res.clearCookie('user_token');
       return res.redirect('/?openLogin=1');
     }
