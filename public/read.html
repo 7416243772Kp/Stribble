@@ -191,14 +191,31 @@
 
 
 
-        /* ==================== ANNOTATION LAYER (clickable links) ==================== */
-        .annotationLayer a {
-            cursor: pointer !important;
+        /* ==================== PDF CLICKABLE LINKS ==================== */
+
+        #annotation-layer {
+            position: absolute !important;
+            inset: 0 !important;
+            z-index: 1000 !important;
+            pointer-events: auto !important;
         }
 
-        .annotationLayer a:hover {
+        #annotation-layer a {
+            position: absolute;
+            display: block;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            z-index: 1001;
+            background: transparent;
+            border: none;
+            outline: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #annotation-layer a:hover {
             background: rgba(99, 102, 241, 0.08);
-            border-radius: 2px;
+            border-radius: 4px;
         }
 
         /* Watermark Overlay — on top of everything but pointer-events: none */
@@ -1798,11 +1815,16 @@
 
                         if (url) {
                             const link = document.createElement('a');
+
                             link.href = url;
                             link.target = '_blank';
                             link.rel = 'noopener noreferrer';
 
+                            // Prevent drag/selecting the link itself
+                            link.draggable = false;
+
                             const [llx, lly, urx, ury] = anno.rect;
+
                             const pt1 = viewport.convertToViewportPoint(llx, lly);
                             const pt2 = viewport.convertToViewportPoint(urx, ury);
 
@@ -1811,20 +1833,41 @@
                             const minY = Math.min(pt1[1], pt2[1]);
                             const maxY = Math.max(pt1[1], pt2[1]);
 
-                            // Convert explicit pixels into percentages for perfect responsiveness
                             const pctLeft = (minX / viewport.width) * 100;
                             const pctTop = (minY / viewport.height) * 100;
                             const pctWidth = ((maxX - minX) / viewport.width) * 100;
                             const pctHeight = ((maxY - minY) / viewport.height) * 100;
 
-                            link.style.position = 'absolute';
-                            link.style.display = 'block';
-                            link.style.left = pctLeft + '%';
-                            link.style.top = pctTop + '%';
-                            link.style.width = pctWidth + '%';
-                            link.style.height = pctHeight + '%';
-                            link.style.cursor = 'pointer';
+                            Object.assign(link.style, {
+                                position: 'absolute',
+                                display: 'block',
+                                left: `${pctLeft}%`,
+                                top: `${pctTop}%`,
+                                width: `${pctWidth}%`,
+                                height: `${pctHeight}%`,
+                                cursor: 'pointer',
+                                pointerEvents: 'auto',
+                                zIndex: '1001',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none'
+                            });
 
+                            // Allow the link to work while keeping copy protection active.
+                            link.addEventListener('click', (event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                window.open(
+                                    url,
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                );
+                            });
+
+                            // Don't let drag events interfere with the PDF security controls.
+                            link.addEventListener('dragstart', (event) => {
+                                event.preventDefault();
+                            });
 
                             annotationLayerDiv.appendChild(link);
                         }
