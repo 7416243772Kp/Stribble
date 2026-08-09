@@ -24,6 +24,7 @@
   const newPasswordInput = document.getElementById("new-password");
   const confirmPasswordInput = document.getElementById("confirm-password");
   const resetPasswordBtn = document.getElementById("reset-password-btn");
+  const resetPasswordForm = document.getElementById("resetPasswordForm");
   const resendOtpBtn = document.getElementById("resend-otp-btn");
   const closeReset = document.getElementById("close-reset");
   const timerCountdown = document.getElementById("timer-countdown");
@@ -322,11 +323,20 @@
 
       if (res.ok && data.success) {
         toast("success", "OTP sent to admin email");
-        // Open reset overlay
+
+        // Make sure the reset modal actually exists
+        if (!resetOverlay) {
+          console.error("Password reset overlay is missing from admin.html");
+          showError("Password reset interface is unavailable. Please refresh the page.");
+          return;
+        }
+
         openResetOverlay();
-        // Hide the Login Form Container (but keep login-overlay visible behind reset-overlay if needed)
-        if (loginContainer) loginContainer.style.display = "none";
-        
+
+        if (loginContainer) {
+          loginContainer.style.display = "none";
+        }
+
         startOtpTimer(600);
       } else {
         showError(data.message || "Failed to send OTP");
@@ -365,7 +375,8 @@
   });
 
   // 5. Reset Password Submit
-  resetPasswordBtn?.addEventListener("click", async () => {
+  resetPasswordForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
     // Collect OTP (split or single)
     let code = "";
     const split = [];

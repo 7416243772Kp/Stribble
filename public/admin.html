@@ -26,11 +26,11 @@
         <form id="adminLoginForm" autocomplete="on" novalidate>
           <div class="field">
             <label for="adminEmail">Email Address</label>
-            <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required />
+            <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required autocomplete="username" />
           </div>
           <div class="field">
             <label for="adminPassword">Password</label>
-            <input type="password" id="adminPassword" name="adminPassword" placeholder="Enter your password" required />
+            <input type="password" id="adminPassword" name="adminPassword" placeholder="Enter your password" required autocomplete="current-password" />
           </div>
            <button type="submit" class="btn btn--primary btn--block" style="margin-top: 20px;">Sign In</button>
            <div style="text-align:center;margin-top:16px">
@@ -82,10 +82,186 @@
         </div>
       </div>
       <div id="login-error" class="login-error hidden" role="alert" aria-live="assertive"></div>
-    </div>
-  </div>
+   </div>
+   </div>
 
-  <div id="edit-course-overlay" class="login-overlay hidden" aria-hidden="true">
+   <!-- ============================= -->
+   <!-- ADMIN PASSWORD RESET OVERLAY -->
+   <!-- ============================= -->
+   <div id="reset-overlay"
+        class="reset-overlay hidden"
+        aria-hidden="true">
+
+       <div class="reset-box"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-password-title">
+
+           <button type="button"
+                   id="close-reset"
+                   class="close-btn"
+                   aria-label="Close password reset">
+               &times;
+           </button>
+
+           <h3 id="reset-password-title"
+               class="admin-auth-title"
+               style="text-align:center; margin-bottom:10px;">
+
+               <span class="admin-auth-icon" aria-hidden="true">
+                   <svg viewBox="0 0 24 24" fill="none">
+                       <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                       <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                   </svg>
+               </span>
+
+               <span>Reset Password</span>
+           </h3>
+
+           <p style="text-align:center;
+                     color:var(--muted);
+                     font-size:14px;
+                     margin-bottom:20px;">
+               Enter the 6-digit code sent to your admin email.
+           </p>
+
+           <form id="resetPasswordForm" novalidate>
+
+               <!-- OTP -->
+               <div class="field">
+
+                   <label>Verification Code</label>
+
+                   <div class="otp-input-group"
+                        role="group"
+                        aria-label="Password reset OTP">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              autocomplete="one-time-code"
+                              id="otp-1">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              id="otp-2">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              id="otp-3">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              id="otp-4">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              id="otp-5">
+
+                       <input type="text"
+                              class="otp-input-single"
+                              maxlength="1"
+                              inputmode="numeric"
+                              id="otp-6">
+
+                   </div>
+
+                   <!-- Fallback OTP input -->
+                   <input type="hidden"
+                          id="reset-otp"
+                          value="">
+
+               </div>
+
+
+               <!-- NEW PASSWORD -->
+               <div class="field">
+
+                   <label for="new-password">
+                       New Password
+                   </label>
+
+                   <input type="password"
+                          id="new-password"
+                          name="newPassword"
+                          placeholder="Enter new password"
+                          minlength="8"
+                          autocomplete="new-password"
+                          required>
+
+               </div>
+
+
+               <!-- CONFIRM PASSWORD -->
+               <div class="field">
+
+                   <label for="confirm-password">
+                       Confirm New Password
+                   </label>
+
+                   <input type="password"
+                          id="confirm-password"
+                          name="confirmPassword"
+                          placeholder="Confirm new password"
+                          minlength="8"
+                          autocomplete="new-password"
+                          required>
+
+               </div>
+
+
+               <!-- TIMER -->
+               <div style="text-align:center;
+                           color:var(--muted);
+                           font-size:13px;
+                           margin:12px 0;">
+
+                   Code expires in
+                   <strong id="timer-countdown">10:00</strong>
+
+               </div>
+
+
+               <!-- RESET BUTTON -->
+               <button type="submit"
+                       id="reset-password-btn"
+                       class="btn btn--primary btn--block">
+
+                   Set New Password
+
+               </button>
+
+
+               <!-- RESEND -->
+               <div style="text-align:center;
+                           margin-top:14px;">
+
+                   <button type="button"
+                           id="resend-otp-btn"
+                           class="btn btn--ghost"
+                           style="font-size:13px;">
+
+                       Resend Code
+
+                   </button>
+
+               </div>
+
+           </form>
+
+       </div>
+   </div>
+
+   <div id="edit-course-overlay" class="login-overlay hidden" aria-hidden="true">
     <div class="login-box admin-modal-dialog" role="dialog" aria-modal="true">
       <h3 class="admin-auth-title" style="margin-bottom: 20px; text-align: center;">
         <span class="admin-auth-icon" aria-hidden="true">
@@ -565,47 +741,8 @@
              <button id="btn-admin-resolve-ticket" class="btn" style="flex: 1; background-color: #10b981; color: white;">Mark as Resolved</button>
           </div>
       </div>
-    </div>
+</div>
   </div> 
-
-  <div id="reset-overlay" class="login-overlay hidden" aria-hidden="true">
-    <div class="login-box" role="dialog" aria-modal="true">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 class="admin-auth-title" style="margin:0;"><span class="admin-auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span><span>Reset Password</span></h3>
-        <button id="close-reset" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
-      </div>
-      
-      <p style="text-align:center; color:var(--text-muted); font-size:0.95rem;">
-        Enter the 6-digit code sent to your email.
-      </p>
-
-      <div class="otp-input-group" style="margin: 20px 0;">
-        <input type="text" id="otp-1" class="otp-input-single" maxlength="1" />
-        <input type="text" id="otp-2" class="otp-input-single" maxlength="1" />
-        <input type="text" id="otp-3" class="otp-input-single" maxlength="1" />
-        <input type="text" id="otp-4" class="otp-input-single" maxlength="1" />
-        <input type="text" id="otp-5" class="otp-input-single" maxlength="1" />
-        <input type="text" id="otp-6" class="otp-input-single" maxlength="1" />
-      </div>
-
-      <div style="text-align:center; margin-bottom:20px; font-size:0.9rem;">
-        <span id="timer-countdown" style="font-weight:600; color:var(--primary);">10:00</span>
-        <span style="margin:0 8px; color:var(--border-color);">|</span>
-        <button id="resend-otp-btn" class="btn btn--ghost" style="padding:4px 10px; font-size:0.8rem;">Resend OTP</button>
-      </div>
-
-      <div class="field">
-        <label for="new-password">New Password</label>
-        <input type="password" id="new-password" placeholder="Min. 8 characters" required />
-      </div>
-      <div class="field">
-        <label for="confirm-password">Confirm Password</label>
-        <input type="password" id="confirm-password" placeholder="Re-enter password" required />
-      </div>
-
-      <button id="reset-password-btn" class="btn btn--primary btn--block" style="margin-top:20px;">Set New Password</button>
-    </div>
-  </div>
 
   <script src="/js/admin-auth.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
